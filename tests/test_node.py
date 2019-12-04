@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from domain import *
-from node import Dispatcher, DispatcherRegistry
+from node import Dispatcher, DispatcherRegistry, LedgerExchange
 
 
 class TestNode(unittest.TestCase):
@@ -122,25 +122,65 @@ class TestNode(unittest.TestCase):
                                 borders=[Border(dest='be', capacity=0, cost=5), Border(dest='de', capacity=0, cost=5)])
 
         # Expected
-        proposal = Proposal(id=42, cost=15, quantity=30, path_node=['fr', 'be'])
+        proposal = Proposal(production_id=42, cost=15, quantity=30, path_node=['fr', 'be'])
 
         # Test
         dispatcher.send_proposal(productions=[Production(cost=10, quantity=30)], path_node=['be'])
         registry.get.assert_called_with('de')
         self.assertEqual(proposal, mock_actor.mes, "Wrong proposal send")
 
+    def test_receive_proposal_offer_give_all(self):
+        # Input
+        ledger = LedgerExchange()
+        ledger.add(Exchange(quantity=50, id=1234, production_id=42))
+
+        dispatcher = Dispatcher(name='fr',
+                                uuid_generate=lambda: 42,
+                                ledger_exchange=ledger,
+                                productions=[Production(cost=10, quantity=100)])
+
+        prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr'])
+
+        # Expected
+        ex_expected = Exchange(id=42, production_id=42, quantity=50)
+
+        # Test
+        ex = dispatcher.receive_proposal_offer(proposal=prop)
+        self.assertEqual(ex_expected, ex, 'Wrong exchange comme back')
+        self.assertEqual(100, ledger.sum_production(42), 'Ledger not updated')
+
+    def test_receive_proposal_offer_give_partial(self):
+        # Input
+        ledger = LedgerExchange()
+        ledger.add(Exchange(quantity=80, id=1234, production_id=42))
+
+        dispatcher = Dispatcher(name='fr',
+                                uuid_generate=lambda: 42,
+                                ledger_exchange=ledger,
+                                productions=[Production(cost=10, quantity=100)])
+
+        prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr'])
+
+        # Expected
+        ex_expected = Exchange(id=42, production_id=42, quantity=20)
+
+        # Test
+        ex = dispatcher.receive_proposal_offer(proposal=prop)
+        self.assertEqual(ex_expected, ex, 'Wrong exchange comme back')
+        self.assertEqual(100, ledger.sum_production(42), 'Ledger not updated')
+
     def test_respond_proposal_ask_all_get_all(self):
         # Input
-        mock_actor = MockActorRef(ProposalFinal(quantity=50))
+        mock_actor = MockActorRef(Exchange(quantity=50))
         registry = DispatcherRegistry()
         registry.get = MagicMock(return_value=mock_actor)
 
-        prop = Proposal(id=1234, cost=10, quantity=50, path_node=['be'])
+        prop = Proposal(production_id=1234, cost=10, quantity=50, path_node=['be'])
         state = NodeState(productions_used=[Production(cost=10, quantity=50, id=1234)],
                           productions_free=[], cost=0, rac=0)
 
         # Output
-        prop_asked = ProposalOffer(id=prop.id, cost=prop.cost, quantity=prop.quantity, path_node=prop.path_node)
+        prop_asked = ProposalOffer(id=prop.production_id, cost=prop.cost, quantity=prop.quantity, path_node=prop.path_node)
 
         # Test
         dispatcher = Dispatcher(name='fr', registry=registry)
@@ -149,6 +189,20 @@ class TestNode(unittest.TestCase):
         registry.get.assert_called_with('be')
         self.assertEqual(prop_asked, mock_actor.mes, "Wrong proposal offer send")
 
+
+class TestLedgerExchange(unittest.TestCase):
+
+    def test(self):
+        ledger = LedgerExchange()
+        ledger.add(Exchange(id=1234, production_id=1, quantity=10))
+        ledger.add(Exchange(id=9876, production_id=1, quantity=10))
+        ledger.add(Exchange(id=5432, production_id=1, quantity=10))
+        ledger.add(Exchange(id=4566, production_id=2, quantity=10))
+
+        self.assertEqual(30, ledger.sum_production(production_id=1), "Wrong ledger behaviour")
+
+        ledger.delete(Exchange(id=9876, production_id=1, quantity=10))
+        self.assertEqual(20, ledger.sum_production(production_id=1), "Wrong ledger behaviour")
 
 
 class MockActorRef:

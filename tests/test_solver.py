@@ -23,6 +23,6 @@ class TestSolver(unittest.TestCase):
         a.tell(Start())
         b.tell(Start())
 
-        time.sleep(1)
+        time.sleep(2)
         a.stop()
         b.stop()

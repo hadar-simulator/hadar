@@ -34,17 +34,20 @@ class Production(DTO):
         self.id = id
 
 
+
 class Proposal(DTO):
-    def __init__(self, id: uuid , cost: int, quantity: int, path_node: List[str]):
-        self.id = id
+    def __init__(self, production_id: uuid, cost: int, quantity: int, path_node: List[str]):
+        self.production_id = production_id
         self.cost = cost
         self.quantity = quantity
         self.path_node = path_node
 
 
-class ProposalFinal(DTO):
-    def __init__(self, quantity):
+class Exchange(DTO):
+    def __init__(self, quantity=0, id: uuid=0, production_id: uuid=0):
         self.quantity = quantity
+        self.id = id
+        self.production = production_id
 
 
 class ProposalOffer(Proposal):
