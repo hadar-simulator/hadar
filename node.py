@@ -13,29 +13,35 @@ class LedgerExchange:
     def __init__(self):
         self.ledger = {}
 
-    def add(self, ex: Exchange):
-        if ex.production not in self.ledger.keys():
-            self.ledger[ex.production] = {}
+    def add_all(self, ex: List[Exchange]):
+        for e in ex:
+            self.add(e)
 
-        if ex.id in self.ledger[ex.production].keys():
+    def add(self, ex: Exchange):
+        if ex.production_id not in self.ledger.keys():
+            self.ledger[ex.production_id] = {}
+
+        if ex.id in self.ledger[ex.production_id].keys():
             raise ValueError('Exchange already stored in ledger')
-        self.ledger[ex.production][ex.id] = ex
+        self.ledger[ex.production_id][ex.id] = ex
 
     def delete(self, ex: Exchange):
-        if ex.production in self.ledger.keys():
-            del self.ledger[ex.production][ex.id]
+        if ex.production_id in self.ledger.keys():
+            del self.ledger[ex.production_id][ex.id]
 
     def sum_production(self, production_id):
         if production_id not in self.ledger.keys():
             return 0
         return sum([ex.quantity for ex in self.ledger[production_id].values()])
 
+
 class Dispatcher(ThreadingActor):
 
     def __init__(self, name,
-                 uuid_generate=uuid.uuid1,
+                 uuid_generate=uuid.uuid4,
                  registry: DispatcherRegistry = DispatcherRegistry(),
-                 ledger_exchange: LedgerExchange = LedgerExchange(),
+                 ledger_exchange: LedgerExchange = None,
+                 min_exchange: int=1,
                  consumptions: List[Consumption] = [],
                  productions: List[Production] = [],
                  borders: List[Border] = []):
@@ -46,7 +52,8 @@ class Dispatcher(ThreadingActor):
         self.consumptions = sorted(consumptions, key=lambda x: x.cost, reverse=True)
         self.raw_productions = Dispatcher.generate_production_id(productions, self.uuid_generate)
         self.borders = borders
-        self.ledger_exchanges = ledger_exchange
+        self.ledger_exchanges = LedgerExchange() if ledger_exchange is None else ledger_exchange
+        self.min_exchange = min_exchange
         self.registry = registry
         self.registry.add(self)
 
@@ -64,7 +71,8 @@ class Dispatcher(ThreadingActor):
         print('received at', self.name, ':', message)
         if isinstance(message, Start):
             self.send_proposal(productions=self.state.productions_free)
-            return
+        if isinstance(message, Snapshot):
+            return self
         if isinstance(message, ProposalOffer):
             return self.receive_proposal_offer(proposal=message)
         if isinstance(message, Proposal):
@@ -94,7 +102,7 @@ class Dispatcher(ThreadingActor):
     def receive_proposal(self, proposal: Proposal):
         # TODO test
         prod = Production(cost=proposal.cost, quantity=proposal.quantity, type='import', id=proposal.production_id)
-        new_state = self.optimize_adequacy([prod] + self.state.productions_used)
+        new_state = self.optimize_adequacy([prod] + self.state.productions_used + self.state.productions_free)
         if new_state.cost < self.state.cost:
             self.responce_proposal(proposal, new_state)
         else:
@@ -106,20 +114,21 @@ class Dispatcher(ThreadingActor):
         quantity_used = self.ledger_exchanges.sum_production(proposal.production_id)
 
         quantity_exchange = min(proposal.quantity, quantity_free - quantity_used)
-        ex = Exchange(quantity=quantity_exchange, id=self.uuid_generate(), production_id=proposal.production_id)
+        ex = self.generate_exchanges(quantity=quantity_exchange, production_id=proposal.production_id)
 
         if quantity_exchange > 0:
-            self.ledger_exchanges.add(ex)
+            self.ledger_exchanges.add_all(ex)
         return ex
 
 
     def responce_proposal(self, proposal: Proposal, new_state: NodeState):
         prod_asked = Dispatcher.find_production(new_state.productions_used, proposal.production_id)
         prop_asked = ProposalOffer(production_id=proposal.production_id, cost=proposal.cost, quantity=prod_asked.quantity, path_node=proposal.path_node)
-        exchange = self.registry.get(proposal.path_node[0]).ask(prop_asked)
-        print(exchange)
+        exchanges = self.registry.get(proposal.path_node[0]).ask(prop_asked)
 
-        # TODO follow accept exchange or refuse
+        prod = [Production(id=ex.production_id, cost=prop_asked.cost, quantity=ex.quantity, type='exchange', exchange=ex)
+                for ex in exchanges]
+        self.state = self.optimize_adequacy(prod + self.state.productions_used + self.state.productions_free)
 
 
     def optimize_adequacy(self, productions: List[Production]) -> NodeState:
@@ -129,6 +138,7 @@ class Dispatcher(ThreadingActor):
         :param productions: production capacities
         :return: NodeState with new production used stack, free production, current rac and cost
         """
+
         productions.sort(key=lambda x: x.cost)
 
         productions_used = []
@@ -158,6 +168,16 @@ class Dispatcher(ThreadingActor):
             gap = cons.quantity
 
         return NodeState(productions_used, productions_free, cost, rac)
+
+    def generate_exchanges(self, production_id: int, quantity: int):
+        length = int(quantity / self.min_exchange)
+        exchanges = [Exchange(quantity=self.min_exchange, id=self.uuid_generate(), production_id=production_id)
+                     for i in range(0, length)]
+
+        remain = quantity - length*self.min_exchange
+        if remain:
+            exchanges += [Exchange(quantity=remain, id=self.uuid_generate(), production_id=production_id)]
+        return exchanges
 
     @staticmethod
     def generate_production_id(productions: List[Production], uuid_generate):
