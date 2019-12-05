@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 from domain import *
 from node import Dispatcher, DispatcherRegistry, LedgerExchange
@@ -126,7 +126,7 @@ class TestNode(unittest.TestCase):
         # Test
         dispatcher.send_proposal(productions=[Production(id=42, cost=10, quantity=30)], path_node=['be'])
         registry.get.assert_called_with('de')
-        self.assertEqual(proposal, mock_actor.mes, "Wrong proposal send")
+        self.assertEqual(proposal, mock_actor.mes[0], "Wrong proposal send")
 
     def test_receive_proposal_offer_give_all(self):
         # Input
@@ -191,7 +191,7 @@ class TestNode(unittest.TestCase):
         ex = dispatcher.receive_proposal_offer(proposal=prop)
         self.assertEqual([ex_expected], ex, 'Wrong exchange come back')
         registry.get.assert_called_with('be')
-        self.assertEqual(prop_forward, mock_actor.mes, 'Wrong message forward')
+        self.assertEqual(prop_forward, mock_actor.mes[0], 'Wrong message forward')
 
     def test_make_offer_ask_all_get_all(self):
         # Input
@@ -211,7 +211,7 @@ class TestNode(unittest.TestCase):
         dispatcher.make_offer(proposal=prop, new_state=state)
 
         registry.get.assert_called_with('be')
-        self.assertEqual(prop_asked, mock_actor.mes, "Wrong proposal offer send")
+        self.assertEqual(prop_asked, mock_actor.mes[0], "Wrong proposal offer send")
 
     def test_make_offer_ask_partial_get_all(self):
         # Input
@@ -234,7 +234,7 @@ class TestNode(unittest.TestCase):
 
         registry.get.assert_called_with('be')
         dispatcher.send_remain_proposal.assert_called_with(proposal=prop, asked_quantity=50, given_quantity=50)
-        self.assertEqual(prop_asked, mock_actor.mes, "Wrong proposal offer send")
+        self.assertEqual(prop_asked, mock_actor.mes[0], "Wrong proposal offer send")
 
     def test_send_remain_proposal(self):
         # Input
@@ -250,6 +250,31 @@ class TestNode(unittest.TestCase):
         # Test
         dispatcher.send_remain_proposal(proposal=prop, asked_quantity=100, given_quantity=100)
         dispatcher.send_proposal.assert_called_with([expected], ['be'])
+
+    def test_send_cancel_exchange(self):
+        # Input
+        mock_actor = MockActorRef()
+        registry = DispatcherRegistry()
+        registry.get = MagicMock(return_value=mock_actor)
+
+        dispatcher = Dispatcher(name='fr', registry=registry)
+
+        exchanges = [
+            Exchange(quantity=10, id=0, production_id=24, path_node=['be']),
+            Exchange(quantity=10, id=1, production_id=24, path_node=['be']),
+            Exchange(quantity=10, id=2, production_id=42, path_node=['de']),
+            Exchange(quantity=10, id=3, production_id=24, path_node=['be']),
+        ]
+
+        # Expected
+        cancel24 = CanceledExchange(ids=[0, 1, 3], path_node=['be'])
+        cancel42 = CanceledExchange(ids=[2], path_node=['de'])
+
+        dispatcher.send_cancel_exchange(exchanges)
+
+        registry.get.assert_has_calls([call('be'), call('de')])
+        self.assertEqual(cancel24, mock_actor.mes[0], 'Wrong cancel exchange send')
+        self.assertEqual(cancel42, mock_actor.mes[1], 'Wrong cancel exchange send')
 
     def test_generate_exchange(self):
         #Input
@@ -301,11 +326,11 @@ class TestLedgerExchange(unittest.TestCase):
 
 class MockActorRef:
     def __init__(self, res=None):
-        self.mes = None
+        self.mes = []
         self.res = res
 
     def tell(self, mes):
-        self.mes = mes
+        self.mes.append(mes)
 
     def ask(self, mes):
         self.mes = mes

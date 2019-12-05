@@ -12,21 +12,21 @@ class TestSolver(unittest.TestCase):
 
     def test_two_nodes_on_side(self):
         a = Dispatcher.start(name='a',
-                             min_exchange=100,
-                             consumptions=[Consumption(cost=10**6, quantity=1000)],
-                             productions=[Production(cost=10, quantity=2000, type='nuclear')],
-                             borders=[Border(dest='b', capacity=1000, cost=2)])
+                             min_exchange=1,
+                             consumptions=[Consumption(cost=10**6, quantity=10)],
+                             productions=[Production(cost=10, quantity=20, type='nuclear')],
+                             borders=[Border(dest='b', capacity=10, cost=2)])
 
         b = Dispatcher.start(name='b',
-                             min_exchange=100,
-                             consumptions=[Consumption(cost=10**6, quantity=500)],
-                             productions=[Production(cost=10, quantity=250, type='nuclear')],
-                             borders=[Border(dest='c', capacity=1000, cost=2)])
+                             min_exchange=1,
+                             consumptions=[Consumption(cost=10**6, quantity=5)],
+                             productions=[Production(cost=10, quantity=3, type='nuclear')],
+                             borders=[Border(dest='c', capacity=1, cost=2)])
 
         c = Dispatcher.start(name='c',
-                             min_exchange=100,
-                             consumptions=[Consumption(cost=10**6, quantity=750)],
-                             productions=[Production(cost=10, quantity=500, type='nuclear')])
+                             min_exchange=1,
+                             consumptions=[Consumption(cost=10**6, quantity=8)],
+                             productions=[Production(cost=10, quantity=5, type='nuclear')])
 
         a.tell(Start())
         b.tell(Start())

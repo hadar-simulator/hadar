@@ -33,8 +33,10 @@ class Exchange(DTO):
         self.path_node = path_node
 
 
-class CanceledExchange(Exchange):
-    pass
+class CanceledExchange(DTO):
+    def __init__(self, ids: List[int], path_node: List[str]=[]):
+        self.ids = ids
+        self.path_node = path_node
 
 
 class Production(DTO):

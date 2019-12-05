@@ -171,9 +171,9 @@ class Dispatcher(ThreadingActor):
 
         # Cancel useless exchange
         useless_exchanges = Dispatcher.find_exchanges(self.state.productions_free)
+        self.send_cancel_exchange(useless_exchanges)
 
-
-        # TODO inspect production free to create proposal & cancel exchange
+        # TODO inspect production free to create proposal
 
     def send_remain_proposal(self, proposal: Proposal, asked_quantity: int, given_quantity: int):
         """
@@ -192,18 +192,23 @@ class Dispatcher(ThreadingActor):
 
     def send_cancel_exchange(self, exchanges: List[Exchange]):
         """
-        Send canceled exchange order.
+        Send canceled exchange order regrouped by production.
 
         :param exchanges: exchanges to cancel
         :return:
         """
-        # TODO test
+        productions = {}
+        paths = {}
         for ex in exchanges:
-            cancel = CanceledExchange(quantity=ex.quantity,
-                                      id=ex.id,
-                                      production_id=ex.production_id,
-                                      path_node=ex.path_node[1:])
-            self.registry.get(ex.path_node[0]).tell(cancel)
+            if ex.production_id not in productions.keys():
+                productions[ex.production_id] = []
+            productions[ex.production_id].append(ex.id)
+            paths[ex.production_id] = ex.path_node
+
+        for prod_id, ex in productions.items():
+            path = paths[prod_id]
+            cancel = CanceledExchange(ids=ex, path_node=path)
+            self.registry.get(path[0]).tell(cancel)
 
     def optimize_adequacy(self, productions: List[Production]) -> NodeState:
         """
