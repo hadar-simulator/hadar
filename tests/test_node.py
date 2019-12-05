@@ -170,6 +170,28 @@ class TestNode(unittest.TestCase):
         self.assertEqual([ex_expected], ex, 'Wrong exchange comme back')
         self.assertEqual(100, ledger.sum_production(42), 'Ledger not updated')
 
+
+    def test_receive_proposal_offer_forward(self):
+        # Input
+        ex_expected = Exchange(id=1, production_id=42, quantity=50)
+        mock_actor = MockActorRef([ex_expected])
+        registry = DispatcherRegistry()
+        registry.get = MagicMock(return_value=mock_actor)
+        dispatcher = Dispatcher(name='fr',
+                                uuid_generate=lambda: 1,
+                                registry=registry)
+
+        prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr', 'be'])
+
+        # Expected
+        prop_forward = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['be'])
+
+
+        # Test
+        ex = dispatcher.receive_proposal_offer(proposal=prop)
+        self.assertEqual([ex_expected], ex, 'Wrong exchange come back')
+        registry.get.assert_called_with('be')
+
     def test_respond_proposal_ask_all_get_all(self):
         # Input
         mock_actor = MockActorRef([Exchange(quantity=50)])
@@ -182,6 +204,26 @@ class TestNode(unittest.TestCase):
 
         # Output
         prop_asked = ProposalOffer(production_id=prop.production_id, cost=prop.cost, quantity=prop.quantity, path_node=prop.path_node)
+
+        # Test
+        dispatcher = Dispatcher(name='fr', registry=registry)
+        dispatcher.responce_proposal(proposal=prop, new_state=state)
+
+        registry.get.assert_called_with('be')
+        self.assertEqual(prop_asked, mock_actor.mes, "Wrong proposal offer send")
+
+    def test_respond_proposal_ask_partial_get_all(self):
+        # Input
+        mock_actor = MockActorRef([Exchange(quantity=50)])
+        registry = DispatcherRegistry()
+        registry.get = MagicMock(return_value=mock_actor)
+
+        prop = Proposal(production_id=1234, cost=10, quantity=100, path_node=['be'])
+        state = NodeState(productions_used=[Production(cost=10, quantity=50, id=1234)],
+                          productions_free=[], cost=0, rac=0)
+
+        # Output
+        prop_asked = ProposalOffer(production_id=prop.production_id, cost=prop.cost, quantity=50, path_node=prop.path_node)
 
         # Test
         dispatcher = Dispatcher(name='fr', registry=registry)

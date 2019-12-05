@@ -14,26 +14,33 @@ class TestSolver(unittest.TestCase):
         a = Dispatcher.start(name='a',
                              min_exchange=100,
                              consumptions=[Consumption(cost=10**6, quantity=1000)],
-                             productions=[Production(cost=10, quantity=1500, type='nuclear')],
+                             productions=[Production(cost=10, quantity=2500, type='nuclear')],
                              borders=[Border(dest='b', capacity=1000, cost=2)])
 
         b = Dispatcher.start(name='b',
+                             min_exchange=100,
+                             consumptions=[Consumption(cost=10**6, quantity=500)],
+                             productions=[Production(cost=10, quantity=500, type='nuclear')],
+                             borders=[Border(dest='c', capacity=1000, cost=2)])
+
+        c = Dispatcher.start(name='c',
                              min_exchange=100,
                              consumptions=[Consumption(cost=10**6, quantity=1000)],
                              productions=[Production(cost=10, quantity=500, type='nuclear')])
 
         a.tell(Start())
         b.tell(Start())
-
+        c.tell(Start())
 
         time.sleep(1)
 
         self.plot(a)
         self.plot(b)
+        self.plot(c)
 
         a.stop()
         b.stop()
-
+        c.stop()
 
     def plot(self, actor: ActorRef):
         d = actor.ask(Snapshot())

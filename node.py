@@ -109,7 +109,14 @@ class Dispatcher(ThreadingActor):
             self.send_proposal(productions=[prod], path_node=proposal.path_node)
 
     def receive_proposal_offer(self, proposal: ProposalOffer) -> Exchange:
-        # TODO check border capacity and backward
+        # TODO check border capacity
+        if proposal.production_id not in [p.id for p in self.state.productions_free]:
+            forward = ProposalOffer(production_id=proposal.production_id,
+                                    cost=proposal.cost,
+                                    quantity=proposal.quantity,
+                                    path_node=proposal.path_node[1:])
+            return self.registry.get(forward.path_node[0]).ask(forward)
+
         quantity_free = Dispatcher.find_production(self.state.productions_free, proposal.production_id).quantity
         quantity_used = self.ledger_exchanges.sum_production(proposal.production_id)
 
@@ -129,6 +136,8 @@ class Dispatcher(ThreadingActor):
         prod = [Production(id=ex.production_id, cost=prop_asked.cost, quantity=ex.quantity, type='exchange', exchange=ex)
                 for ex in exchanges]
         self.state = self.optimize_adequacy(prod + self.state.productions_used + self.state.productions_free)
+
+        # TODO inspect production free to create proposal & cancel exchange
 
 
     def optimize_adequacy(self, productions: List[Production]) -> NodeState:
@@ -150,12 +159,13 @@ class Dispatcher(ThreadingActor):
         # Compute prod cost
         for prod in productions:
             used = min(prod.quantity, max(0, -rac))
-            productions_used.append(Dispatcher.copy_production(prod, used))
+            if used:
+                productions_used.append(Dispatcher.copy_production(prod, used))
             rac += prod.quantity
             cost += prod.cost*used
 
             free = prod.quantity - used
-            if free > 0:
+            if free:
                 productions_free.append(Dispatcher.copy_production(prod, free))
 
         # Compute load cost
