@@ -139,14 +139,14 @@ class TestNode(unittest.TestCase):
                                 ledger_exchange=ledger,
                                 productions=[Production(cost=10, quantity=100)])
 
-        prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr'])
+        prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr'], return_path_node=['be'])
 
         # Expected
-        ex_expected = Exchange(id=42, production_id=42, quantity=50)
+        ex_expected = Exchange(id=42, production_id=42, quantity=50, path_node=['be'])
 
         # Test
         ex = dispatcher.receive_proposal_offer(proposal=prop)
-        self.assertEqual([ex_expected], ex, 'Wrong exchange comme back')
+        self.assertEqual([ex_expected], ex, 'Wrong exchange come back')
         self.assertEqual(100, ledger.sum_production(42), 'Ledger not updated')
 
     def test_receive_proposal_offer_give_partial(self):
@@ -160,14 +160,14 @@ class TestNode(unittest.TestCase):
                                 ledger_exchange=ledger,
                                 productions=[Production(cost=10, quantity=100)])
 
-        prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr'])
+        prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr'], return_path_node=['be'])
 
         # Expected
-        ex_expected = Exchange(id=42, production_id=42, quantity=20)
+        ex_expected = Exchange(id=42, production_id=42, quantity=20, path_node=['be'])
 
         # Test
         ex = dispatcher.receive_proposal_offer(proposal=prop)
-        self.assertEqual([ex_expected], ex, 'Wrong exchange comme back')
+        self.assertEqual([ex_expected], ex, 'Wrong exchange come back')
         self.assertEqual(100, ledger.sum_production(42), 'Ledger not updated')
 
 
@@ -181,18 +181,19 @@ class TestNode(unittest.TestCase):
                                 uuid_generate=lambda: 1,
                                 registry=registry)
 
-        prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr', 'be'])
+        prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr', 'be'], return_path_node=['fr', 'it'])
 
         # Expected
-        prop_forward = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['be'])
+        prop_forward = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['be'], return_path_node=['fr', 'it'])
 
 
         # Test
         ex = dispatcher.receive_proposal_offer(proposal=prop)
         self.assertEqual([ex_expected], ex, 'Wrong exchange come back')
         registry.get.assert_called_with('be')
+        self.assertEqual(prop_forward, mock_actor.mes, 'Wrong message forward')
 
-    def test_respond_proposal_ask_all_get_all(self):
+    def test_make_offer_ask_all_get_all(self):
         # Input
         mock_actor = MockActorRef([Exchange(quantity=50)])
         registry = DispatcherRegistry()
@@ -203,34 +204,52 @@ class TestNode(unittest.TestCase):
                           productions_free=[], cost=0, rac=0)
 
         # Output
-        prop_asked = ProposalOffer(production_id=prop.production_id, cost=prop.cost, quantity=prop.quantity, path_node=prop.path_node)
+        prop_asked = ProposalOffer(production_id=prop.production_id, cost=prop.cost, quantity=prop.quantity, path_node=prop.path_node, return_path_node=['fr'])
 
         # Test
         dispatcher = Dispatcher(name='fr', registry=registry)
-        dispatcher.responce_proposal(proposal=prop, new_state=state)
+        dispatcher.make_offer(proposal=prop, new_state=state)
 
         registry.get.assert_called_with('be')
         self.assertEqual(prop_asked, mock_actor.mes, "Wrong proposal offer send")
 
-    def test_respond_proposal_ask_partial_get_all(self):
+    def test_make_offer_ask_partial_get_all(self):
         # Input
         mock_actor = MockActorRef([Exchange(quantity=50)])
         registry = DispatcherRegistry()
         registry.get = MagicMock(return_value=mock_actor)
+
+        dispatcher = Dispatcher(name='fr', registry=registry)
+        dispatcher.send_remain_proposal = MagicMock()
 
         prop = Proposal(production_id=1234, cost=10, quantity=100, path_node=['be'])
         state = NodeState(productions_used=[Production(cost=10, quantity=50, id=1234)],
                           productions_free=[], cost=0, rac=0)
 
         # Output
-        prop_asked = ProposalOffer(production_id=prop.production_id, cost=prop.cost, quantity=50, path_node=prop.path_node)
+        prop_asked = ProposalOffer(production_id=prop.production_id, cost=prop.cost, quantity=50, path_node=prop.path_node, return_path_node=['fr'])
 
         # Test
-        dispatcher = Dispatcher(name='fr', registry=registry)
-        dispatcher.responce_proposal(proposal=prop, new_state=state)
+        dispatcher.make_offer(proposal=prop, new_state=state)
 
         registry.get.assert_called_with('be')
+        dispatcher.send_remain_proposal.assert_called_with(proposal=prop, asked_quantity=50, given_quantity=50)
         self.assertEqual(prop_asked, mock_actor.mes, "Wrong proposal offer send")
+
+    def test_send_remain_proposal(self):
+        # Input
+        dispatcher = Dispatcher(name='fr')
+        dispatcher.send_proposal = MagicMock()
+
+        prop = Proposal(production_id=1, cost=10, quantity=200, path_node=['be'])
+
+        # Expected
+        expected = Production(id=1, cost=10, quantity=100)
+
+
+        # Test
+        dispatcher.send_remain_proposal(proposal=prop, asked_quantity=100, given_quantity=100)
+        dispatcher.send_proposal.assert_called_with([expected], ['be'])
 
     def test_generate_exchange(self):
         #Input
@@ -238,27 +257,27 @@ class TestNode(unittest.TestCase):
 
         # Expected
         expected = [
-            Exchange(id=42, production_id=45, quantity=10),
-            Exchange(id=42, production_id=45, quantity=10)
+            Exchange(id=42, production_id=45, quantity=10, path_node=['fr']),
+            Exchange(id=42, production_id=45, quantity=10, path_node=['fr'])
         ]
 
         # Test complete
-        res = dispatcher.generate_exchanges(production_id=45, quantity=20)
+        res = dispatcher.generate_exchanges(production_id=45, quantity=20, path_node=['fr'])
         self.assertEqual(expected, res, 'Wrong exchange generation')
 
         # Expected
         expected = [
-            Exchange(id=42, production_id=45, quantity=10),
-            Exchange(id=42, production_id=45, quantity=10),
-            Exchange(id=42, production_id=45, quantity=5)
+            Exchange(id=42, production_id=45, quantity=10, path_node=['fr']),
+            Exchange(id=42, production_id=45, quantity=10, path_node=['fr']),
+            Exchange(id=42, production_id=45, quantity=5, path_node=['fr'])
         ]
 
         # Test partial
-        res = dispatcher.generate_exchanges(production_id=45, quantity=25)
+        res = dispatcher.generate_exchanges(production_id=45, quantity=25, path_node=['fr'])
         self.assertEqual(expected, res, 'Wrong exchange generation')
 
         # Test empty
-        res = dispatcher.generate_exchanges(production_id=45, quantity=0)
+        res = dispatcher.generate_exchanges(production_id=45, quantity=0, path_node=['fr'])
         self.assertEqual([], res, 'Wrong empty exchange generation')
 
 

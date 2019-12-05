@@ -1,6 +1,6 @@
 import time
 
-from domain import Consumption, Production, Border, Start, ProductionFree
+from domain import Consumption, Production, Border, Start
 from node import Dispatcher, DispatcherRegistry
 
 

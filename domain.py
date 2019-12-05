@@ -26,10 +26,15 @@ class Consumption(DTO):
 
 
 class Exchange(DTO):
-    def __init__(self, quantity=0, id: uuid=0, production_id: uuid=0):
+    def __init__(self, quantity=0, id: uuid=0, production_id: uuid=0, path_node: List[str]=[]):
         self.quantity = quantity
         self.id = id
         self.production_id = production_id
+        self.path_node = path_node
+
+
+class CanceledExchange(Exchange):
+    pass
 
 
 class Production(DTO):
@@ -51,7 +56,9 @@ class Proposal(DTO):
 
 
 class ProposalOffer(Proposal):
-    pass
+    def __init__(self, production_id: uuid, cost: int, quantity: int, path_node: List[str], return_path_node: List[str]):
+        Proposal.__init__(self, production_id, cost, quantity, path_node)
+        self.return_path_node = return_path_node
 
 
 class NodeState(DTO):
@@ -68,22 +75,10 @@ class Border:
         self.capacity = capacity
         self.cost = cost
 
-class Snapshot:
+class Snapshot(DTO):
     def __init__(self):
         pass
 
-    def __str__(self):
-        return "Snapshot !"
-
-    def __repr__(self):
-        return self.__str__()
-
-class Start:
+class Start(DTO):
     def __init__(self):
         pass
-
-    def __str__(self):
-        return "Start !"
-
-    def __repr__(self):
-        return self.__str__()
