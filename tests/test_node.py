@@ -1,103 +1,14 @@
 import unittest
 from unittest.mock import MagicMock, call
 
-from domain import *
-from node import Dispatcher, DispatcherRegistry, LedgerExchange
-
+from dispatcher.domain import *
+from dispatcher.node import Dispatcher, LedgerExchange
+from dispatcher.manager import DispatcherRegistry
 
 class TestNode(unittest.TestCase):
 
     def setUp(self) -> None:
         self.registry = DispatcherRegistry()
-
-    def test_optimize_adequacy_rac_positive(self):
-        # Input
-        productions = [
-            Production(type='nuclear', cost=10, quantity=200),
-            Production(type='solar', cost=5, quantity=50),
-            Production(type='oil', cost=20, quantity=200)
-        ]
-
-        consumptions = [
-            Consumption(cost=10**6, quantity=300)
-        ]
-
-        # Output
-        productions_free = [
-            Production(type='oil', cost=20, quantity=150, id=42)
-        ]
-
-        productions_used = [
-            Production(type='solar', cost=5, quantity=50, id=42),
-            Production(type='nuclear', cost=10, quantity=200, id=42),
-            Production(type='oil', cost=20, quantity=50, id=42)
-        ]
-
-        # Compare
-        expected_state = NodeState(productions_used, productions_free, 3250, 150)
-
-        dispatcher = Dispatcher(name='fr', consumptions=consumptions, productions=productions, uuid_generate=lambda: 42)
-        state = dispatcher.optimize_adequacy(productions)
-        self.assertEqual(expected_state, state)
-
-    def test_optimize_adequacy_rac_zero(self):
-        # Input
-        productions = [
-            Production(type='nuclear', cost=10, quantity=200),
-            Production(type='solar', cost=5, quantity=50),
-            Production(type='oil', cost=20, quantity=200)
-        ]
-
-        consumptions = [
-            Consumption(cost=10**6, quantity=450)
-        ]
-
-        # Output
-        productions_free = [
-        ]
-
-        productions_used = [
-            Production(type='solar', cost=5, quantity=50, id=42),
-            Production(type='nuclear', cost=10, quantity=200, id=42),
-            Production(type='oil', cost=20, quantity=200, id=42)
-        ]
-
-        # Compare
-        expected_state = NodeState(productions_used, productions_free, 6250, 0)
-
-        dispatcher = Dispatcher(name='fr', consumptions=consumptions, productions=productions, uuid_generate=lambda: 42)
-        state = dispatcher.optimize_adequacy(productions)
-        self.assertEqual(expected_state, state)
-
-    def test_optimize_adequacy_rac_negative(self):
-        # Input
-        productions = [
-            Production(type='nuclear', cost=10, quantity=200),
-            Production(type='solar', cost=5, quantity=50),
-            Production(type='oil', cost=20, quantity=200)
-        ]
-
-        consumptions = [
-            Consumption(cost=10**6, quantity=300),
-            Consumption(cost=10**3, quantity=300)
-        ]
-
-        # Output
-        productions_free = [
-        ]
-
-        productions_used = [
-            Production(type='solar', cost=5, quantity=50, id=42),
-            Production(type='nuclear', cost=10, quantity=200, id=42),
-            Production(type='oil', cost=20, quantity=200, id=42)
-        ]
-
-        # Test
-        expected_state = NodeState(productions_used, productions_free, 156250, -150)
-
-        dispatcher = Dispatcher(name='fr', consumptions=consumptions, productions=productions, uuid_generate=lambda: 42)
-        state = dispatcher.optimize_adequacy(productions)
-        self.assertEqual(expected_state, state)
 
 
     def test_find_production(self):
@@ -324,37 +235,6 @@ class TestNode(unittest.TestCase):
         self.assertEqual(cancel24, mock_actor.mes[0], 'Wrong cancel exchange send')
         self.assertEqual(cancel42, mock_actor.mes[1], 'Wrong cancel exchange send')
 
-    def test_clean_production(self):
-        # Input
-        productions = [
-            Production(id=2, cost=20, quantity=10),
-            Production(id=1, cost=40, quantity=10),
-            Production(id=0, cost=10, quantity=10),
-            Production(id=2, cost=20, quantity=10),
-        ]
-
-        # Expected
-        expected = [
-            Production(id=0, cost=10, quantity=10),
-            Production(id=2, cost=20, quantity=20),
-            Production(id=1, cost=40, quantity=10)
-        ]
-
-        self.assertEqual(expected, Dispatcher.clean_production(productions), 'Productions is not cleaned')
-
-    def test_is_same_prod(self):
-        a = Production(id=0, cost=0, quantity=0)
-        b = Production(id=1, cost=0, quantity=0)
-        c = Production(id=0, cost=0, quantity=0, exchange=Exchange(id=1))
-        e = Production(id=2, cost=0, quantity=0, exchange=Exchange(id=2))
-        f = Production(id=2, cost=0, quantity=0, exchange=Exchange(id=3))
-
-        self.assertTrue(Dispatcher.is_same_prod(a, a))
-        self.assertTrue(Dispatcher.is_same_prod(e, e))
-
-        self.assertFalse(Dispatcher.is_same_prod(a, b))
-        self.assertFalse(Dispatcher.is_same_prod(a, c))
-        self.assertFalse(Dispatcher.is_same_prod(e, f))
 
     def test_generate_exchange(self):
         #Input

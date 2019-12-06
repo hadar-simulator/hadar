@@ -4,8 +4,8 @@ from copy import copy, deepcopy
 
 from pykka import ThreadingActor
 
-from domain import *
-from manager import DispatcherRegistry
+from dispatcher.domain import *
+from dispatcher.manager import DispatcherRegistry
 
 
 class LedgerExchange:
@@ -298,32 +298,6 @@ class Dispatcher(ThreadingActor):
         if remain:
             exchanges += [Exchange(quantity=remain, id=self.uuid_generate(), production_id=production_id, path_node=path_node)]
         return exchanges
-
-    @staticmethod
-    def clean_production(productions: List[Production]) -> List[Production]:
-        productions = deepcopy(productions)
-        productions.sort(key=lambda x: x.cost)
-
-        # Merge same production (same id and exchange id)
-        i = 0
-        while i < len(productions):
-            while i+1 < len(productions) and Dispatcher.is_same_prod(productions[i], productions[i+1]):
-                productions[i].quantity += productions[i+1].quantity
-                del productions[i+1]
-            i += 1
-        return productions
-
-    @staticmethod
-    def is_same_prod(a: Production, b: Production):
-        if a.id != b.id:
-            return False
-        if a.type != b.type:
-            return False
-        if a.exchange != b.exchange:
-            return False
-        if a.exchange is None and b.exchange is None:
-            return True
-        return a.exchange.id == b.exchange.id
 
     @staticmethod
     def generate_production_id(productions: List[Production], uuid_generate):
