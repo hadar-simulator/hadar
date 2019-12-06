@@ -236,6 +236,54 @@ class TestNode(unittest.TestCase):
         dispatcher.send_remain_proposal.assert_called_with(proposal=prop, asked_quantity=50, given_quantity=50)
         self.assertEqual(prop_asked, mock_actor.mes[0], "Wrong proposal offer send")
 
+    def test_receive_cancel_exchange_forward(self):
+        # Input
+        mock_actor = MockActorRef()
+        registry = DispatcherRegistry()
+        registry.get = MagicMock(return_value=mock_actor)
+
+        dispatcher = Dispatcher(name='fr', registry=registry)
+
+        exchange = Exchange(quantity=10, id=0, production_id=42, path_node=['fr', 'it'])
+        cancel = CanceledExchange(exchanges=[exchange], path_node=['fr', 'it'])
+
+        # Expected
+        expected = CanceledExchange(exchanges=[exchange], path_node=['it'])
+
+        # Test
+        dispatcher.receive_cancel_exchange(cancel)
+        registry.get.assert_called_with('it')
+        self.assertEqual(expected, mock_actor.mes[0], "Wrong cancel forwarded")
+
+    def test_receive_cancel_exchange_cancel(self):
+        # Input
+        ledger = LedgerExchange()
+        ledger.add(Exchange(quantity=10, id=1, production_id=42, path_node=['be']))
+        ledger.add(Exchange(quantity=10, id=2, production_id=42, path_node=['be']))
+        ledger.add(Exchange(quantity=10, id=3, production_id=42, path_node=['be']))
+
+        mock_actor = MockActorRef()
+        registry = DispatcherRegistry()
+        registry.get = MagicMock(return_value=mock_actor)
+
+        dispatcher = Dispatcher(name='fr', registry=registry, ledger_exchange=ledger,
+                                uuid_generate=lambda: 42,
+                                productions=[Production(cost=10, quantity=40)],
+                                borders=[Border(dest='be', capacity=100, cost=2)])
+
+        ex1 = Exchange(quantity=10, id=1, production_id=42, path_node=['fr', 'it'])
+        ex2 = Exchange(quantity=10, id=2, production_id=42, path_node=['fr', 'it'])
+        cancel = CanceledExchange(exchanges=[ex1, ex2], path_node=['fr'])
+
+        # Expected
+        proposal = Proposal(production_id=42, cost=10+2, quantity=20, path_node=['fr'])
+
+        # Test
+        dispatcher.receive_cancel_exchange(cancel)
+        self.assertEqual(10, ledger.sum_production(42))
+        registry.get.assert_called_with('be')
+        self.assertEqual(proposal, mock_actor.mes[0], 'Wrong proposal')
+
     def test_send_remain_proposal(self):
         # Input
         dispatcher = Dispatcher(name='fr')
@@ -267,14 +315,46 @@ class TestNode(unittest.TestCase):
         ]
 
         # Expected
-        cancel24 = CanceledExchange(ids=[0, 1, 3], path_node=['be'])
-        cancel42 = CanceledExchange(ids=[2], path_node=['de'])
+        cancel24 = CanceledExchange(exchanges=[exchanges[0], exchanges[1], exchanges[3]], path_node=['be'])
+        cancel42 = CanceledExchange(exchanges=[exchanges[2]], path_node=['de'])
 
         dispatcher.send_cancel_exchange(exchanges)
 
         registry.get.assert_has_calls([call('be'), call('de')])
         self.assertEqual(cancel24, mock_actor.mes[0], 'Wrong cancel exchange send')
         self.assertEqual(cancel42, mock_actor.mes[1], 'Wrong cancel exchange send')
+
+    def test_clean_production(self):
+        # Input
+        productions = [
+            Production(id=2, cost=20, quantity=10),
+            Production(id=1, cost=40, quantity=10),
+            Production(id=0, cost=10, quantity=10),
+            Production(id=2, cost=20, quantity=10),
+        ]
+
+        # Expected
+        expected = [
+            Production(id=0, cost=10, quantity=10),
+            Production(id=2, cost=20, quantity=20),
+            Production(id=1, cost=40, quantity=10)
+        ]
+
+        self.assertEqual(expected, Dispatcher.clean_production(productions), 'Productions is not cleaned')
+
+    def test_is_same_prod(self):
+        a = Production(id=0, cost=0, quantity=0)
+        b = Production(id=1, cost=0, quantity=0)
+        c = Production(id=0, cost=0, quantity=0, exchange=Exchange(id=1))
+        e = Production(id=2, cost=0, quantity=0, exchange=Exchange(id=2))
+        f = Production(id=2, cost=0, quantity=0, exchange=Exchange(id=3))
+
+        self.assertTrue(Dispatcher.is_same_prod(a, a))
+        self.assertTrue(Dispatcher.is_same_prod(e, e))
+
+        self.assertFalse(Dispatcher.is_same_prod(a, b))
+        self.assertFalse(Dispatcher.is_same_prod(a, c))
+        self.assertFalse(Dispatcher.is_same_prod(e, f))
 
     def test_generate_exchange(self):
         #Input
@@ -333,6 +413,6 @@ class MockActorRef:
         self.mes.append(mes)
 
     def ask(self, mes):
-        self.mes = mes
+        self.mes.append(mes)
         return self.res
 

@@ -34,8 +34,8 @@ class Exchange(DTO):
 
 
 class CanceledExchange(DTO):
-    def __init__(self, ids: List[int], path_node: List[str]=[]):
-        self.ids = ids
+    def __init__(self, exchanges: List[Exchange], path_node: List[str]=[]):
+        self.exchanges = exchanges
         self.path_node = path_node
 
 
@@ -71,15 +71,24 @@ class NodeState(DTO):
         self.rac = rac
 
 
-class Border:
+class Border(DTO):
     def __init__(self, dest: str, capacity: int, cost: int):
         self.dest = dest
         self.capacity = capacity
         self.cost = cost
 
+
+class Event(DTO):
+    def __init__(self, type: str, message, res=None):
+        self.type = type
+        self.message = message
+        self.res = res
+
+
 class Snapshot(DTO):
     def __init__(self):
         pass
+
 
 class Start(DTO):
     def __init__(self):

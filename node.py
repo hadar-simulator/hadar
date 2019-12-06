@@ -29,6 +29,10 @@ class LedgerExchange:
         if ex.production_id in self.ledger.keys():
             del self.ledger[ex.production_id][ex.id]
 
+    def delete_all(self, exs: List[Exchange]):
+        for ex in exs:
+            self.delete(ex)
+
     def sum_production(self, production_id):
         if production_id not in self.ledger.keys():
             return 0
@@ -56,6 +60,7 @@ class Dispatcher(ThreadingActor):
         self.min_exchange = min_exchange
         self.registry = registry
         self.registry.add(self)
+        self.events = []
 
 
         self.state = self.optimize_adequacy(self.raw_productions)
@@ -68,16 +73,29 @@ class Dispatcher(ThreadingActor):
         :param message: next message to process
         :return:
         """
-        print('received at', self.name, ':', message)
+        self.events.append(Event(type='recv', message=message))
         if isinstance(message, Start):
             self.send_proposal(productions=self.state.productions_free)
-        if isinstance(message, Snapshot):
+        elif isinstance(message, Snapshot):
             return self
-        if isinstance(message, ProposalOffer):
-            return self.receive_proposal_offer(proposal=message)
-        if isinstance(message, Proposal):
+        elif isinstance(message, ProposalOffer):
+            ex = self.receive_proposal_offer(proposal=message)
+            self.events.append(Event(type='recv res', message=ex))
+            return ex
+        elif isinstance(message, Proposal):
             self.receive_proposal(proposal=message)
-            return
+        elif isinstance(message, CanceledExchange):
+            self.receive_cancel_exchange(cancel=message)
+
+    def tell(self, to: str, mes):
+        self.events.append(Event(type='tell', message=mes))
+        self.registry.get(to).tell(mes)
+
+    def ask(self, to: str, mes):
+        self.events.append(Event(type='ask', message=mes))
+        res = self.registry.get(to).ask(mes)
+        self.events.append(Event(type='ask res', message=res))
+        return res
 
     def send_proposal(self, productions: List[Production], path_node: List[str] = []):
         """
@@ -96,8 +114,7 @@ class Dispatcher(ThreadingActor):
                           for prod in productions]
             for prop in proposals:
                 if b not in prop.path_node:
-                    self.registry.get(b.dest).tell(prop)
-
+                    self.tell(to=b.dest, mes=prop)
 
     def receive_proposal(self, proposal: Proposal):
         """
@@ -122,7 +139,9 @@ class Dispatcher(ThreadingActor):
         :return: exchanges still available to respond to offer
         """
         # TODO check border capacity
-        if proposal.production_id not in [p.id for p in self.state.productions_free]:
+
+        # Forward proposal if path has next dispatcher
+        if len(proposal.path_node) > 1:
             forward = deepcopy(proposal)
             forward.path_node = proposal.path_node[1:]
             return self.registry.get(forward.path_node[0]).ask(forward)
@@ -157,7 +176,7 @@ class Dispatcher(ThreadingActor):
                                    return_path_node=proposal.path_node[-2::-1]+[self.name])
 
         # Receive offer result
-        exchanges = self.registry.get(proposal.path_node[0]).ask(prop_asked)
+        exchanges = self.ask(to=proposal.path_node[0], mes=prop_asked)
         prod = []
         for ex in exchanges:
             ex.path_node = proposal.path_node
@@ -174,6 +193,26 @@ class Dispatcher(ThreadingActor):
         self.send_cancel_exchange(useless_exchanges)
 
         # TODO inspect production free to create proposal
+
+    def receive_cancel_exchange(self, cancel: CanceledExchange):
+        # TODO cancel border capacity
+
+        # Forward if path node has next
+        if len(cancel.path_node) > 1:
+            cancel = deepcopy(cancel)
+            cancel.path_node = cancel.path_node[1:]
+            self.registry.get(cancel.path_node[0]).tell(cancel)
+            return
+
+        # Delete exchange
+        self.ledger_exchanges.delete_all(cancel.exchanges)
+
+        # Send proposal with exchange canceled
+        quantity = sum([ex.quantity for ex in cancel.exchanges])
+        prod_id = cancel.exchanges[0].production_id
+        cost = [p.cost for p in self.raw_productions if p.id == prod_id][0]
+        prod_free = Production(cost=cost, quantity=quantity, id=prod_id)
+        self.send_proposal([prod_free])
 
     def send_remain_proposal(self, proposal: Proposal, asked_quantity: int, given_quantity: int):
         """
@@ -198,17 +237,15 @@ class Dispatcher(ThreadingActor):
         :return:
         """
         productions = {}
-        paths = {}
         for ex in exchanges:
             if ex.production_id not in productions.keys():
-                productions[ex.production_id] = []
-            productions[ex.production_id].append(ex.id)
-            paths[ex.production_id] = ex.path_node
+                productions[ex.production_id] = [[], []]
+            productions[ex.production_id][0].append(ex)
+            productions[ex.production_id][1] = ex.path_node
 
-        for prod_id, ex in productions.items():
-            path = paths[prod_id]
-            cancel = CanceledExchange(ids=ex, path_node=path)
-            self.registry.get(path[0]).tell(cancel)
+        for prod_id, (ex, path) in productions.items():
+            cancel = CanceledExchange(exchanges=ex, path_node=path)
+            self.tell(to=path[0], mes=cancel)
 
     def optimize_adequacy(self, productions: List[Production]) -> NodeState:
         """
@@ -218,7 +255,7 @@ class Dispatcher(ThreadingActor):
         :return: NodeState with new production used stack, free production, current rac and cost
         """
 
-        productions.sort(key=lambda x: x.cost)
+        productions = Dispatcher.clean_production(productions)
 
         productions_used = []
         productions_free = []
@@ -261,6 +298,32 @@ class Dispatcher(ThreadingActor):
         if remain:
             exchanges += [Exchange(quantity=remain, id=self.uuid_generate(), production_id=production_id, path_node=path_node)]
         return exchanges
+
+    @staticmethod
+    def clean_production(productions: List[Production]) -> List[Production]:
+        productions = deepcopy(productions)
+        productions.sort(key=lambda x: x.cost)
+
+        # Merge same production (same id and exchange id)
+        i = 0
+        while i < len(productions):
+            while i+1 < len(productions) and Dispatcher.is_same_prod(productions[i], productions[i+1]):
+                productions[i].quantity += productions[i+1].quantity
+                del productions[i+1]
+            i += 1
+        return productions
+
+    @staticmethod
+    def is_same_prod(a: Production, b: Production):
+        if a.id != b.id:
+            return False
+        if a.type != b.type:
+            return False
+        if a.exchange != b.exchange:
+            return False
+        if a.exchange is None and b.exchange is None:
+            return True
+        return a.exchange.id == b.exchange.id
 
     @staticmethod
     def generate_production_id(productions: List[Production], uuid_generate):
