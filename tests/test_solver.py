@@ -4,8 +4,8 @@ import time
 
 from pykka import ActorRef
 
-from domain import Consumption, Production, Border, Start, Snapshot
-from node import DispatcherRegistry, Dispatcher
+from dispatcher.agent import Dispatcher
+from dispatcher.domain import Consumption, Production, Border, Start, Snapshot
 
 
 class TestSolver(unittest.TestCase):
@@ -46,7 +46,7 @@ class TestSolver(unittest.TestCase):
         d = actor.ask(Snapshot())
 
         print('=============================================================================================')
-        print("Node ", d.name, 'rac=', d.state.rac, 'cost=', d.state.cost)
+        print("Node ", d.name, 'rac=', d.broker.state.rac, 'cost=', d.broker.state.cost)
         print('\nEvents')
         print('\ttype\tmes')
         for event in d.events:
@@ -54,7 +54,7 @@ class TestSolver(unittest.TestCase):
 
         print("\nProduction used")
         print('\ttype        id\t\t\t\t\t\t\t\t\tcost\tquantity\t\texchange_id\t\t\t\t\t\t\texchange_path')
-        for p in d.state.productions_used:
+        for p in d.broker.state.productions_used:
             print('\t{type: <12}{id: <36}{cost: <8}{quantity: <16}'.format(type=p.type, id=p.id.hex, cost=p.cost, quantity=p.quantity), end='')
             if p.exchange is None:
                 print('None')
@@ -63,11 +63,11 @@ class TestSolver(unittest.TestCase):
 
         print("\nProduction free")
         print('\ttype    id\t\t\t\t\t\t\t\t\tcost\tquantity')
-        for p in d.state.productions_free:
+        for p in d.broker.state.productions_free:
             print('\t{type: <8}{id: <36}{cost: <8}{quantity: <8}'.format(type=p.type, id=p.id.hex, cost=p.cost, quantity=p.quantity))
 
         print("\nLedger")
         print('\tproduction_id\t\t\t\t\t\texchange_id\t\t\t\t\t\t\tquantity\tpath')
-        for production, exchanges in d.ledger_exchanges.ledger.items():
+        for production, exchanges in d.broker.ledger_exchanges.ledger.items():
             for id, ex in exchanges.items():
                 print('\t{production: <36}{id: <36}{quantity: <12}{path}'.format(id=ex.id.hex, production=ex.production_id.hex, quantity=ex.quantity, path=ex.path_node))
