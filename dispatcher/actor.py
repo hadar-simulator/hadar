@@ -1,5 +1,6 @@
 import uuid
 
+import time
 from pykka import ThreadingActor
 
 from dispatcher.domain import *
@@ -13,6 +14,24 @@ def singleton(class_):
             instances[class_] = class_(*args, **kwargs)
         return instances[class_]
     return getinstance
+
+
+@singleton
+class Waiter:
+    def __init__(self, wait_ms=0):
+        self.updated = True
+        self.wait_ms = wait_ms
+
+    def wait(self):
+        while self.updated:
+            self.updated = False
+            print('\nWait', end='')
+            time.sleep(self.wait_ms / 1000)
+
+    def update(self):
+        self.updated = True
+        print(' Pock', end='')
+
 
 @singleton
 class Registry:
@@ -44,6 +63,7 @@ class Dispatcher(ThreadingActor):
                              productions=productions,
                              borders=borders)
 
+        self.waiter = Waiter()
         self.registry = Registry()
         self.registry.add(self)
 
@@ -56,18 +76,22 @@ class Dispatcher(ThreadingActor):
         :param message: next message to process
         :return:
         """
+        self.waiter.update()
         self.events.append(Event(type='recv', message=message))
+
         if isinstance(message, Start):
             self.broker.init()
         elif isinstance(message, Snapshot):
             return self
+        elif isinstance(message, Next):
+            return self.name, self.next()
         elif isinstance(message, ProposalOffer):
             ex = self.broker.receive_proposal_offer(proposal=message)
             self.events.append(Event(type='recv res', message=ex))
             return ex
         elif isinstance(message, Proposal):
             self.broker.receive_proposal(proposal=message)
-        elif isinstance(message, CanceledExchange):
+        elif isinstance(message, ConsumerCanceledExchange):
             self.broker.receive_cancel_exchange(cancel=message)
 
     def tell_to(self, to: str, mes):
@@ -79,3 +103,7 @@ class Dispatcher(ThreadingActor):
         res = self.registry.get(to).ask(mes)
         self.events.append(Event(type='ask res', message=res))
         return res
+
+    def next(self):
+        c, p, b = self.broker.compute_total()
+        return c, p, b

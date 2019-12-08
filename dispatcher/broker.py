@@ -164,7 +164,7 @@ class Broker:
 
         # TODO inspect production free to create proposal
 
-    def receive_cancel_exchange(self, cancel: CanceledExchange):
+    def receive_cancel_exchange(self, cancel: ConsumerCanceledExchange):
         # TODO cancel border capacity
 
         # Forward if path node has next
@@ -214,7 +214,7 @@ class Broker:
             productions[ex.production_id][1] = ex.path_node
 
         for prod_id, (ex, path) in productions.items():
-            cancel = CanceledExchange(exchanges=ex, path_node=path)
+            cancel = ConsumerCanceledExchange(exchanges=ex, path_node=path)
             self.tell(to=path[0], mes=cancel)
 
     def generate_exchanges(self, production_id: int, quantity: int, path_node: List[str]):
@@ -229,6 +229,20 @@ class Broker:
         if remain:
             exchanges += [Exchange(quantity=remain, id=self.uuid_generate(), production_id=production_id, path_node=path_node)]
         return exchanges
+
+    def compute_total(self):
+        """
+        Compute total production used, and exchange at borders
+        :return:
+        """
+        # Compute productions
+        productions = deepcopy(self.raw_productions)
+        for p in productions:
+            p.quantity = sum(used.quantity for used in self.state.productions_used if used.id == p.id)
+            p.quantity += self.ledger_exchanges.sum_production(p.id)
+
+        # TODO border
+        return self.consumptions, productions, []
 
     @staticmethod
     def generate_production_id(productions: List[Production], uuid_generate):

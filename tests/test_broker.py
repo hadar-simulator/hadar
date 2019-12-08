@@ -137,10 +137,10 @@ class BrokerTest(unittest.TestCase):
         broker = Broker(name='fr', tell=tell, ask=None)
 
         exchange = Exchange(quantity=10, id=0, production_id=42, path_node=['fr', 'it'])
-        cancel = CanceledExchange(exchanges=[exchange], path_node=['fr', 'it'])
+        cancel = ConsumerCanceledExchange(exchanges=[exchange], path_node=['fr', 'it'])
 
         # Expected
-        expected = CanceledExchange(exchanges=[exchange], path_node=['it'])
+        expected = ConsumerCanceledExchange(exchanges=[exchange], path_node=['it'])
 
         # Test
         broker.receive_cancel_exchange(cancel)
@@ -163,7 +163,7 @@ class BrokerTest(unittest.TestCase):
 
         ex1 = Exchange(quantity=10, id=1, production_id=42, path_node=['fr', 'it'])
         ex2 = Exchange(quantity=10, id=2, production_id=42, path_node=['fr', 'it'])
-        cancel = CanceledExchange(exchanges=[ex1, ex2], path_node=['fr'])
+        cancel = ConsumerCanceledExchange(exchanges=[ex1, ex2], path_node=['fr'])
 
         # Expected
         proposal = Proposal(production_id=42, cost=10 + 2, quantity=20, path_node=['fr'])
@@ -201,8 +201,8 @@ class BrokerTest(unittest.TestCase):
         ]
 
         # Expected
-        cancel24 = CanceledExchange(exchanges=[exchanges[0], exchanges[1], exchanges[3]], path_node=['be'])
-        cancel42 = CanceledExchange(exchanges=[exchanges[2]], path_node=['de'])
+        cancel24 = ConsumerCanceledExchange(exchanges=[exchanges[0], exchanges[1], exchanges[3]], path_node=['be'])
+        cancel42 = ConsumerCanceledExchange(exchanges=[exchanges[2]], path_node=['de'])
 
         broker.send_cancel_exchange(exchanges)
 
@@ -249,6 +249,21 @@ class BrokerTest(unittest.TestCase):
 
         self.assertEqual(productions[1], Broker.find_production(prods=productions, id=23),
                          "Can't find productions by id")
+
+    def test_compute_total(self):
+        ledger = LedgerExchange()
+        ledger.add(Exchange(quantity=10, id=1, production_id=42, path_node=[]))
+        broker = Broker(name='fr',
+                        ask=None, tell=None,
+                        uuid_generate=lambda: 42,
+                        ledger_exchange=ledger,
+                        consumptions=[Consumption(quantity=10, cost=10**6)],
+                        productions=[Production(quantity=30, cost=10)])
+
+        consumptions, productions, border = broker.compute_total()
+        self.assertEqual([Consumption(quantity=10, cost=10**6)], consumptions, 'Wrong compute consumptions')
+        self.assertEqual([Production(quantity=20, cost=10, id=42)], productions, 'Wrong compute productions')
+        self.assertEqual([], border)
 
 
 class TestLedgerExchange(unittest.TestCase):

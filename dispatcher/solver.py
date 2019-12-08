@@ -1,30 +1,32 @@
 import time
 
-from domain import Consumption, Production, Border, Start
-from node import Broker, DispatcherRegistry
+from pykka import ActorRegistry
+
+from actor import Dispatcher, Waiter
+from dispatcher.domain import *
 
 
-def main():
-
-    resolver = DispatcherRegistry()
-
-    a = Broker.start(name='a', resolver=resolver,
-                     consumptions=[Consumption(cost=10**6, quantity=1000)],
-                     productions=[Production(cost=10, quantity=1500, type='nuclear')],
-                     borders=[Border(dest='b', capacity=1000, cost=2)])
-
-    b = Broker.start(name='b', resolver=resolver,
-                     consumptions=[Consumption(cost=10**6, quantity=1000)],
-                     productions=[Production(cost=10, quantity=500, type='nuclear')])
-
-    a.tell(Start())
-    b.tell(Start())
-
-if __name__ == '__main__':
-    main()
+def create_dispatcher(name: str, node: NodeQuantity) -> Dispatcher:
+    return Dispatcher.start(name=name,
+                            min_exchange=1,
+                            consumptions=node.consumptions,
+                            productions=node.productions,
+                            borders=node.borders)
 
 
+def solve(study: Study) -> Study:
+    waiter = Waiter(wait_ms=2)
 
+    dispatcher = [create_dispatcher(name, node) for name, node in study.nodes.items()]
+    for d in dispatcher:
+        d.tell(Start())
 
+    waiter.wait()
 
+    nodes = {}
+    for d in dispatcher:
+        name, (cons, prod, borders) = d.ask(Next())
+        nodes[name] = NodeQuantity(consumptions=cons, productions=prod, borders=borders)
 
+    ActorRegistry.stop_all()
+    return Study(nodes=nodes)

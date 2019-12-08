@@ -20,9 +20,10 @@ class DTO:
 
 class Consumption(DTO):
 
-    def __init__(self, cost: int, quantity: int):
+    def __init__(self, quantity: int, cost: int=0, type: str=''):
         self.cost = cost
         self.quantity = quantity
+        self.type = type
 
 
 class Exchange(DTO):
@@ -33,7 +34,7 @@ class Exchange(DTO):
         self.path_node = path_node
 
 
-class CanceledExchange(DTO):
+class ConsumerCanceledExchange(DTO):
     def __init__(self, exchanges: List[Exchange], path_node: List[str]=[]):
         self.exchanges = exchanges
         self.path_node = path_node
@@ -41,12 +42,32 @@ class CanceledExchange(DTO):
 
 class Production(DTO):
 
-    def __init__(self, cost: int, quantity: int, type: str='in', id: uuid=0, exchange: Exchange = None):
+    def __init__(self, quantity: int, cost: int=0, type: str='in', id: uuid=0, exchange: Exchange = None):
         self.type = type
         self.cost = cost
         self.quantity = quantity
         self.id = id
         self.exchange = exchange
+
+
+class Border(DTO):
+    def __init__(self, dest: str, capacity: int, cost: int=0):
+        self.dest = dest
+        self.capacity = capacity
+        self.cost = cost
+
+
+class NodeQuantity(DTO):
+    def __init__(self, consumptions: List[Consumption]=[], productions: List[Production]=[], borders: [Border]=[], min_exchange=1):
+        self.min_exchange = min_exchange
+        self.consumptions = consumptions
+        self.productions = productions
+        self.borders = borders
+
+
+class Study(DTO):
+    def __init__(self, nodes: Mapping[str, NodeQuantity]):
+        self.nodes = nodes
 
 
 class Proposal(DTO):
@@ -71,13 +92,6 @@ class NodeState(DTO):
         self.rac = rac
 
 
-class Border(DTO):
-    def __init__(self, dest: str, capacity: int, cost: int):
-        self.dest = dest
-        self.capacity = capacity
-        self.cost = cost
-
-
 class Event(DTO):
     def __init__(self, type: str, message, res=None):
         self.type = type
@@ -91,5 +105,9 @@ class Snapshot(DTO):
 
 
 class Start(DTO):
+    def __init__(self):
+        pass
+
+class Next(DTO):
     def __init__(self):
         pass
