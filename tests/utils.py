@@ -1,6 +1,6 @@
 from pykka import ActorRef
 
-from domain import *
+from dispatcher.domain import *
 
 
 def assert_study(self, expected: Study, result: Study):
@@ -31,14 +31,13 @@ def assert_study(self, expected: Study, result: Study):
         for border_expected, border_res in zip(node.borders, res.borders):
             self.assertEqual(border_expected.dest, border_res.dest,
                              "Border for node {} has different type".format(name))
-            self.assertEqual(border_expected.quantity, border_res.quantity,
-                             'Border {} for node {} has different quantity'.format(border_expected.type, name))
+            self.assertEqual(border_expected.capacity, border_res.capacity,
+                             'Border {} for node {} has different quantity'.format(border_expected.dest, name))
             self.assertEqual(border_expected.cost, border_res.cost,
-                             'Border {} for node {} has different cost'.format(border_expected.type, name))
+                             'Border {} for node {} has different cost'.format(border_expected.dest, name))
 
 
-def plot(actor: ActorRef):
-    d = actor.ask(Snapshot())
+def plot(d):
 
     print('=============================================================================================')
     print("Node ", d.name, 'rac=', d.broker.state.rac, 'cost=', d.broker.state.cost)
@@ -65,9 +64,10 @@ def plot(actor: ActorRef):
 
     print("\nLedger")
     print('\tproduction_id\t\t\t\t\t\texchange_id\t\t\t\t\t\t\tquantity\tpath')
-    for production, exchanges in d.broker.ledger_exchanges.ledger.items():
-        for id, ex in exchanges.items():
-            print('\t{production: <36}{id: <36}{quantity: <12}{path}'.format(id=ex.id.hex,
+    for border, productions in d.broker.ledger_exchanges.ledger.items():
+        for prod_id, exchanges in productions.items():
+            for id, ex in exchanges.items():
+                print('\t{production: <36}{id: <36}{quantity: <12}{path}'.format(id=ex.id.hex,
                                                                              production=ex.production_id.hex,
                                                                              quantity=ex.quantity,
                                                                              path=ex.path_node))

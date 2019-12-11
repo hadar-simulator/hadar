@@ -25,14 +25,15 @@ class BrokerTest(unittest.TestCase):
     def test_receive_proposal_offer_give_all(self):
         # Input
         ledger = LedgerExchange()
-        ledger.add(Exchange(quantity=50, id=1234, production_id=42))
+        ledger.add(Exchange(quantity=50, id=1234, production_id=42, path_node=['be']))
 
         broker = Broker(name='fr',
                         uuid_generate=lambda: 42,
                         ask=None, tell=None,
                         min_exchange=50,
                         ledger_exchange=ledger,
-                        productions=[Production(cost=10, quantity=100)])
+                        productions=[Production(cost=10, quantity=100)],
+                        borders=[Border(dest='be', capacity=100)])
 
         prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr'], return_path_node=['be'])
 
@@ -44,17 +45,42 @@ class BrokerTest(unittest.TestCase):
         self.assertEqual([ex_expected], ex, 'Wrong exchange come back')
         self.assertEqual(100, ledger.sum_production(42), 'Ledger not updated')
 
-    def test_receive_proposal_offer_give_partial(self):
+    def test_receive_proposal_offer_capped_by_border(self):
         # Input
         ledger = LedgerExchange()
-        ledger.add(Exchange(quantity=80, id=1234, production_id=42))
+        ledger.add(Exchange(quantity=80, id=1234, production_id=42, path_node=['be']))
+        ledger.add(Exchange(quantity=20, id=4321, production_id=24, path_node=['be']))
 
         broker = Broker(name='fr',
                         uuid_generate=lambda: 42,
                         tell=None, ask=None,
                         min_exchange=20,
                         ledger_exchange=ledger,
-                        productions=[Production(cost=10, quantity=100)])
+                        productions=[Production(cost=10, quantity=100)],
+                        borders=[Border(dest='be', capacity=120)])
+
+        prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr'], return_path_node=['be'])
+
+        # Expected
+        ex_expected = Exchange(id=42, production_id=42, quantity=20, path_node=['be'])
+
+        # Test
+        ex = broker.receive_proposal_offer(proposal=prop)
+        self.assertEqual([ex_expected], ex, 'Wrong exchange come back')
+        self.assertEqual(100, ledger.sum_production(42), 'Ledger not updated')
+
+    def test_receive_proposal_offer_capped_by_production(self):
+        # Input
+        ledger = LedgerExchange()
+        ledger.add(Exchange(quantity=80, id=1234, production_id=42, path_node=['be']))
+
+        broker = Broker(name='fr',
+                        uuid_generate=lambda: 42,
+                        tell=None, ask=None,
+                        min_exchange=20,
+                        ledger_exchange=ledger,
+                        productions=[Production(cost=10, quantity=100)],
+                        borders=[Border(dest='be', capacity=200)])
 
         prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr'], return_path_node=['be'])
 
@@ -68,11 +94,15 @@ class BrokerTest(unittest.TestCase):
 
     def test_receive_proposal_offer_forward(self):
         # Input
-        ex_expected = [Exchange(id=1, production_id=42, quantity=50)]
-        ask = MagicMock(return_value=ex_expected)
+        ledger = LedgerExchange()
+
+        ex_expected = Exchange(id=1, production_id=42, quantity=50, path_node=['it'])
+        ask = MagicMock(return_value=[ex_expected])
         broker = Broker(name='fr',
                         uuid_generate=lambda: 1,
-                        ask=ask, tell=None)
+                        ask=ask, tell=None,
+                        ledger_exchange=ledger,
+                        borders=[Border(dest='it', capacity=50)])
 
         prop = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['fr', 'be'],
                              return_path_node=['fr', 'it'])
@@ -80,11 +110,12 @@ class BrokerTest(unittest.TestCase):
         # Expected
         prop_forward = ProposalOffer(production_id=42, cost=10, quantity=50, path_node=['be'],
                                      return_path_node=['fr', 'it'])
-
         # Test
         ex = broker.receive_proposal_offer(proposal=prop)
-        self.assertEqual(ex_expected, ex, 'Wrong exchange come back')
+        self.assertEqual([ex_expected], ex, 'Wrong exchange come back')
         ask.assert_called_with(to='be', mes=prop_forward)
+
+        self.assertEqual({'it': {42: {1: ex_expected}}}, ledger.ledger, 'Wrong ledger state')
 
     def test_make_offer_ask_all_get_all(self):
         # Input
@@ -161,8 +192,8 @@ class BrokerTest(unittest.TestCase):
                         productions=[Production(cost=10, quantity=40)],
                         borders=[Border(dest='be', capacity=100, cost=2)])
 
-        ex1 = Exchange(quantity=10, id=1, production_id=42, path_node=['fr', 'it'])
-        ex2 = Exchange(quantity=10, id=2, production_id=42, path_node=['fr', 'it'])
+        ex1 = Exchange(quantity=10, id=1, production_id=42, path_node=['be'])
+        ex2 = Exchange(quantity=10, id=2, production_id=42, path_node=['be'])
         cancel = ConsumerCanceledExchange(exchanges=[ex1, ex2], path_node=['fr'])
 
         # Expected
@@ -252,33 +283,36 @@ class BrokerTest(unittest.TestCase):
 
     def test_compute_total(self):
         ledger = LedgerExchange()
-        ledger.add(Exchange(quantity=10, id=1, production_id=42, path_node=[]))
+        ledger.add(Exchange(quantity=10, id=1, production_id=42, path_node=['be']))
         broker = Broker(name='fr',
                         ask=None, tell=None,
                         uuid_generate=lambda: 42,
                         ledger_exchange=ledger,
                         consumptions=[Consumption(quantity=10, cost=10**6)],
-                        productions=[Production(quantity=30, cost=10)])
+                        productions=[Production(quantity=30, cost=10)],
+                        borders=[Border(dest='be', capacity=20, cost=10)])
 
         consumptions, productions, border = broker.compute_total()
         self.assertEqual([Consumption(quantity=10, cost=10**6)], consumptions, 'Wrong compute consumptions')
         self.assertEqual([Production(quantity=20, cost=10, id=42)], productions, 'Wrong compute productions')
-        self.assertEqual([], border)
+        self.assertEqual([Border(dest='be', capacity=10, cost=10)], border)
 
 
 class TestLedgerExchange(unittest.TestCase):
 
     def test(self):
         ex = [
-            Exchange(id=1234, production_id=1, quantity=10),
-            Exchange(id=9876, production_id=1, quantity=10),
-            Exchange(id=5432, production_id=1, quantity=10),
-            Exchange(id=4566, production_id=2, quantity=10)
+            Exchange(id=1234, production_id=1, quantity=10, path_node=['fr']),
+            Exchange(id=9876, production_id=1, quantity=10, path_node=['fr']),
+            Exchange(id=5432, production_id=1, quantity=10, path_node=['be']),
+            Exchange(id=4566, production_id=2, quantity=10, path_node=['fr'])
         ]
         ledger = LedgerExchange()
         ledger.add_all(ex)
 
         self.assertEqual(30, ledger.sum_production(production_id=1), "Wrong ledger behaviour")
+        self.assertEqual(30, ledger.sum_border(name='fr'), 'Wrong ledger behaviour')
 
-        ledger.delete(Exchange(id=9876, production_id=1, quantity=10))
+        ledger.delete(Exchange(id=9876, production_id=1, quantity=10, path_node=['fr']))
         self.assertEqual(20, ledger.sum_production(production_id=1), "Wrong ledger behaviour")
+        self.assertEqual(20, ledger.sum_border(name='fr'), 'Wrong ledger behaviour')

@@ -5,6 +5,7 @@ from pykka import ThreadingActor
 
 from dispatcher.domain import *
 from dispatcher.broker import Broker
+from tests.utils import plot
 
 
 def singleton(class_):
@@ -106,4 +107,5 @@ class Dispatcher(ThreadingActor):
 
     def next(self):
         c, p, b = self.broker.compute_total()
+        # plot(self)
         return c, p, b

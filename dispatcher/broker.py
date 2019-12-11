@@ -16,25 +16,39 @@ class LedgerExchange:
             self.add(e)
 
     def add(self, ex: Exchange):
-        if ex.production_id not in self.ledger.keys():
-            self.ledger[ex.production_id] = {}
+        border = ex.path_node[0]
+        if border not in self.ledger.keys():
+            self.ledger[border] = {}
+        if ex.production_id not in self.ledger[border].keys():
+            self.ledger[border][ex.production_id] = {}
 
-        if ex.id in self.ledger[ex.production_id].keys():
+        if ex.id in self.ledger[border][ex.production_id].keys():
             raise ValueError('Exchange already stored in ledger')
-        self.ledger[ex.production_id][ex.id] = ex
+        self.ledger[border][ex.production_id][ex.id] = ex
 
     def delete(self, ex: Exchange):
-        if ex.production_id in self.ledger.keys():
-            del self.ledger[ex.production_id][ex.id]
+        for border, productions in self.ledger.items():
+            if ex.production_id in productions.keys():
+                del self.ledger[border][ex.production_id][ex.id]
 
     def delete_all(self, exs: List[Exchange]):
         for ex in exs:
             self.delete(ex)
 
     def sum_production(self, production_id):
-        if production_id not in self.ledger.keys():
+        acc = 0
+        for border, prods in self.ledger.items():
+            if production_id in prods.keys():
+                acc += sum([ex.quantity for ex in prods[production_id].values()])
+        return acc
+
+    def sum_border(self, name: str):
+        if name not in self.ledger.keys():
             return 0
-        return sum([ex.quantity for ex in self.ledger[production_id].values()])
+        acc = 0
+        for prod in self.ledger[name].values():
+            acc += sum([ex.quantity for ex in prod.values()])
+        return acc
 
 
 class Broker:
@@ -58,10 +72,8 @@ class Broker:
         self.borders = borders
         self.ledger_exchanges = LedgerExchange() if ledger_exchange is None else ledger_exchange
         self.min_exchange = min_exchange
-        self.events = []
 
         self.state = optimize_adequacy(self.consumptions, self.raw_productions)
-        print(self.name, 'cost=', self.state.cost)
 
     def init(self):
         self.send_proposal(productions=self.state.productions_free)
@@ -80,7 +92,7 @@ class Broker:
                                   cost=prod.cost + b.cost,
                                   quantity=prod.quantity,
                                   path_node=[self.name] + path_node)
-                          for prod in productions]
+                         for prod in productions]
             for prop in proposals:
                 if b not in prop.path_node:
                     self.tell(to=b.dest, mes=prop)
@@ -107,22 +119,35 @@ class Broker:
         :param proposal: proposal offer returning by a dispatcher
         :return: exchanges still available to respond to offer
         """
-        # TODO check border capacity
+        # Check border capacity
+        border = Broker.find_border(self.borders, path=proposal.return_path_node)
+        free_border_capacity = border.capacity - self.ledger_exchanges.sum_border(border.dest)
+        if not free_border_capacity:
+            return []
+        proposal.quantity = min(free_border_capacity, proposal.quantity)
 
         # Forward proposal if path has next dispatcher
         if len(proposal.path_node) > 1:
             forward = deepcopy(proposal)
             forward.path_node = proposal.path_node[1:]
-            return self.ask(to=forward.path_node[0], mes=forward)
+            ex = self.ask(to=forward.path_node[0], mes=forward)
 
+            # Save exchange to ledger
+            for e in deepcopy(ex):
+                e.path_node = e.path_node[1:]
+                self.ledger_exchanges.add(e)
+            return ex
+
+        # Check production remain capacity
         quantity_free = Broker.find_production(self.state.productions_free, proposal.production_id).quantity
         quantity_used = self.ledger_exchanges.sum_production(proposal.production_id)
 
+        # Send available exchange
         quantity_exchange = min(proposal.quantity, quantity_free - quantity_used)
         ex = self.generate_exchanges(quantity=quantity_exchange,
                                      production_id=proposal.production_id,
                                      path_node=proposal.return_path_node)
-
+        # Save exchange in ledger
         if quantity_exchange > 0:
             self.ledger_exchanges.add_all(ex)
         return [deepcopy(e) for e in ex]
@@ -165,7 +190,8 @@ class Broker:
         # TODO inspect production free to create proposal
 
     def receive_cancel_exchange(self, cancel: ConsumerCanceledExchange):
-        # TODO cancel border capacity
+        # delete exchange in ledger
+        self.ledger_exchanges.delete_all(cancel.exchanges)
 
         # Forward if path node has next
         if len(cancel.path_node) > 1:
@@ -173,9 +199,6 @@ class Broker:
             cancel.path_node = cancel.path_node[1:]
             self.tell(to=cancel.path_node[0], mes=cancel)
             return
-
-        # Delete exchange
-        self.ledger_exchanges.delete_all(cancel.exchanges)
 
         # Send proposal with exchange canceled
         quantity = sum([ex.quantity for ex in cancel.exchanges])
@@ -238,11 +261,14 @@ class Broker:
         # Compute productions
         productions = deepcopy(self.raw_productions)
         for p in productions:
-            p.quantity = sum(used.quantity for used in self.state.productions_used if used.id == p.id)
+            p.quantity = sum([used.quantity for used in self.state.productions_used if used.id == p.id])
             p.quantity += self.ledger_exchanges.sum_production(p.id)
 
-        # TODO border
-        return self.consumptions, productions, []
+        # Compute borders
+        borders = deepcopy(self.borders)
+        for b in borders:
+            b.capacity = self.ledger_exchanges.sum_border(b.dest)
+        return self.consumptions, productions, borders
 
     @staticmethod
     def generate_production_id(productions: List[Production], uuid_generate):
@@ -257,6 +283,10 @@ class Broker:
     @staticmethod
     def find_production(prods: List[Production], id: uuid) -> Production:
         return list(filter(lambda x: x.id == id, prods))[0]
+
+    @staticmethod
+    def find_border(borders: List[Border], path: List[str]) -> Border:
+        return [b for b in borders if b.dest in path][0]
 
     @staticmethod
     def copy_production(production: Production, quantity: int) -> Production:
