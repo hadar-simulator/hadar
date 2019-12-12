@@ -96,7 +96,7 @@ class BrokerTest(unittest.TestCase):
         # Input
         ledger = LedgerExchange()
 
-        ex_expected = Exchange(id=1, production_id=42, quantity=50, path_node=['it'])
+        ex_expected = Exchange(id=1, production_id=42, quantity=50, path_node=['fr', 'it'])
         ask = MagicMock(return_value=[ex_expected])
         broker = Broker(name='fr',
                         uuid_generate=lambda: 1,
@@ -115,7 +115,8 @@ class BrokerTest(unittest.TestCase):
         self.assertEqual([ex_expected], ex, 'Wrong exchange come back')
         ask.assert_called_with(to='be', mes=prop_forward)
 
-        self.assertEqual({'it': {42: {1: ex_expected}}}, ledger.ledger, 'Wrong ledger state')
+        self.assertEqual({'it': {42: {1: Exchange(id=1, production_id=42, quantity=50, path_node=['it'])}}},
+                         ledger.ledger, 'Wrong ledger state')
 
     def test_make_offer_ask_all_get_all(self):
         # Input

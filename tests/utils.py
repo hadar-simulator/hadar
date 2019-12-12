@@ -6,7 +6,7 @@ from dispatcher.domain import *
 def assert_study(self, expected: Study, result: Study):
     for name, node in expected.nodes.items():
         if name not in result.nodes.keys():
-            self.fail('Node {} expected but not')
+            self.fail('Node {} expected but not'.format(name))
         res = result.nodes[name]
 
         # Consumptions

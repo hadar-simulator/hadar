@@ -1,7 +1,7 @@
 import uuid
 
 import time
-from pykka import ThreadingActor
+from pykka import ThreadingActor, ActorRegistry
 
 from dispatcher.domain import *
 from dispatcher.broker import Broker
@@ -34,18 +34,6 @@ class Waiter:
         print(' Pock', end='')
 
 
-@singleton
-class Registry:
-    def __init__(self):
-        self.dispatchers = {}
-
-    def add(self, dispatcher):
-        self.dispatchers[dispatcher.name] = dispatcher.actor_ref
-
-    def get(self, name: str):
-        return self.dispatchers[name]
-
-
 class Dispatcher(ThreadingActor):
 
     def __init__(self, name,
@@ -65,10 +53,10 @@ class Dispatcher(ThreadingActor):
                              borders=borders)
 
         self.waiter = Waiter()
-        self.registry = Registry()
-        self.registry.add(self)
-
         self.events = []
+
+        self.actor_ref.actor_urn = name
+        ActorRegistry.register(self.actor_ref)
 
     def on_receive(self, message):
         """
@@ -95,13 +83,16 @@ class Dispatcher(ThreadingActor):
         elif isinstance(message, ConsumerCanceledExchange):
             self.broker.receive_cancel_exchange(cancel=message)
 
+    def on_stop(self):
+        ActorRegistry.unregister(self.actor_ref)
+
     def tell_to(self, to: str, mes):
         self.events.append(Event(type='tell', message=mes))
-        self.registry.get(to).tell(mes)
+        ActorRegistry.get_by_urn(to).tell(mes)
 
     def ask_to(self, to: str, mes):
         self.events.append(Event(type='ask', message=mes))
-        res = self.registry.get(to).ask(mes)
+        res = ActorRegistry.get_by_urn(to).ask(mes)
         self.events.append(Event(type='ask res', message=res))
         return res
 

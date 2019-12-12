@@ -134,7 +134,7 @@ class Broker:
 
             # Save exchange to ledger
             for e in deepcopy(ex):
-                e.path_node = e.path_node[1:]
+                e.path_node = self.trim_path(e.path_node)
                 self.ledger_exchanges.add(e)
             return ex
 
@@ -270,6 +270,13 @@ class Broker:
             b.capacity = self.ledger_exchanges.sum_border(b.dest)
         return self.consumptions, productions, borders
 
+    def trim_path(self, path: List[str]):
+        while path[0] != self.name and len(path) > 0:
+            del path[0]
+        del path[0]
+        return path
+
+
     @staticmethod
     def generate_production_id(productions: List[Production], uuid_generate):
         for p in productions:
@@ -284,10 +291,10 @@ class Broker:
     def find_production(prods: List[Production], id: uuid) -> Production:
         return list(filter(lambda x: x.id == id, prods))[0]
 
+
     @staticmethod
     def find_border(borders: List[Border], path: List[str]) -> Border:
         return [b for b in borders if b.dest in path][0]
-
     @staticmethod
     def copy_production(production: Production, quantity: int) -> Production:
         p = copy(production)
