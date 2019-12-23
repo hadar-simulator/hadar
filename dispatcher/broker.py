@@ -29,7 +29,9 @@ class LedgerExchange:
     def delete(self, ex: Exchange):
         for border, productions in self.ledger.items():
             if ex.production_id in productions.keys():
-                del self.ledger[border][ex.production_id][ex.id]
+                for _,  exchanges in productions.items():
+                    if ex.id in exchanges.keys():
+                        del self.ledger[border][ex.production_id][ex.id]
 
     def delete_all(self, exs: List[Exchange]):
         for ex in exs:
@@ -52,6 +54,7 @@ class LedgerExchange:
 
 
 class Broker:
+    """Manage exchange and proposal shared"""
     def __init__(self, name,
                  tell,
                  ask,
@@ -76,6 +79,10 @@ class Broker:
         self.state = optimize_adequacy(self.consumptions, self.raw_productions)
 
     def init(self):
+        """
+        Initiate exchange by sending proposal.
+
+        """
         self.send_proposal(productions=self.state.productions_free)
 
     def send_proposal(self, productions: List[Production], path_node: List[str] = []):
@@ -183,13 +190,30 @@ class Broker:
         exchanges_quantity = sum([ex.quantity for ex in exchanges])
         self.send_remain_proposal(proposal=proposal, asked_quantity=prop_asked.quantity, given_quantity=exchanges_quantity)
 
+        self.optimize_free_productions()
+
+    def optimize_free_productions(self):
+        """
+        Cancel useless exchange. Resend proposal for free productions.
+
+        :return:
+        """
+
         # Cancel useless exchange
-        useless_exchanges = Broker.find_exchanges(self.state.productions_free)
+        useless_exchanges = Broker.filter_exchanges(self.state.productions_free)
         self.send_cancel_exchange(useless_exchanges)
 
-        # TODO inspect production free to create proposal
+        # Resend proposal
+        free_prods = Broker.filter_productions(self.state.productions_free)
+        self.send_proposal(productions=free_prods)
 
     def receive_cancel_exchange(self, cancel: ConsumerCanceledExchange):
+        """
+        Delete exchange in ledger. Forward cancel or resend proposal if node are the producer of this exchange.
+
+        :param cancel: exchanges to cancel
+        :return:
+        """
         # delete exchange in ledger
         self.ledger_exchanges.delete_all(cancel.exchanges)
 
@@ -241,6 +265,14 @@ class Broker:
             self.tell(to=path[0], mes=cancel)
 
     def generate_exchanges(self, production_id: int, quantity: int, path_node: List[str]):
+        """
+        Generate list to exchanges to fill available quantity with minimum exchange capacity.
+
+        :param production_id: id production to embedded
+        :param quantity:  quantity to use to generate exchange list
+        :param path_node: path node to embedded
+        :return: list of exchanges. sum of capacities equals or less quantity asked
+        """
         length = int(quantity / self.min_exchange)
         exchanges = [Exchange(quantity=self.min_exchange,
                               id=self.uuid_generate(),
@@ -271,6 +303,12 @@ class Broker:
         return self.consumptions, productions, borders
 
     def trim_path(self, path: List[str]):
+        """
+        trim older nodes in path.
+
+        :param path: whole path from exchange producer
+        :return: trimed path with only next nodes
+        """
         while path[0] != self.name and len(path) > 0:
             del path[0]
         del path[0]
@@ -284,8 +322,12 @@ class Broker:
         return productions
 
     @staticmethod
-    def find_exchanges(prods: List[Production]) -> List[Exchange]:
+    def filter_exchanges(prods: List[Production]) -> List[Exchange]:
         return [prod.exchange for prod in prods if prod.exchange is not None]
+
+    @staticmethod
+    def filter_productions(prods: List[Production]) -> List[Production]:
+        return [prod for prod in prods if prod.exchange is None]
 
     @staticmethod
     def find_production(prods: List[Production], id: uuid) -> Production:

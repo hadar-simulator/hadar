@@ -314,6 +314,6 @@ class TestLedgerExchange(unittest.TestCase):
         self.assertEqual(30, ledger.sum_production(production_id=1), "Wrong ledger behaviour")
         self.assertEqual(30, ledger.sum_border(name='fr'), 'Wrong ledger behaviour')
 
-        ledger.delete(Exchange(id=9876, production_id=1, quantity=10, path_node=['fr']))
+        ledger.delete(ex[1])
         self.assertEqual(20, ledger.sum_production(production_id=1), "Wrong ledger behaviour")
         self.assertEqual(20, ledger.sum_border(name='fr'), 'Wrong ledger behaviour')
