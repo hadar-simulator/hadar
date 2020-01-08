@@ -3,7 +3,7 @@ import unittest
 import time
 import logging
 
-from utils import assert_study
+from tests.utils import assert_study
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('pykka').setLevel(logging.INFO)

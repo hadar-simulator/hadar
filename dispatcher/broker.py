@@ -2,7 +2,7 @@ import uuid
 from typing import List
 from copy import copy, deepcopy
 
-from adequacy import optimize_adequacy
+from dispatcher.adequacy import optimize_adequacy
 from dispatcher.domain import *
 
 

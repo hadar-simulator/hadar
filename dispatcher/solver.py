@@ -2,7 +2,7 @@ import time
 
 from pykka import ActorRegistry
 
-from actor import Dispatcher, Waiter
+from dispatcher.actor import Dispatcher, Waiter
 from dispatcher.domain import *
 
 

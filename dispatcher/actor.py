@@ -26,12 +26,10 @@ class Waiter:
     def wait(self):
         while self.updated:
             self.updated = False
-            print('\nWait', end='')
             time.sleep(self.wait_ms / 1000)
 
     def update(self):
         self.updated = True
-        print(' Pock', end='')
 
 
 class Dispatcher(ThreadingActor):

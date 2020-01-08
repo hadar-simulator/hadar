@@ -1,2 +1,6 @@
 pykka
 gevent
+jupyter
+plotly
+networkx
+numpy
