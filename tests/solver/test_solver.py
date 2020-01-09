@@ -10,8 +10,8 @@ logging.getLogger('pykka').setLevel(logging.INFO)
 
 from pykka import ActorRef
 
-from dispatcher.domain import *
-from solver import solve
+from hadar.solver.domain import *
+from hadar.solver.actor_solver import solve
 
 
 class TestSolver(unittest.TestCase):

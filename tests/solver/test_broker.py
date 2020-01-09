@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import MagicMock, call
 
-from dispatcher.domain import *
-from dispatcher.broker import *
+from hadar.solver.domain import *
+from hadar.solver.broker import *
 
 
 class BrokerTest(unittest.TestCase):

@@ -1,9 +1,7 @@
-import time
-
 from pykka import ActorRegistry
 
-from dispatcher.actor import Dispatcher, Waiter
-from dispatcher.domain import *
+from hadar.solver.domain import *
+from hadar.solver.actor import Dispatcher, Waiter
 
 
 def create_dispatcher(name: str, node: NodeQuantity) -> Dispatcher:

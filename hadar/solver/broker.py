@@ -1,9 +1,10 @@
 import uuid
-from typing import List
 from copy import copy, deepcopy
+from typing import List
 
-from dispatcher.adequacy import optimize_adequacy
-from dispatcher.domain import *
+from hadar.solver.domain import *
+
+from hadar.solver.adequacy import optimize_adequacy
 
 
 class LedgerExchange:

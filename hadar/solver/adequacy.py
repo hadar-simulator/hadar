@@ -1,6 +1,6 @@
 from copy import deepcopy, copy
-from typing import *
-from dispatcher.domain import *
+
+from hadar.solver.domain import *
 
 
 def is_same_prod(a: Production, b: Production):

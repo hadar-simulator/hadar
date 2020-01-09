@@ -1,11 +1,9 @@
-import uuid
-
 import time
+
 from pykka import ThreadingActor, ActorRegistry
 
-from dispatcher.domain import *
-from dispatcher.broker import Broker
-from tests.utils import plot
+from hadar.solver.broker import Broker
+from hadar.solver.domain import *
 
 
 def singleton(class_):
