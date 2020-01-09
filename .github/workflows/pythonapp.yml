@@ -23,7 +23,9 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with unittest
       run: |
-        python -m unittest discover
+        pip install coverage
+        coverage run --source=./hadar -m unittest discover
+        coverage xml -i
 
     - uses: actions/checkout@master
     - name: SonarCloud Scan
