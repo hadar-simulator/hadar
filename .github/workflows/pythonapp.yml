@@ -26,10 +26,14 @@ jobs:
         pip install coverage
         coverage run --source=./hadar -m unittest discover
         coverage xml -i
+        top coverage.xml
 
     - uses: actions/checkout@master
     - name: SonarCloud Scan
       uses: sonarsource/sonarcloud-github-action@master
+      with:
+        name: coverage-report
+        paht: coverage.xml
       env:
         GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
