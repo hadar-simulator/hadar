@@ -1,10 +1,7 @@
-name: Python application
-
+name: Test Python Application
 on: [push]
-
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -27,3 +24,10 @@ jobs:
     - name: Test with unittest
       run: |
         python -m unittest discover
+
+    - uses: actions/checkout@master
+    - name: SonarCloud Scan
+      uses: sonarsource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
