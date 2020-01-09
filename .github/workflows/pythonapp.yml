@@ -26,7 +26,7 @@ jobs:
         pip install coverage
         coverage run --source=./hadar -m unittest discover
         coverage xml -i
-        top coverage.xml
+        cat coverage.xml
 
     - uses: actions/checkout@master
     - name: SonarCloud Scan
