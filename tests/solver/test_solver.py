@@ -8,8 +8,6 @@ from tests.utils import assert_study
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('pykka').setLevel(logging.INFO)
 
-from pykka import ActorRef
-
 from hadar.solver.domain import *
 from hadar.solver.actor_solver import solve
 
