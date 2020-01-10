@@ -3,3 +3,4 @@ gevent
 jupyter
 plotly
 pandas
+numpy

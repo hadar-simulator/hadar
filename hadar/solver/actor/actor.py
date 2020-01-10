@@ -1,10 +1,11 @@
 import time
-import uuid
-from typing import List
+import numpy as np
+import pandas as pd
 
 from pykka import ThreadingActor, ActorRegistry
 
-from hadar.solver.actor.messages import *
+from solver.actor.domain.input import *
+from solver.actor.domain.message import *
 
 def singleton(class_):
     instances = {}
@@ -41,26 +42,28 @@ class Dispatcher(ThreadingActor):
 
     def __init__(self, name,
                  min_exchange: int=1,
-                 # consumptions: List[Consumption] = [],
-                 # productions: List[Production] = [],
-                 # borders: List[Border] = []
+                 consumptions: List[InputConsumption] = [],
+                 productions: List[InputProduction] = [],
+                 borders: List[InputBorder] = []
                  ):
         super().__init__()
 
         self.name = name
-        # self.broker = Broker(name=name,
-        #                      tell=self.tell_to,
-        #                      ask=self.ask_to,
-        #                      min_exchange=min_exchange,
-        #                      consumptions=consumptions,
-        #                      productions=productions,
-        #                      borders=borders)
+        self.consumptions = consumptions
+        self.productions = productions
+        self.borders = borders
+
+        self.state = None
 
         self.waiter = Waiter()
         self.events = []
 
         self.actor_ref.actor_urn = name
         ActorRegistry.register(self.actor_ref)
+
+    def build_state(self, t: int):
+        pass  # TODO
+
 
     def on_receive(self, message):
         """

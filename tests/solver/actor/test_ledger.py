@@ -1,8 +1,8 @@
 import unittest
 import pandas as pd
 
-from solver.actor.messages import Exchange
-from solver.actor.common import LedgerExchange, LedgerProduction
+from solver.actor.domain.message import Exchange
+from solver.actor.ledger import LedgerExchange, LedgerProduction, LedgerConsumption, LedgerBorder
 
 
 class TestLedgerExchange(unittest.TestCase):
@@ -70,6 +70,42 @@ class TestLedgerProduction(unittest.TestCase):
         pd.testing.assert_series_equal(expectedC.iloc[0], ledger.find_production(1))
 
         pd.testing.assert_frame_equal(expectedB, ledger.filter_exchanges())
+
+
+class TestLedgerConsumption(unittest.TestCase):
+    def test(self):
+        ledger = LedgerConsumption()
+
+        # Add
+        ledger.add(type='load', cost=20, quantity=100)
+        ledger.add(type='stockage', cost=20, quantity=200)
+
+        # Inspect
+        expected = pd.DataFrame({'cost': [20, 20], 'quantity': [100, 200]}, index=['load', 'stockage'])
+        pd.testing.assert_frame_equal(expected, ledger.ledger)
+
+        # Delete
+        ledger.delete(type='load')
+        expected = pd.DataFrame({'cost': [20], 'quantity': [200]}, index=['stockage'])
+        pd.testing.assert_frame_equal(expected, ledger.ledger)
+
+
+class TestLedgerBorder(unittest.TestCase):
+    def test(self):
+        ledger = LedgerBorder()
+
+        # Add
+        ledger.add(dest='fr', cost=20, quantity=100)
+        ledger.add(dest='be', cost=20, quantity=200)
+
+        # Inspect
+        expected = pd.DataFrame({'cost': [20, 20], 'quantity': [100, 200]}, index=['fr', 'be'])
+        pd.testing.assert_frame_equal(expected, ledger.ledger)
+
+        # Delete
+        ledger.delete(dest='fr')
+        expected = pd.DataFrame({'cost': [20], 'quantity': [200]}, index=['be'])
+        pd.testing.assert_frame_equal(expected, ledger.ledger)
 
 class MockUUID:
     def __init__(self):
