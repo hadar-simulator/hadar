@@ -83,30 +83,93 @@ class LedgerProduction:
         self.ledger = self.ledger.astype({'cost': 'int64', 'quantity': 'int64', 'type': 'object', 'used': 'bool', 'exchange': 'object'})
 
     def add_production(self, cost: int, quantity: int, type: str = ''):
+        """
+        Add production from internal.
+
+        :param cost: production cost
+        :param quantity: production quantity
+        :param type: production type
+        :return:
+        """
         self.ledger.loc[self.uuid_generate()] = [cost, quantity, type, False, None]
 
     def add_exchange(self, cost: int, ex: Exchange):
+        """
+        Add production from external.
+
+        :param cost: cost of external production
+        :param ex: exchange object where production comes
+        :return:
+        """
         self.ledger.loc[ex.production_id] = [cost, ex.quantity, 'import', False, ex]
 
     def delete(self, id: uuid):
+        """
+        Delete production by its id.
+
+        :param id: production id
+        :return:
+        """
         self.ledger.drop(id, inplace=True)
 
     def delete_all(self, ids):
+        """
+        Delete many production by their ids.
+
+        :param ids: productions id
+        :return:
+        """
         self.ledger.drop(ids, inplace=True)
 
     def filter_exchanges(self) -> pd.DataFrame:
+        """
+        Get only external production.
+
+        :return: dataframe with external production
+        """
         return self.ledger[self.ledger['exchange'].notnull()]
 
     def filter_productions(self) -> pd.DataFrame:
+        """
+        Get only internal production.
+
+        :return: dataframe with internal production
+        """
         return self.ledger[self.ledger['exchange'].isnull()]
 
     def find_production(self, id: uuid) -> pd.Series:
+        """
+        Get production by id
+        :param id: production id
+        :return: Series with asked production
+        """
         return self.ledger.loc[id]
 
 
 class State:
-
+    """
+    Represent current adequacy configuration. Each Handler has to update and forward this state.
+    """
+    def __init__(self, consumptions: pd.DataFrame, borders: pd.DataFrame,
+                 productions: LedgerProduction, rac: int, cost: int):
+        self.consumptions = consumptions
+        self.borders = borders
+        self.productions = productions
+        self.rac = rac
+        self.cost = cost
 
 
 class Handler(ABC):
-    pass
+    """
+    Represent an atomic behaviour. Handler update state object and call other handlers.
+    Message receiving behaviour is implemented by chaining handler according to Chain of Responsabilities pattern
+    """
+
+    def __init__(self, ask, to, uuid_generate=uuid.uuid4):
+        self.ask = ask
+        self.to = to
+        self.uuid_generate = uuid_generate
+
+    @abstractmethod
+    def execute(self, state: State) -> State:
+        pass
