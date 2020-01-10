@@ -4,8 +4,11 @@ import pandas as pd
 
 from pykka import ThreadingActor, ActorRegistry
 
-from solver.actor.domain.input import *
-from solver.actor.domain.message import *
+from hadar.solver.actor.common import State
+from hadar.solver.actor.domain.input import *
+from hadar.solver.actor.domain.message import *
+from hadar.solver.actor.ledger import LedgerConsumption, LedgerProduction, LedgerBorder
+
 
 def singleton(class_):
     instances = {}
@@ -42,6 +45,7 @@ class Dispatcher(ThreadingActor):
 
     def __init__(self, name,
                  min_exchange: int=1,
+                 uuid_generate=uuid.uuid4,
                  consumptions: List[InputConsumption] = [],
                  productions: List[InputProduction] = [],
                  borders: List[InputBorder] = []
@@ -52,8 +56,10 @@ class Dispatcher(ThreadingActor):
         self.consumptions = consumptions
         self.productions = productions
         self.borders = borders
+        self.uuid_generate = uuid_generate
 
-        self.state = None
+        self.t = 0
+        self.state = self.build_state(self.t)
 
         self.waiter = Waiter()
         self.events = []
@@ -62,7 +68,29 @@ class Dispatcher(ThreadingActor):
         ActorRegistry.register(self.actor_ref)
 
     def build_state(self, t: int):
-        pass  # TODO
+        """
+        Build new state according to timestamp.
+
+        :param t: timestamp (i.e. quantity array index) to use
+        :return: state with all ledgers setup with correct available quantities
+        """
+        # Build Consumers
+        consumer_ledger = LedgerConsumption()
+        for cons in self.consumptions:
+            consumer_ledger.add(type=cons.type, cost=cons.cost, quantity=cons.quantity[t])
+
+        # Build Producers
+        producer_ledger = LedgerProduction(uuid_generate=self.uuid_generate)
+        for prod in self.productions:
+            producer_ledger.add_production(cost=prod.cost, quantity=prod.quantity[t], type=prod.type)
+
+        # Build Border
+        border_ledger = LedgerBorder()
+        for b in self.borders:
+            border_ledger.add(dest=b.dest, cost=b.cost, quantity=b.quantity[t])
+
+        return State(consumptions=consumer_ledger, borders=border_ledger,
+                     productions=producer_ledger, rac=0, cost=0)
 
 
     def on_receive(self, message):

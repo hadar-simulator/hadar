@@ -4,15 +4,15 @@ from typing import List
 import pandas as pd
 from abc import ABC, abstractmethod
 
-from solver.actor.actor import Exchange
-from solver.actor.ledger import LedgerProduction
+from solver.actor.domain.input import DTO
+from solver.actor.ledger import LedgerProduction, LedgerConsumption, LedgerBorder
 
 
-class State:
+class State(DTO):
     """
     Represent current adequacy configuration. Each Handler has to update and forward this state.
     """
-    def __init__(self, consumptions: pd.DataFrame, borders: pd.DataFrame,
+    def __init__(self, consumptions: LedgerConsumption, borders: LedgerBorder,
                  productions: LedgerProduction, rac: int, cost: int):
         self.consumptions = consumptions
         self.borders = borders

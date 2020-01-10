@@ -3,16 +3,36 @@ from typing import List
 
 import pandas as pd
 
-from solver.actor.actor import Exchange
+from hadar.solver.actor.domain.message import Exchange
 
 
-class LedgerExchange:
+class Ledger:
+    """Meta Ledger to implement eq, hash, str, repr method"""
+    def __init__(self, headers: List[List[str]]):
+        self.ledger = pd.DataFrame(columns=[name for name, dtype in headers])
+        self.ledger = self.ledger.astype({name: dtype for name, dtype in headers})
+
+    def __hash__(self):
+        return hash(self.ledger)
+
+    def __eq__(self, other):
+        print('Original', self.ledger)
+        print('Other', other.ledger)
+        return isinstance(other, type(self)) and self.ledger.equals(other.ledger)
+
+    def __str__(self):
+        return str(self.ledger)
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class LedgerExchange(Ledger):
     """
     Manage exchange ledger for a dispatcher.
     """
     def __init__(self):
-        self.ledger = pd.DataFrame(columns=['prod_id', 'border', 'quantity', 'path_node'])
-        self.ledger = self.ledger.astype({'prod_id': 'int64', 'border': 'object', 'quantity': 'int64', 'path_node': 'object'})
+        Ledger.__init__(self, [['prod_id', 'int64'], ['border', 'object'], ['quantity', 'int64'], ['path_node', 'object']])
 
     def add_all(self, ex: List[Exchange]):
         """
@@ -73,13 +93,18 @@ class LedgerExchange:
         return self.ledger[self.ledger['border'] == name]['quantity'].sum()
 
 
-class LedgerProduction:
+class LedgerProduction(Ledger):
     """Manage production used by dispatcher"""
 
     def __init__(self, uuid_generate=uuid.uuid4):
         self.uuid_generate = uuid_generate
-        self.ledger = pd.DataFrame(columns=('cost', 'quantity', 'type', 'used', 'exchange'))
-        self.ledger = self.ledger.astype({'cost': 'int64', 'quantity': 'int64', 'type': 'object', 'used': 'bool', 'exchange': 'object'})
+        Ledger.__init__(self, [['cost', 'int64'], ['quantity', 'int64'], ['type', 'object'],
+                               ['used', 'bool'], ['exchange', 'object']])
+
+    def __eq__(self, other):
+        if not hasattr(other, 'ledger'):
+            return False
+        return self.ledger.equals(other.ledger)
 
     def add_production(self, cost: int, quantity: int, type: str = ''):
         """
@@ -145,12 +170,11 @@ class LedgerProduction:
         return self.ledger.loc[id]
 
 
-class LedgerConsumption:
+class LedgerConsumption(Ledger):
     """Manage consumption used by dispatcher"""
 
     def __init__(self):
-        self.ledger = pd.DataFrame(columns=('cost', 'quantity'))
-        self.ledger = self.ledger.astype({'cost': 'int64', 'quantity': 'int64'})
+        Ledger.__init__(self, [['cost', 'int64'], ['quantity', 'int64']])
 
     def add(self, type: str, cost: int, quantity: int):
         self.ledger.loc[type] = [cost, quantity]
@@ -159,12 +183,16 @@ class LedgerConsumption:
         self.ledger.drop(type, inplace=True)
 
 
-class LedgerBorder:
+class LedgerBorder(Ledger):
     """Manage borders used by dispatcher"""
 
     def __init__(self):
-        self.ledger = pd.DataFrame(columns=('cost', 'quantity'))
-        self.ledger = self.ledger.astype({'cost': 'int64', 'quantity': 'int64'})
+        Ledger.__init__(self, [['cost', 'int64'], ['quantity', 'int64']])
+
+    def __eq__(self, other):
+        if not hasattr(other, 'ledger'):
+            return False
+        return self.ledger.equals(other.ledger)
 
     def add(self, dest: str, cost: int, quantity: int):
         self.ledger.loc[dest] = [cost, quantity]
