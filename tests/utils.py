@@ -1,6 +1,4 @@
-from pykka import ActorRef
-
-from hadar.solver.domain import *
+from solver.actor.domain import *
 
 
 def assert_study(self, expected: Study, result: Study):

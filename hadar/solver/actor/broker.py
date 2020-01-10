@@ -1,58 +1,8 @@
-import uuid
 from copy import copy, deepcopy
-from typing import List
 
-from hadar.solver.domain import *
+from solver.actor.domain import *
 
-from hadar.solver.adequacy import optimize_adequacy
-
-
-class LedgerExchange:
-
-    def __init__(self):
-        self.ledger = {}
-
-    def add_all(self, ex: List[Exchange]):
-        for e in ex:
-            self.add(e)
-
-    def add(self, ex: Exchange):
-        border = ex.path_node[0]
-        if border not in self.ledger.keys():
-            self.ledger[border] = {}
-        if ex.production_id not in self.ledger[border].keys():
-            self.ledger[border][ex.production_id] = {}
-
-        if ex.id in self.ledger[border][ex.production_id].keys():
-            raise ValueError('Exchange already stored in ledger')
-        self.ledger[border][ex.production_id][ex.id] = ex
-
-    def delete(self, ex: Exchange):
-        for border, productions in self.ledger.items():
-            if ex.production_id in productions.keys():
-                for _,  exchanges in productions.items():
-                    if ex.id in exchanges.keys():
-                        del self.ledger[border][ex.production_id][ex.id]
-
-    def delete_all(self, exs: List[Exchange]):
-        for ex in exs:
-            self.delete(ex)
-
-    def sum_production(self, production_id):
-        acc = 0
-        for border, prods in self.ledger.items():
-            if production_id in prods.keys():
-                acc += sum([ex.quantity for ex in prods[production_id].values()])
-        return acc
-
-    def sum_border(self, name: str):
-        if name not in self.ledger.keys():
-            return 0
-        acc = 0
-        for prod in self.ledger[name].values():
-            acc += sum([ex.quantity for ex in prod.values()])
-        return acc
-
+from solver.actor.adequacy import optimize_adequacy
 
 class Broker:
     """Manage exchange and proposal shared"""

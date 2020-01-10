@@ -1,6 +1,5 @@
 import unittest
 
-import time
 import logging
 
 from tests.utils import assert_study
@@ -8,7 +7,7 @@ from tests.utils import assert_study
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('pykka').setLevel(logging.INFO)
 
-from hadar.solver.domain import *
+from solver.actor.domain import *
 from hadar.solver.actor_solver import solve
 
 

@@ -26,18 +26,7 @@ class Consumption(DTO):
         self.type = type
 
 
-class Exchange(DTO):
-    def __init__(self, quantity=0, id: uuid=0, production_id: uuid=0, path_node: List[str]=[]):
-        self.quantity = quantity
-        self.id = id
-        self.production_id = production_id
-        self.path_node = path_node
 
-
-class ConsumerCanceledExchange(DTO):
-    def __init__(self, exchanges: List[Exchange], path_node: List[str]=[]):
-        self.exchanges = exchanges
-        self.path_node = path_node
 
 
 class Production(DTO):
@@ -70,18 +59,6 @@ class Study(DTO):
         self.nodes = nodes
 
 
-class Proposal(DTO):
-    def __init__(self, production_id: uuid, cost: int, quantity: int, path_node: List[str]):
-        self.production_id = production_id
-        self.cost = cost
-        self.quantity = quantity
-        self.path_node = path_node
-
-
-class ProposalOffer(Proposal):
-    def __init__(self, production_id: uuid, cost: int, quantity: int, path_node: List[str], return_path_node: List[str]):
-        Proposal.__init__(self, production_id, cost, quantity, path_node)
-        self.return_path_node = return_path_node
 
 
 class NodeState(DTO):

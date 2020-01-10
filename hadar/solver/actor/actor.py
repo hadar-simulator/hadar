@@ -1,10 +1,10 @@
 import time
+import uuid
+from typing import List
 
 from pykka import ThreadingActor, ActorRegistry
 
-from hadar.solver.broker import Broker
-from hadar.solver.domain import *
-
+from hadar.solver.actor.messages import *
 
 def singleton(class_):
     instances = {}
@@ -30,23 +30,31 @@ class Waiter:
         self.updated = True
 
 
+class Event:
+    def __init__(self, type: str, message, res=None):
+        self.type = type
+        self.message = message
+        self.res = res
+
+
 class Dispatcher(ThreadingActor):
 
     def __init__(self, name,
                  min_exchange: int=1,
-                 consumptions: List[Consumption] = [],
-                 productions: List[Production] = [],
-                 borders: List[Border] = []):
+                 # consumptions: List[Consumption] = [],
+                 # productions: List[Production] = [],
+                 # borders: List[Border] = []
+                 ):
         super().__init__()
 
         self.name = name
-        self.broker = Broker(name=name,
-                             tell=self.tell_to,
-                             ask=self.ask_to,
-                             min_exchange=min_exchange,
-                             consumptions=consumptions,
-                             productions=productions,
-                             borders=borders)
+        # self.broker = Broker(name=name,
+        #                      tell=self.tell_to,
+        #                      ask=self.ask_to,
+        #                      min_exchange=min_exchange,
+        #                      consumptions=consumptions,
+        #                      productions=productions,
+        #                      borders=borders)
 
         self.waiter = Waiter()
         self.events = []

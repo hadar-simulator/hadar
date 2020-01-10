@@ -1,6 +1,6 @@
 from pykka import ActorRegistry
 
-from hadar.solver.domain import *
+from solver.actor.domain import *
 from hadar.solver.actor import Dispatcher, Waiter
 
 

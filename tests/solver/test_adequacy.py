@@ -1,7 +1,7 @@
 import unittest
 
-from hadar.solver.adequacy import *
-from hadar.solver.domain import *
+from solver.actor.adequacy import *
+from solver.actor.domain import *
 
 
 class TestAdequacy(unittest.TestCase):
