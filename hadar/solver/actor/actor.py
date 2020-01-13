@@ -132,6 +132,4 @@ class Dispatcher(ThreadingActor):
         return res
 
     def next(self):
-        c, p, b = self.broker.compute_total()
-        # plot(self)
-        return c, p, b
+        pass

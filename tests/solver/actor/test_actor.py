@@ -3,8 +3,8 @@ import unittest
 
 from hadar.solver.actor.ledger import *
 from hadar.solver.actor.domain.input import *
-from solver.actor.actor import Dispatcher
-from solver.actor.common import State
+from hadar.solver.actor.actor import Dispatcher
+from hadar.solver.actor.common import State
 
 
 class TestDispatcher(unittest.TestCase):
@@ -30,4 +30,3 @@ class TestDispatcher(unittest.TestCase):
         state = State(consumptions=cons, productions=prod, borders=border, rac=0, cost=0)
 
         self.assertEqual(state, dispatcher.build_state(0))
-        # TODO error undefined
