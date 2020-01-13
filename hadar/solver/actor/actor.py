@@ -1,4 +1,6 @@
 import time
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 
@@ -8,6 +10,7 @@ from hadar.solver.actor.common import State
 from hadar.solver.actor.domain.input import *
 from hadar.solver.actor.domain.message import *
 from hadar.solver.actor.ledger import LedgerConsumption, LedgerProduction, LedgerBorder
+from hadar.solver.actor.domain.output import *
 
 
 def singleton(class_):
@@ -58,6 +61,11 @@ class Dispatcher(ThreadingActor):
         self.borders = borders
         self.uuid_generate = uuid_generate
 
+        self.out_node = OutputNode(in_consumptions=self.consumptions,
+                                   in_productions=self.productions,
+                                   in_borders=self.borders)
+
+        self.limit = self.consumptions[0].quantity.size
         self.t = 0
         self.state = self.build_state(self.t)
 
@@ -67,7 +75,7 @@ class Dispatcher(ThreadingActor):
         self.actor_ref.actor_urn = name
         ActorRegistry.register(self.actor_ref)
 
-    def build_state(self, t: int):
+    def build_state(self, t: int) -> State:
         """
         Build new state according to timestamp.
 
@@ -131,5 +139,39 @@ class Dispatcher(ThreadingActor):
         self.events.append(Event(type='ask res', message=res))
         return res
 
-    def next(self):
-        pass
+    def next(self) -> OutputNode:
+        """
+        Handle next message. Update result. pass to next timestamp.
+
+        :return: return OutputNode only if they have no more timestamp
+        """
+        self.compute_total(self.t)
+        if self.t + 1 < self.limit:
+            self.t += 1
+            self.state = self.build_state(self.t)
+        else:
+            return self.out_node
+
+    def compute_total(self, t: int):
+        """
+        Compute dispatcher result:
+        - copy initial consumption quantities
+        - get production quantity used
+        - sum production send to border
+
+        :param t: timestamp to update inside output result
+        :return:
+        """
+        for i, _ in enumerate(self.out_node.consumptions):
+            type = self.out_node.consumptions[i].type
+            self.out_node.consumptions[i].quantity[t] = self.state.consumptions.find_consumption(type)['quantity']
+
+        for i, _ in enumerate(self.out_node.productions):
+            type = self.out_node.productions[i].type
+            p = self.state.productions.find_production_by_type(type)
+            qt = p['quantity'] if p['used'] else 0
+            self.out_node.productions[i].quantity[t] = qt
+
+        for i, _ in enumerate(self.out_node.borders):
+            dest = self.out_node.borders[i].dest
+            self.out_node.borders[i].quantity[t] = self.state.exchanges.sum_border(name=dest)

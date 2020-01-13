@@ -4,8 +4,8 @@ from typing import List
 import pandas as pd
 from abc import ABC, abstractmethod
 
-from solver.actor.domain.input import DTO
-from solver.actor.ledger import LedgerProduction, LedgerConsumption, LedgerBorder
+from hadar.solver.actor.domain.input import DTO
+from hadar.solver.actor.ledger import *
 
 
 class State(DTO):
@@ -17,6 +17,7 @@ class State(DTO):
         self.consumptions = consumptions
         self.borders = borders
         self.productions = productions
+        self.exchanges = LedgerExchange()
         self.rac = rac
         self.cost = cost
 

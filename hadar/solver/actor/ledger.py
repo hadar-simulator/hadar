@@ -106,16 +106,17 @@ class LedgerProduction(Ledger):
             return False
         return self.ledger.equals(other.ledger)
 
-    def add_production(self, cost: int, quantity: int, type: str = ''):
+    def add_production(self, cost: int, quantity: int, type: str = '', used: bool = False):
         """
         Add production from internal.
 
         :param cost: production cost
         :param quantity: production quantity
         :param type: production type
+        :param used: set used or not
         :return:
         """
-        self.ledger.loc[self.uuid_generate()] = [cost, quantity, type, False, None]
+        self.ledger.loc[self.uuid_generate()] = [cost, quantity, type, used, None]
 
     def add_exchange(self, cost: int, ex: Exchange):
         """
@@ -169,6 +170,14 @@ class LedgerProduction(Ledger):
         """
         return self.ledger.loc[id]
 
+    def find_production_by_type(self, type: str) -> pd.Series:
+        """
+        Get production by type
+        :param type: production type
+        :return: Series with asked production
+        """
+        return self.ledger[self.ledger['type'] == type].iloc[0]
+
 
 class LedgerConsumption(Ledger):
     """Manage consumption used by dispatcher"""
@@ -181,6 +190,9 @@ class LedgerConsumption(Ledger):
 
     def delete(self, type: str):
         self.ledger.drop(type, inplace=True)
+
+    def find_consumption(self, type: str) -> pd.Series:
+        return self.ledger.loc[type]
 
 
 class LedgerBorder(Ledger):
@@ -199,3 +211,6 @@ class LedgerBorder(Ledger):
 
     def delete(self, dest: str):
         self.ledger.drop(dest, inplace=True)
+
+    def find_border(self, dest: str):
+        return self.ledger.loc[dest]
