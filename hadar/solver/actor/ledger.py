@@ -118,15 +118,16 @@ class LedgerProduction(Ledger):
         """
         self.ledger.loc[self.uuid_generate()] = [cost, quantity, type, used, None]
 
-    def add_exchange(self, cost: int, ex: Exchange):
+    def add_exchange(self, cost: int, ex: Exchange, used: bool = False):
         """
         Add production from external.
 
         :param cost: cost of external production
+        :param used: set used or not
         :param ex: exchange object where production comes
         :return:
         """
-        self.ledger.loc[ex.production_id] = [cost, ex.quantity, 'import', False, ex]
+        self.ledger.loc[ex.id] = [cost, ex.quantity, 'import', used, ex]
 
     def delete(self, id: uuid):
         """
@@ -153,6 +154,9 @@ class LedgerProduction(Ledger):
         :return: dataframe with external production
         """
         return self.ledger[self.ledger['exchange'].notnull()]
+
+    def filter_useless_exchanges(self) -> pd.DataFrame:
+        return self.ledger[self.ledger['exchange'].notnull() & ~self.ledger['used']]
 
     def filter_productions(self) -> pd.DataFrame:
         """

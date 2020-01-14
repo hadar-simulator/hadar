@@ -52,7 +52,7 @@ class TestLedgerProduction(unittest.TestCase):
                                   'type': ['import'],
                                   'used': [False],
                                   'exchange': [ex]},
-                                 index=[3])
+                                 index=[1234])
         pd.testing.assert_frame_equal(expectedB, ledger.filter_exchanges())
 
 

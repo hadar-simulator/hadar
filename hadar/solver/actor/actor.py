@@ -21,6 +21,13 @@ def singleton(class_):
         return instances[class_]
     return getinstance
 
+@singleton
+class HandlerParameter:
+    def __init__(self, ask=None, tell=None, uuid_generate = uuid.uuid4, min_exchange: int = 1):
+        self.ask = ask
+        self.tell = tell
+        self.uuid_generate = uuid_generate
+        self.min_exchange = min_exchange
 
 @singleton
 class Waiter:
