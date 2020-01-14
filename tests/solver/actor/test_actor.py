@@ -28,7 +28,7 @@ class TestDispatcher(unittest.TestCase):
         border = LedgerBorder()
         border.add(dest='be', cost=2, quantity=10)
 
-        state = State(consumptions=cons, productions=prod, borders=border, rac=0, cost=0)
+        state = State(name='fr', consumptions=cons, productions=prod, borders=border, rac=0, cost=0)
 
         self.assertEqual(state, dispatcher.build_state(0))
 
@@ -59,7 +59,8 @@ class TestDispatcher(unittest.TestCase):
         ledger_border = LedgerBorder()
         ledger_border.add(dest='be', cost=2, quantity=7)
 
-        dispatcher.state = State(ledger_cons, ledger_border, ledger_prod, 0, 0)
+        dispatcher.state = State(name='fr', consumptions=ledger_cons, borders=ledger_border,
+                                 productions=ledger_prod, cost=0, rac=0)
         dispatcher.state.exchanges = LedgerExchange()
         dispatcher.state.exchanges.add(Exchange(id=0, production_id=3, quantity=3, path_node=['be']))
 

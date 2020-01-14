@@ -12,8 +12,9 @@ class State(DTO):
     """
     Represent current adequacy configuration. Each Handler has to update and forward this state.
     """
-    def __init__(self, consumptions: LedgerConsumption, borders: LedgerBorder,
+    def __init__(self, name: str, consumptions: LedgerConsumption, borders: LedgerBorder,
                  productions: LedgerProduction, rac: int, cost: int):
+        self.name = name
         self.consumptions = consumptions
         self.borders = borders
         self.productions = productions

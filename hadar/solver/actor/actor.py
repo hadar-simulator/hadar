@@ -22,14 +22,6 @@ def singleton(class_):
     return getinstance
 
 @singleton
-class HandlerParameter:
-    def __init__(self, ask=None, tell=None, uuid_generate = uuid.uuid4, min_exchange: int = 1):
-        self.ask = ask
-        self.tell = tell
-        self.uuid_generate = uuid_generate
-        self.min_exchange = min_exchange
-
-@singleton
 class Waiter:
     def __init__(self, wait_ms=0):
         self.updated = True
@@ -104,7 +96,7 @@ class Dispatcher(ThreadingActor):
         for b in self.borders:
             border_ledger.add(dest=b.dest, cost=b.cost, quantity=b.quantity[t])
 
-        return State(consumptions=consumer_ledger, borders=border_ledger,
+        return State(name=self.name, consumptions=consumer_ledger, borders=border_ledger,
                      productions=producer_ledger, rac=0, cost=0)
 
 

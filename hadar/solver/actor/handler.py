@@ -8,7 +8,14 @@ import numpy as np
 
 from hadar.solver.actor.common import State
 from hadar.solver.actor.domain.message import *
-from hadar.solver.actor.actor import HandlerParameter
+
+
+class HandlerParameter:
+    def __init__(self, ask=None, tell=None, uuid_generate: uuid = uuid.uuid4, min_exchange: int = 1):
+        self.ask = ask
+        self.tell = tell
+        self.uuid_generate = uuid_generate
+        self.min_exchange = min_exchange
 
 
 class Handler(ABC):
@@ -16,12 +23,11 @@ class Handler(ABC):
     Represent an atomic behaviour. Handler update state object and call other handlers.
     Message receiving behaviour is implemented by chaining handler according to Chain of Responsabilities pattern
     """
-    def __init__(self):
-        params = HandlerParameter()
-        self.ask = params.ask
-        self.tell = params.tell
-        self.uuid_generate = params.uuid_generate
-        self.min_exchange = params.min_exchange
+    def __init__(self, params: HandlerParameter = None):
+        self.params = params
+
+    def set_params(self, params: HandlerParameter):
+        self.params = params
 
     @abstractmethod
     def execute(self, state: State) -> State:
@@ -36,13 +42,15 @@ class ReturnHandler(Handler):
     def execute(self, state: State) -> State:
         return state
 
+
 class CancelExchangeUselessHandler(Handler):
     """
     Get exchange in free production and send cancel messages.
     """
-    def __init__(self, next: Handler):
-        Handler.__init__(self)
+    def __init__(self, next: Handler, params: HandlerParameter = None):
+        Handler.__init__(self, params)
         self.next = next
+        self.next.set_params(self.params)
 
     def execute(self, state: State) -> State:
         useless = state.productions.filter_useless_exchanges()
@@ -70,16 +78,34 @@ class CancelExchangeUselessHandler(Handler):
 
         for prod_id, (ex, path) in productions.items():
             cancel = ConsumerCanceledExchange(exchanges=ex, path_node=path)
-            self.tell(to=path[0], mes=cancel)
+            self.params.tell(to=path[0], mes=cancel)
 
 
-class ProposeFreeProduction(Handler):
-    def __init__(self, next: Handler):
-        Handler.__init__(self)
+class ProposeFreeProductionHandler(Handler):
+    """
+    Send as proposal free production.
+    Check already sent production quantity and border capacities.
+    """
+    def __init__(self, next: Handler, params: HandlerParameter = None):
+        Handler.__init__(self, params)
         self.next = next
+        self.next.set_params(self.params)
 
     def execute(self, state: State) -> State:
-        pass
+        for p_id, (p_cost, p_quantity, _, _, _ ) in state.productions.filter_free_productions().iterrows():
+            prod_sent = state.exchanges.sum_production(production_id=p_id)
+            qt = p_quantity - prod_sent
+
+            for b_id, (b_cost, b_quantity) in state.borders.ledger.iterrows():
+                export = state.exchanges.sum_border(name=b_id)
+                qt = min(qt, b_quantity - export)
+                prop = Proposal(production_id=p_id,
+                                cost=p_cost + b_cost,
+                                quantity=qt,
+                                path_node=[state.name])
+                self.params.tell(to=b_id, mes=prop)
+
+        return self.next.execute(deepcopy(state))
 
 
 class StartHandler(Handler):
@@ -87,7 +113,7 @@ class StartHandler(Handler):
     def __init__(self):
         Handler.__init__(self)
         self.handler = CancelExchangeUselessHandler(
-            next=ProposeFreeProduction(
+            next=ProposeFreeProductionHandler(
                 next=ReturnHandler()
             ))
 

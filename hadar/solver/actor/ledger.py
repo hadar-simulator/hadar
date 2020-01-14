@@ -156,7 +156,20 @@ class LedgerProduction(Ledger):
         return self.ledger[self.ledger['exchange'].notnull()]
 
     def filter_useless_exchanges(self) -> pd.DataFrame:
+        """
+        Get production from exchange tagged as not used.
+
+        :return: DataFrame with only exchange not used
+        """
         return self.ledger[self.ledger['exchange'].notnull() & ~self.ledger['used']]
+
+    def filter_free_productions(self) -> pd.DataFrame:
+        """
+        Get internal production not used.
+
+        :return: DataFrame with only internal production not used
+        """
+        return self.ledger[self.ledger['exchange'].isnull() & ~self.ledger['used']]
 
     def filter_productions(self) -> pd.DataFrame:
         """

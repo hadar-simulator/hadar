@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import unittest
 
-from hadar.solver.actor.actor import HandlerParameter, Exchange
+from hadar.solver.actor.actor import Exchange
 from hadar.solver.actor.common import State
 from hadar.solver.actor.handler import *
 from hadar.solver.actor.ledger import *
@@ -12,47 +12,47 @@ from hadar.solver.actor.ledger import *
 
 class TestCancelExchangeUselessHandler(unittest.TestCase):
 
+
     def test_execute(self):
         # Create mock
         tell_mock = MagicMock()
-        HandlerParameter(tell=tell_mock)
-
-        uuid_mock = MockUUID()
 
         # Input
         exchange2 = Exchange(id=2, production_id=10, quantity=1, path_node=['fr'])
         exchange3 = Exchange(id=3, production_id=20, quantity=1, path_node=['be'])
         exchange4 = Exchange(id=4, production_id=20, quantity=1, path_node=['be'])
 
-        productions = LedgerProduction(uuid_generate=uuid_mock.generate)
+        productions = LedgerProduction(uuid_generate=lambda: None)
         productions.add_exchange(cost=10, used=True, ex=Exchange(id=0, production_id=10, quantity=1, path_node=['fr']))
         productions.add_exchange(cost=10, used=True, ex=Exchange(id=1, production_id=10, quantity=1, path_node=['fr']))
         productions.add_exchange(cost=10, used=False, ex=exchange2)  # Should be canceled
         productions.add_exchange(cost=10, used=False, ex=exchange3)  # Should be canceled
-        productions.add_exchange(cost=10, used=False, ex=exchange4)  # Should be canceled 
+        productions.add_exchange(cost=10, used=False, ex=exchange4)  # Should be canceled
 
         exchanges = LedgerExchange()
         exchanges.add_all(productions.filter_exchanges()['exchange'].values)
 
-        state = State(consumptions=LedgerConsumption(),
+        state = State(name='fr',
+                      consumptions=LedgerConsumption(),
                       productions=productions,
                       borders=LedgerBorder(), rac=0, cost=0)
         state.exchanges = exchanges
 
         # Expected
-        exp_productions = LedgerProduction(uuid_generate=uuid_mock.generate)
+        exp_productions = LedgerProduction(uuid_generate=lambda: None)
         exp_productions.add_exchange(cost=10, used=True, ex=Exchange(id=0, production_id=10, quantity=1, path_node=['fr']))
         exp_productions.add_exchange(cost=10, used=True, ex=Exchange(id=1, production_id=10, quantity=1, path_node=['fr']))
 
         exp_exchanges = LedgerExchange()
         exp_exchanges.add_all(exp_productions.filter_exchanges()['exchange'].values)
 
-        exp_state = State(consumptions=LedgerConsumption(),
+        exp_state = State(name='fr',
+                          consumptions=LedgerConsumption(),
                           productions=exp_productions,
                           borders=LedgerBorder(), rac=0, cost=0)
         exp_state.exchanges = exp_exchanges
 
-        handler = CancelExchangeUselessHandler(next=ReturnHandler())
+        handler = CancelExchangeUselessHandler(next=ReturnHandler(), params=HandlerParameter(tell=tell_mock))
         new_state = handler.execute(state)
 
         # Test
@@ -60,6 +60,66 @@ class TestCancelExchangeUselessHandler(unittest.TestCase):
 
         tell_mock.assert_has_calls([call(to='fr', mes=ConsumerCanceledExchange(exchanges=[exchange2], path_node=['fr'])),
                                     call(to='be', mes=ConsumerCanceledExchange(exchanges=[exchange3, exchange4], path_node=['be']))])
+
+
+class ProposeFreeProduction(unittest.TestCase):
+
+    def test_execute_enough_border(self):
+        # Create mock
+        tell_mock = MagicMock()
+        params = HandlerParameter(tell=tell_mock)
+
+        mock_uuid = MockUUID()
+
+        # Input
+        productions = LedgerProduction(uuid_generate=mock_uuid.generate)
+        productions.add_production(type='solar',   cost=10, quantity=10, used=True)
+        productions.add_production(type='nuclear', cost=20, quantity=10, used=True)
+        productions.add_production(type='nuclear', cost=20, quantity=10, used=False)
+
+        borders = LedgerBorder()
+        borders.add(dest='be', cost=10, quantity=10)  # Has enough quantity
+
+        exchanges = LedgerExchange()
+        exchanges.add(Exchange(id=1, quantity=5, production_id=3, path_node=['be']))
+
+        state = State(name='fr', consumptions=LedgerConsumption(), borders=borders, productions=productions, cost=0, rac=0)
+        state.exchanges = exchanges
+
+        handler = ProposeFreeProductionHandler(next=ReturnHandler(), params=params)
+        new_sate = handler.execute(state)
+
+        self.assertEqual(state, new_sate)
+        tell_mock.assert_called_with(to='be', mes=Proposal(production_id=3, cost=30, quantity=5, path_node=['fr']))
+
+    def test_execute_saturation_border(self):
+        # Create mock
+        tell_mock = MagicMock()
+        params = HandlerParameter(tell=tell_mock)
+
+        mock_uuid = MockUUID()
+
+        # Input
+        productions = LedgerProduction(uuid_generate=mock_uuid.generate)
+        productions.add_production(type='solar',   cost=10, quantity=10, used=True)
+        productions.add_production(type='nuclear', cost=20, quantity=10, used=True)
+        productions.add_production(type='nuclear', cost=20, quantity=10, used=False)
+
+        borders = LedgerBorder()
+        borders.add(dest='be', cost=10, quantity=7)  # Not enough quantity
+
+        exchanges = LedgerExchange()
+        exchanges.add(Exchange(id=1, quantity=5, production_id=3, path_node=['be']))
+
+        state = State(name='fr', consumptions=LedgerConsumption(), borders=borders, productions=productions, cost=0, rac=0)
+        state.exchanges = exchanges
+
+        handler = ProposeFreeProductionHandler(next=ReturnHandler(), params=params)
+        new_sate = handler.execute(state)
+
+        self.assertEqual(state, new_sate)
+        tell_mock.assert_called_with(to='be', mes=Proposal(production_id=3, cost=30, quantity=2, path_node=['fr']))
+
 
 
 class MockUUID:
