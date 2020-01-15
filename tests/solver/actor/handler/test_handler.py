@@ -192,12 +192,12 @@ class TestBackwardMessageHandler(unittest.TestCase):
 
         # Input
         message = ProposalOffer(production_id=1, cost=10, quantity=10,
-                                path_node=['fr', 'de'], return_path_node=['de', 'fr', 'be'])
+                                path_node=['fr', 'de'], return_path_node=['de', 'fr'])
         state = State(name='fr', consumptions=None, borders=None, productions=None, rac=0, cost=0)
 
         # Expected
         expected = ProposalOffer(production_id=1, cost=10, quantity=10,
-                                path_node=['de'], return_path_node=['de', 'fr', 'be'])
+                                path_node=['de'], return_path_node=['de', 'fr'])
 
         # Test
         handler = BackwardMessageHandler(next=ReturnHandler(), params=params, type='tell')
@@ -210,7 +210,7 @@ class TestBackwardMessageHandler(unittest.TestCase):
         # Expected
         return_expected = [Exchange(quantity=10, id=1, production_id=1, path_node=['be', 'fr', 'de'])]
         ask_expected = ProposalOffer(production_id=1, cost=10, quantity=10,
-                                path_node=['de'], return_path_node=['de', 'fr', 'be'])
+                                path_node=['de'], return_path_node=['de', 'fr'])
 
         # Create mock
         ask_mock = MagicMock(return_value=return_expected)
@@ -218,7 +218,7 @@ class TestBackwardMessageHandler(unittest.TestCase):
 
         # Input
         message = ProposalOffer(production_id=1, cost=10, quantity=10,
-                                path_node=['fr', 'de'], return_path_node=['de', 'fr', 'be'])
+                                path_node=['fr', 'de'], return_path_node=['de', 'fr'])
         state = State(name='fr', consumptions=None, borders=None, productions=None, rac=0, cost=0)
 
         # Test
@@ -228,6 +228,67 @@ class TestBackwardMessageHandler(unittest.TestCase):
         self.assertEqual(state, res_state)
         self.assertEqual(return_expected, res_message)
         ask_mock.assert_called_with(to='de', mes=ask_expected)
+
+
+class TestCreateAvailableExchangeHandler(unittest.TestCase):
+    def test_execute(self):
+        # Input
+        uuid_mock = MockUUID()
+        params = HandlerParameter(uuid_generate=uuid_mock.generate)
+
+        productions = LedgerProduction(uuid_generate=uuid_mock.generate)
+        productions.add_production(cost=10, quantity=10, type='nuclear', used=False)
+
+        state = State(name='fr', consumptions=None, productions=productions, borders=None, rac=0, cost=0)
+        state.exchanges = LedgerExchange()
+        state.exchanges.add(Exchange(quantity=5, id=1, production_id=1, path_node=['be']))
+
+        offer = ProposalOffer(production_id=1, cost=12, quantity=10, path_node=['fr'], return_path_node=['de'])
+
+        # Expected
+        state_exp = State(name='fr', consumptions=None, productions=productions, borders=None, rac=0, cost=0)
+        state_exp.exchanges = LedgerExchange()
+        state_exp.exchanges.add(Exchange(quantity=5, id=1, production_id=1, path_node=['be']))
+        state_exp.exchanges.add(Exchange(quantity=5, id=2, production_id=1, path_node=['de']))
+
+        response_exp = [Exchange(quantity=5, id=2, production_id=1, path_node=['de'])]
+
+        # Test
+        handler = CreateAvailableExchangeHandler(next=ReturnHandler(), min_exchange=5, params=params)
+        state_res, response_res = handler.execute(state, offer)
+
+        self.assertEqual(state_exp, state_res)
+        self.assertEqual(response_exp, response_res)
+
+    def test_generate_exchange(self):
+        # Input
+        params = HandlerParameter(uuid_generate=lambda: 42)
+        handler = CreateAvailableExchangeHandler(next=ReturnHandler(), min_exchange=10, params=params)
+
+        # Expected
+        expected = [
+            Exchange(id=42, production_id=45, quantity=10, path_node=['fr']),
+            Exchange(id=42, production_id=45, quantity=10, path_node=['fr'])
+        ]
+
+        # Test complete
+        res = handler._generate_exchanges(production_id=45, quantity=20, path_node=['fr'])
+        self.assertEqual(expected, res, 'Wrong exchange generation')
+
+        # Expected
+        expected = [
+            Exchange(id=42, production_id=45, quantity=10, path_node=['fr']),
+            Exchange(id=42, production_id=45, quantity=10, path_node=['fr']),
+            Exchange(id=42, production_id=45, quantity=5, path_node=['fr'])
+        ]
+
+        # Test partial
+        res = handler._generate_exchanges(production_id=45, quantity=25, path_node=['fr'])
+        self.assertEqual(expected, res, 'Wrong exchange generation')
+
+        # Test empty
+        res = handler._generate_exchanges(production_id=45, quantity=0, path_node=['fr'])
+        self.assertEqual([], res, 'Wrong empty exchange generation')
 
 
 class MockUUID:

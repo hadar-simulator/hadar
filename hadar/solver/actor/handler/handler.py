@@ -11,11 +11,11 @@ from hadar.solver.actor.domain.message import *
 
 
 class HandlerParameter:
+    """Global parameters used by all handlers"""
     def __init__(self, ask=None, tell=None, uuid_generate: uuid = uuid.uuid4, min_exchange: int = 1):
         self.ask = ask
         self.tell = tell
         self.uuid_generate = uuid_generate
-        self.min_exchange = min_exchange
 
 
 class Handler(ABC):
@@ -40,19 +40,39 @@ class ReturnHandler(Handler):
         Handler.__init__(self)
 
     def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
+        """
+        Return state and message without any change.
+
+        :param state: current state
+        :param message: message receive
+        :return: same state, same message
+        """
         return state, message
 
 
 class CancelUselessImportationHandler(Handler):
     """
-    Get exchange in free production and send cancel messages.
+    Cancel exchanges find in not free productions
     """
     def __init__(self, next: Handler, params: HandlerParameter = None):
+        """
+        Create handler.
+
+        :param next: handler to execute at this end of process
+        :param params: handler parameters (use only if handler is first of the chain)
+        """
         Handler.__init__(self, params)
         self.next = next
         self.next.set_params(self.params)
 
-    def execute(self, state: State, nothing: Any = None) -> Tuple[State, Any]:
+    def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
+        """
+        Execute process.
+
+        :param state: current state
+        :param message: message receive from dispatcher. (Not used by handler)
+        :return: new state, response message. (Not response from handler)
+        """
         useless = state.productions.filter_useless_exchanges()
         exs = useless['exchange'].values
 
@@ -87,11 +107,24 @@ class ProposeFreeProductionHandler(Handler):
     Check already sent production quantity and border capacities.
     """
     def __init__(self, next: Handler, params: HandlerParameter = None):
+        """
+        Create handler.
+
+        :param next: handler to execute at this end of process
+        :param params: handler parameters (use only if handler is first of the chain)
+        """
         Handler.__init__(self, params)
         self.next = next
         self.next.set_params(self.params)
 
     def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
+        """
+        Execute process.
+
+        :param state: current state
+        :param message: message received from dispatcher. Not used by this handler
+        :return: new state, response message (Not response from this handler)
+        """
         for p_id, (p_cost, p_quantity, _, _, _ ) in state.productions.filter_free_productions().iterrows():
             prod_sent = state.exchanges.sum_production(production_id=p_id)
             qt = p_quantity - prod_sent
@@ -109,8 +142,15 @@ class ProposeFreeProductionHandler(Handler):
 
 
 class CancelExportationHandler(Handler):
-    """Cancel exchange. If middle node forward cancel"""
+    """Cancel exchange. If middle node then forward cancel"""
     def __init__(self, on_producer: Handler, on_forward: Handler, params: HandlerParameter = None):
+        """
+        Create handler.
+
+        :param on_producer: handler to execute if node is the producer of exchange.
+        :param on_forward: handler to execute when node is intermediate.
+        :param params: handler parameters (use only if handler is first of the chain)
+        """
         Handler.__init__(self, params)
         self.on_producer = on_producer
         self.on_producer.set_params(self.params)
@@ -118,6 +158,13 @@ class CancelExportationHandler(Handler):
         self.on_forward.set_params(self.params)
 
     def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
+        """
+        Execute process.
+
+        :param state: current state
+        :param message: ConsumerCancelExchange message
+        :return: new state, response message (Not response from handler)
+        """
         # delete exchange in ledger
         state.exchanges.delete_all(message.exchanges)
 
@@ -150,3 +197,62 @@ class BackwardMessageHandler(Handler):
         elif self.type == 'tell':
             self.params.tell(to=message.path_node[0], mes=message)
             return self.next.execute(deepcopy(state), None)
+
+
+class CreateAvailableExchangeHandler(Handler):
+    """Create available exchanges according to proposal"""
+    def __init__(self, next: Handler, min_exchange: int = 1, params: HandlerParameter = None):
+        """
+        Create Handler.
+
+        :param next: handler to call after process
+        :param min_exchange: production are tokenized when exchanged. Set the tokenize size
+        :param params: current handler parameters
+        """
+        Handler.__init__(self, params)
+        self.next = next
+        self.min_exchange = min_exchange
+        self.next.set_params(params)
+
+    def execute(self, state: State, proposal: Any = None) -> Tuple[State, Any]:
+        """
+        Compute available exchanges according to production already sent.
+
+        :param state: current state
+        :param proposal: ProposalOffer message
+        :return: (state, [available exchanges])
+        """
+        # Check production remain capacity
+        quantity_available = state.productions.find_production(proposal.production_id).quantity
+        quantity_used = state.exchanges.sum_production(proposal.production_id)
+
+        # Send available exchange
+        quantity_exchange = min(proposal.quantity, quantity_available - quantity_used)
+        ex = self._generate_exchanges(quantity=quantity_exchange,
+                                      production_id=proposal.production_id,
+                                      path_node=proposal.return_path_node)
+        # Save exchange in ledger
+        if quantity_exchange > 0:
+            state.exchanges.add_all(ex)
+        return self.next.execute(deepcopy(state), deepcopy(ex))
+
+    def _generate_exchanges(self, production_id: int, quantity: int, path_node: List[str]):
+        """
+        Generate list to exchanges to fill available quantity with minimum exchange capacity.
+
+        :param production_id: id production to embedded
+        :param quantity:  quantity to use to generate exchange list
+        :param path_node: path node to embedded
+        :return: list of exchanges. sum of capacities equals or less quantity asked
+        """
+        length = int(quantity / self.min_exchange)
+        exchanges = [Exchange(quantity=self.min_exchange,
+                              id=self.params.uuid_generate(),
+                              production_id=production_id,
+                              path_node=path_node)
+                     for i in range(0, length)]
+
+        remain = quantity - length*self.min_exchange
+        if remain:
+            exchanges += [Exchange(quantity=remain, id=self.params.uuid_generate(), production_id=production_id, path_node=path_node)]
+        return exchanges
