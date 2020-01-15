@@ -1,7 +1,7 @@
 import uuid
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import List
+from typing import List, Tuple, Any
 
 import pandas as pd
 import numpy as np
@@ -30,7 +30,7 @@ class Handler(ABC):
         self.params = params
 
     @abstractmethod
-    def execute(self, state: State, message=None) -> State:
+    def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
         pass
 
 
@@ -39,8 +39,8 @@ class ReturnHandler(Handler):
     def __init__(self):
         Handler.__init__(self)
 
-    def execute(self, state: State, message=None) -> State:
-        return state
+    def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
+        return state, message
 
 
 class CancelUselessImportationHandler(Handler):
@@ -52,7 +52,7 @@ class CancelUselessImportationHandler(Handler):
         self.next = next
         self.next.set_params(self.params)
 
-    def execute(self, state: State, nothing=None) -> State:
+    def execute(self, state: State, nothing: Any = None) -> Tuple[State, Any]:
         useless = state.productions.filter_useless_exchanges()
         exs = useless['exchange'].values
 
@@ -91,7 +91,7 @@ class ProposeFreeProductionHandler(Handler):
         self.next = next
         self.next.set_params(self.params)
 
-    def execute(self, state: State, nothing=None) -> State:
+    def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
         for p_id, (p_cost, p_quantity, _, _, _ ) in state.productions.filter_free_productions().iterrows():
             prod_sent = state.exchanges.sum_production(production_id=p_id)
             qt = p_quantity - prod_sent
@@ -117,15 +117,36 @@ class CancelExportationHandler(Handler):
         self.on_forward = on_forward
         self.on_forward.set_params(self.params)
 
-    def execute(self, state: State, message=None) -> State:
+    def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
         # delete exchange in ledger
         state.exchanges.delete_all(message.exchanges)
 
         # Forward if path node has next
         if len(message.path_node) > 1:
-            cancel = deepcopy(message)
-            cancel.path_node = cancel.path_node[1:]
-            self.params.tell(to=cancel.path_node[0], mes=cancel)
             return self.on_forward.execute(deepcopy(state), message)
 
-        return self.on_producer.execute(deepcopy(state), message)
+        return self.on_producer.execute(deepcopy(state), deepcopy(message))
+
+
+class BackwardMessageHandler(Handler):
+    """Forward message to border"""
+    def __init__(self, next: Handler, type: str, params: HandlerParameter = None):
+        """
+        Create Handler
+        :param next: handler to execute after backward
+        :param type: give what kind of connection 'ask' or 'tell'
+        """
+        Handler.__init__(self, params)
+        self.type = type
+        self.next = next
+        self.next.set_params(params)
+
+    def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
+        message.path_node = message.path_node[1:]
+        if self.type == 'ask':
+            res = self.params.ask(to=message.path_node[0], mes=message)
+            return self.next.execute(deepcopy(state), deepcopy(res))
+
+        elif self.type == 'tell':
+            self.params.tell(to=message.path_node[0], mes=message)
+            return self.next.execute(deepcopy(state), None)

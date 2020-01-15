@@ -54,7 +54,7 @@ class TestCancelExchangeUselessHandler(unittest.TestCase):
         exp_state.exchanges = exp_exchanges
 
         handler = CancelUselessImportationHandler(next=ReturnHandler(), params=HandlerParameter(tell=tell_mock))
-        new_state = handler.execute(state)
+        new_state, _ = handler.execute(state)
 
         # Test
         self.assertEqual(exp_state, new_state)
@@ -90,7 +90,7 @@ class ProposeFreeProduction(unittest.TestCase):
         state.exchanges = exchanges
 
         handler = ProposeFreeProductionHandler(next=ReturnHandler(), params=params)
-        new_sate = handler.execute(state)
+        new_sate, _ = handler.execute(state)
 
         self.assertEqual(state, new_sate)
         tell_mock.assert_called_with(to='be', mes=Proposal(production_id=3, cost=30, quantity=5, path_node=['fr']))
@@ -119,7 +119,7 @@ class ProposeFreeProduction(unittest.TestCase):
         state.exchanges = exchanges
 
         handler = ProposeFreeProductionHandler(next=ReturnHandler(), params=params)
-        new_sate = handler.execute(state)
+        new_sate, _ = handler.execute(state)
 
         self.assertEqual(state, new_sate)
         tell_mock.assert_called_with(to='be', mes=Proposal(production_id=3, cost=30, quantity=2, path_node=['fr']))
@@ -150,10 +150,9 @@ class TestCancelExportationHandler(unittest.TestCase):
 
         # Test
         handler = CancelExportationHandler(on_producer=ReturnHandler(), on_forward=ReturnHandler(), params=params)
-        res = handler.execute(state=state, message=message)
+        res, _ = handler.execute(state=state, message=message)
 
         self.assertEqual(state_exp, res)
-        tell_mock.assert_called_with(to='be', mes=ConsumerCanceledExchange(path_node=['be'], exchanges=[ex_cancel]))
 
     def test_execute_producer(self):
         # Create mock
@@ -179,10 +178,56 @@ class TestCancelExportationHandler(unittest.TestCase):
 
         # Test
         handler = CancelExportationHandler(on_producer=ReturnHandler(), on_forward=ReturnHandler(), params=params)
-        res = handler.execute(state=state, message=message)
+        res, _ = handler.execute(state=state, message=message)
 
         self.assertEqual(state_exp, res)
         self.assertEqual(0, len(tell_mock.call_list()))
+
+
+class TestBackwardMessageHandler(unittest.TestCase):
+    def test_execute_tell(self):
+        # Create mock
+        tell_mock = MagicMock()
+        params = HandlerParameter(tell=tell_mock)
+
+        # Input
+        message = ProposalOffer(production_id=1, cost=10, quantity=10,
+                                path_node=['fr', 'de'], return_path_node=['de', 'fr', 'be'])
+        state = State(name='fr', consumptions=None, borders=None, productions=None, rac=0, cost=0)
+
+        # Expected
+        expected = ProposalOffer(production_id=1, cost=10, quantity=10,
+                                path_node=['de'], return_path_node=['de', 'fr', 'be'])
+
+        # Test
+        handler = BackwardMessageHandler(next=ReturnHandler(), params=params, type='tell')
+        res, _ = handler.execute(state=state, message=message)
+
+        self.assertEqual(state, res)
+        tell_mock.assert_called_with(to='de', mes=expected)
+
+    def test_execute_tell(self):
+        # Expected
+        return_expected = [Exchange(quantity=10, id=1, production_id=1, path_node=['be', 'fr', 'de'])]
+        ask_expected = ProposalOffer(production_id=1, cost=10, quantity=10,
+                                path_node=['de'], return_path_node=['de', 'fr', 'be'])
+
+        # Create mock
+        ask_mock = MagicMock(return_value=return_expected)
+        params = HandlerParameter(ask=ask_mock)
+
+        # Input
+        message = ProposalOffer(production_id=1, cost=10, quantity=10,
+                                path_node=['fr', 'de'], return_path_node=['de', 'fr', 'be'])
+        state = State(name='fr', consumptions=None, borders=None, productions=None, rac=0, cost=0)
+
+        # Test
+        handler = BackwardMessageHandler(next=ReturnHandler(), params=params, type='ask')
+        res_state, res_message = handler.execute(state=state, message=message)
+
+        self.assertEqual(state, res_state)
+        self.assertEqual(return_expected, res_message)
+        ask_mock.assert_called_with(to='de', mes=ask_expected)
 
 
 class MockUUID:

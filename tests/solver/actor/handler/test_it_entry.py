@@ -41,7 +41,7 @@ class TestCanceledCustomerExchangeHandler(unittest.TestCase):
 
         # Test
         handler = CanceledCustomerExchangeHandler(params=params)
-        res = handler.execute(state=state, message=message)
+        res, _ = handler.execute(state=state, message=message)
 
         self.assertEqual(state_exp, res)
         tell_mock.assert_called_with(to='be', mes=Proposal(production_id=1, cost=12, quantity=10, path_node=['fr']))
