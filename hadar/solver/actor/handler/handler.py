@@ -30,7 +30,7 @@ class Handler(ABC):
         self.params = params
 
     @abstractmethod
-    def execute(self, state: State) -> State:
+    def execute(self, state: State, message=None) -> State:
         pass
 
 
@@ -39,11 +39,11 @@ class ReturnHandler(Handler):
     def __init__(self):
         Handler.__init__(self)
 
-    def execute(self, state: State) -> State:
+    def execute(self, state: State, message=None) -> State:
         return state
 
 
-class CancelExchangeUselessHandler(Handler):
+class CancelUselessImportationHandler(Handler):
     """
     Get exchange in free production and send cancel messages.
     """
@@ -52,7 +52,7 @@ class CancelExchangeUselessHandler(Handler):
         self.next = next
         self.next.set_params(self.params)
 
-    def execute(self, state: State) -> State:
+    def execute(self, state: State, nothing=None) -> State:
         useless = state.productions.filter_useless_exchanges()
         exs = useless['exchange'].values
 
@@ -91,7 +91,7 @@ class ProposeFreeProductionHandler(Handler):
         self.next = next
         self.next.set_params(self.params)
 
-    def execute(self, state: State) -> State:
+    def execute(self, state: State, nothing=None) -> State:
         for p_id, (p_cost, p_quantity, _, _, _ ) in state.productions.filter_free_productions().iterrows():
             prod_sent = state.exchanges.sum_production(production_id=p_id)
             qt = p_quantity - prod_sent
@@ -108,14 +108,24 @@ class ProposeFreeProductionHandler(Handler):
         return self.next.execute(deepcopy(state))
 
 
-class StartHandler(Handler):
+class CancelExportationHandler(Handler):
+    """Cancel exchange. If middle node forward cancel"""
+    def __init__(self, on_producer: Handler, on_forward: Handler, params: HandlerParameter = None):
+        Handler.__init__(self, params)
+        self.on_producer = on_producer
+        self.on_producer.set_params(self.params)
+        self.on_forward = on_forward
+        self.on_forward.set_params(self.params)
 
-    def __init__(self):
-        Handler.__init__(self)
-        self.handler = CancelExchangeUselessHandler(
-            next=ProposeFreeProductionHandler(
-                next=ReturnHandler()
-            ))
+    def execute(self, state: State, message=None) -> State:
+        # delete exchange in ledger
+        state.exchanges.delete_all(message.exchanges)
 
-    def execute(self, state: State) -> State:
-        return self.handler.execute(deepcopy(state))
+        # Forward if path node has next
+        if len(message.path_node) > 1:
+            cancel = deepcopy(message)
+            cancel.path_node = cancel.path_node[1:]
+            self.params.tell(to=cancel.path_node[0], mes=cancel)
+            return self.on_forward.execute(deepcopy(state), message)
+
+        return self.on_producer.execute(deepcopy(state), message)

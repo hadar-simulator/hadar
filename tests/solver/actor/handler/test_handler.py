@@ -6,12 +6,11 @@ import unittest
 
 from hadar.solver.actor.actor import Exchange
 from hadar.solver.actor.common import State
-from hadar.solver.actor.handler import *
+from hadar.solver.actor.handler.handler import *
 from hadar.solver.actor.ledger import *
 
 
 class TestCancelExchangeUselessHandler(unittest.TestCase):
-
 
     def test_execute(self):
         # Create mock
@@ -40,8 +39,10 @@ class TestCancelExchangeUselessHandler(unittest.TestCase):
 
         # Expected
         exp_productions = LedgerProduction(uuid_generate=lambda: None)
-        exp_productions.add_exchange(cost=10, used=True, ex=Exchange(id=0, production_id=10, quantity=1, path_node=['fr']))
-        exp_productions.add_exchange(cost=10, used=True, ex=Exchange(id=1, production_id=10, quantity=1, path_node=['fr']))
+        exp_productions.add_exchange(cost=10, used=True,
+                                     ex=Exchange(id=0, production_id=10, quantity=1, path_node=['fr']))
+        exp_productions.add_exchange(cost=10, used=True,
+                                     ex=Exchange(id=1, production_id=10, quantity=1, path_node=['fr']))
 
         exp_exchanges = LedgerExchange()
         exp_exchanges.add_all(exp_productions.filter_exchanges()['exchange'].values)
@@ -52,14 +53,15 @@ class TestCancelExchangeUselessHandler(unittest.TestCase):
                           borders=LedgerBorder(), rac=0, cost=0)
         exp_state.exchanges = exp_exchanges
 
-        handler = CancelExchangeUselessHandler(next=ReturnHandler(), params=HandlerParameter(tell=tell_mock))
+        handler = CancelUselessImportationHandler(next=ReturnHandler(), params=HandlerParameter(tell=tell_mock))
         new_state = handler.execute(state)
 
         # Test
         self.assertEqual(exp_state, new_state)
 
-        tell_mock.assert_has_calls([call(to='fr', mes=ConsumerCanceledExchange(exchanges=[exchange2], path_node=['fr'])),
-                                    call(to='be', mes=ConsumerCanceledExchange(exchanges=[exchange3, exchange4], path_node=['be']))])
+        tell_mock.assert_has_calls(
+            [call(to='fr', mes=ConsumerCanceledExchange(exchanges=[exchange2], path_node=['fr'])),
+             call(to='be', mes=ConsumerCanceledExchange(exchanges=[exchange3, exchange4], path_node=['be']))])
 
 
 class ProposeFreeProduction(unittest.TestCase):
@@ -73,7 +75,7 @@ class ProposeFreeProduction(unittest.TestCase):
 
         # Input
         productions = LedgerProduction(uuid_generate=mock_uuid.generate)
-        productions.add_production(type='solar',   cost=10, quantity=10, used=True)
+        productions.add_production(type='solar', cost=10, quantity=10, used=True)
         productions.add_production(type='nuclear', cost=20, quantity=10, used=True)
         productions.add_production(type='nuclear', cost=20, quantity=10, used=False)
 
@@ -83,7 +85,8 @@ class ProposeFreeProduction(unittest.TestCase):
         exchanges = LedgerExchange()
         exchanges.add(Exchange(id=1, quantity=5, production_id=3, path_node=['be']))
 
-        state = State(name='fr', consumptions=LedgerConsumption(), borders=borders, productions=productions, cost=0, rac=0)
+        state = State(name='fr', consumptions=LedgerConsumption(), borders=borders, productions=productions, cost=0,
+                      rac=0)
         state.exchanges = exchanges
 
         handler = ProposeFreeProductionHandler(next=ReturnHandler(), params=params)
@@ -101,7 +104,7 @@ class ProposeFreeProduction(unittest.TestCase):
 
         # Input
         productions = LedgerProduction(uuid_generate=mock_uuid.generate)
-        productions.add_production(type='solar',   cost=10, quantity=10, used=True)
+        productions.add_production(type='solar', cost=10, quantity=10, used=True)
         productions.add_production(type='nuclear', cost=20, quantity=10, used=True)
         productions.add_production(type='nuclear', cost=20, quantity=10, used=False)
 
@@ -111,7 +114,8 @@ class ProposeFreeProduction(unittest.TestCase):
         exchanges = LedgerExchange()
         exchanges.add(Exchange(id=1, quantity=5, production_id=3, path_node=['be']))
 
-        state = State(name='fr', consumptions=LedgerConsumption(), borders=borders, productions=productions, cost=0, rac=0)
+        state = State(name='fr', consumptions=LedgerConsumption(), borders=borders, productions=productions, cost=0,
+                      rac=0)
         state.exchanges = exchanges
 
         handler = ProposeFreeProductionHandler(next=ReturnHandler(), params=params)
@@ -120,6 +124,65 @@ class ProposeFreeProduction(unittest.TestCase):
         self.assertEqual(state, new_sate)
         tell_mock.assert_called_with(to='be', mes=Proposal(production_id=3, cost=30, quantity=2, path_node=['fr']))
 
+
+class TestCancelExportationHandler(unittest.TestCase):
+    def test_execute_forward(self):
+        # Create mock
+        tell_mock = MagicMock()
+        params = HandlerParameter(tell=tell_mock)
+
+        # Input
+        ex_cancel = Exchange(id=10, production_id=1, quantity=10, path_node=['fr', 'be', 'de'])
+        ex_keep = Exchange(id=5, production_id=1, quantity=10, path_node=['fr', 'be', 'de'])
+
+        state = State(name='fr', consumptions=LedgerConsumption(),
+                      borders=LedgerBorder(), productions=LedgerProduction(), rac=0, cost=0)
+        state.exchanges = LedgerExchange()
+        state.exchanges.add_all([ex_cancel, ex_keep])
+
+        message = ConsumerCanceledExchange(path_node=['fr', 'be'], exchanges=[ex_cancel])
+
+        # Expected
+        state_exp = State(name='fr', consumptions=LedgerConsumption(),
+                          borders=LedgerBorder(), productions=LedgerProduction(), rac=0, cost=0)
+        state_exp.exchanges = LedgerExchange()
+        state_exp.exchanges.add(ex_keep)
+
+        # Test
+        handler = CancelExportationHandler(on_producer=ReturnHandler(), on_forward=ReturnHandler(), params=params)
+        res = handler.execute(state=state, message=message)
+
+        self.assertEqual(state_exp, res)
+        tell_mock.assert_called_with(to='be', mes=ConsumerCanceledExchange(path_node=['be'], exchanges=[ex_cancel]))
+
+    def test_execute_producer(self):
+        # Create mock
+        tell_mock = MagicMock()
+        params = HandlerParameter(tell=tell_mock)
+
+        # Input
+        ex_cancel = Exchange(id=10, production_id=1, quantity=10, path_node=['fr', 'be', 'de'])
+        ex_keep = Exchange(id=5, production_id=1, quantity=10, path_node=['fr', 'be', 'de'])
+
+        state = State(name='fr', consumptions=LedgerConsumption(),
+                      borders=LedgerBorder(), productions=LedgerProduction(), rac=0, cost=0)
+        state.exchanges = LedgerExchange()
+        state.exchanges.add_all([ex_cancel, ex_keep])
+
+        message = ConsumerCanceledExchange(path_node=['fr'], exchanges=[ex_cancel])
+
+        # Expected
+        state_exp = State(name='fr', consumptions=LedgerConsumption(),
+                          borders=LedgerBorder(), productions=LedgerProduction(), rac=0, cost=0)
+        state_exp.exchanges = LedgerExchange()
+        state_exp.exchanges.add(ex_keep)
+
+        # Test
+        handler = CancelExportationHandler(on_producer=ReturnHandler(), on_forward=ReturnHandler(), params=params)
+        res = handler.execute(state=state, message=message)
+
+        self.assertEqual(state_exp, res)
+        self.assertEqual(0, len(tell_mock.call_list()))
 
 
 class MockUUID:
