@@ -231,3 +231,6 @@ class LedgerBorder(Ledger):
 
     def find_border(self, dest: str):
         return self.ledger.loc[dest]
+
+    def find_border_in_path(self, path: List[str]):
+        return self.ledger[self.ledger.index.isin(path)].iloc[0]

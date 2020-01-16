@@ -280,5 +280,31 @@ class AcceptAvailableExchangeHandler(Handler):
 class CheckOfferBorderCapacityHandler(Handler):
     """Check border capacity to respond to offer"""
     def __init__(self, next: Handler, params: HandlerParameter = None):
+        """
+        Create handler
+        :param next: handler to execute after check border capacity
+        :param params: parameters to use
+        """
         Handler.__init__(self, params)
-        next.set_params(params)
+        self.next = next
+        self.set_params(params)
+
+    def set_params(self, params: HandlerParameter):
+        self.params = params
+        self.next.set_params(params)
+
+    def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
+        """
+        Check border capacity, update message with new quantity.
+
+        :param state: current state
+        :param message: ProposalOffer
+        :return: (new state, response message
+        """
+        border = state.borders.find_border_in_path(message.return_path_node)
+        free_border_capacity = border.quantity - state.exchanges.sum_border(border.name)
+        if not free_border_capacity:
+            return deepcopy(state), []
+
+        message.quantity = min(free_border_capacity, message.quantity)
+        return self.next.execute(deepcopy(state), deepcopy(message))

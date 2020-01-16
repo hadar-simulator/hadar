@@ -102,6 +102,8 @@ class TestLedgerBorder(unittest.TestCase):
         expected = pd.DataFrame({'cost': [20, 20], 'quantity': [100, 200]}, index=['fr', 'be'])
         pd.testing.assert_frame_equal(expected, ledger.ledger)
 
+        pd.testing.assert_series_equal(ledger.ledger.loc['fr'], ledger.find_border_in_path(['it', 'fr']))
+
         # Delete
         ledger.delete(dest='fr')
         expected = pd.DataFrame({'cost': [20], 'quantity': [200]}, index=['be'])

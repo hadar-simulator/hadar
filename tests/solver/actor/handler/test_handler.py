@@ -277,6 +277,30 @@ class TestAcceptAvailableExchangeHandler(unittest.TestCase):
         self.assertEqual([], res, 'Wrong empty exchange generation')
 
 
+class TestCheckOfferBorderCapacityHandler(unittest.TestCase):
+    def test_execute_available(self):
+        # Input
+        params = HandlerParameter()
+
+        borders = LedgerBorder()
+        borders.add(dest='be', cost=10, quantity=10)
+
+        state = State(name='fr', consumptions=None, borders=borders, productions=None, rac=0, cost=0)
+        state.exchanges = LedgerExchange()
+        state.exchanges.add(Exchange(id=0, production_id=10, quantity=5, path_node=['be']))
+
+        offer = ProposalOffer(production_id=11, cost=10, quantity=10, path_node=['fr', 'it'], return_path_node=['fr', 'be'])
+
+        # Expected
+        offer_exp = ProposalOffer(production_id=11, cost=10, quantity=5, path_node=['fr', 'it'], return_path_node=['fr', 'be'])
+
+        handler = CheckOfferBorderCapacityHandler(next=ReturnHandler(), params=params)
+        res_state, res_message = handler.execute(state=state, message=offer)
+
+        self.assertEqual(state, res_state)
+        self.assertEqual(offer_exp, res_message)
+
+
 class MockUUID:
     def __init__(self):
         self.inc = 0
