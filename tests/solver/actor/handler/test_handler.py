@@ -126,10 +126,9 @@ class ProposeFreeProduction(unittest.TestCase):
 
 
 class TestCancelExportationHandler(unittest.TestCase):
-    def test_execute_forward(self):
+    def test_execute(self):
         # Create mock
-        tell_mock = MagicMock()
-        params = HandlerParameter(tell=tell_mock)
+        params = HandlerParameter()
 
         # Input
         ex_cancel = Exchange(id=10, production_id=1, quantity=10, path_node=['fr', 'be', 'de'])
@@ -149,39 +148,10 @@ class TestCancelExportationHandler(unittest.TestCase):
         state_exp.exchanges.add(ex_keep)
 
         # Test
-        handler = CancelExportationHandler(on_producer=ReturnHandler(), on_forward=ReturnHandler(), params=params)
+        handler = CancelExportationHandler(next=ReturnHandler(), params=params)
         res, _ = handler.execute(state=state, message=message)
 
         self.assertEqual(state_exp, res)
-
-    def test_execute_producer(self):
-        # Create mock
-        tell_mock = MagicMock()
-        params = HandlerParameter(tell=tell_mock)
-
-        # Input
-        ex_cancel = Exchange(id=10, production_id=1, quantity=10, path_node=['fr', 'be', 'de'])
-        ex_keep = Exchange(id=5, production_id=1, quantity=10, path_node=['fr', 'be', 'de'])
-
-        state = State(name='fr', consumptions=LedgerConsumption(),
-                      borders=LedgerBorder(), productions=LedgerProduction(), rac=0, cost=0)
-        state.exchanges = LedgerExchange()
-        state.exchanges.add_all([ex_cancel, ex_keep])
-
-        message = ConsumerCanceledExchange(path_node=['fr'], exchanges=[ex_cancel])
-
-        # Expected
-        state_exp = State(name='fr', consumptions=LedgerConsumption(),
-                          borders=LedgerBorder(), productions=LedgerProduction(), rac=0, cost=0)
-        state_exp.exchanges = LedgerExchange()
-        state_exp.exchanges.add(ex_keep)
-
-        # Test
-        handler = CancelExportationHandler(on_producer=ReturnHandler(), on_forward=ReturnHandler(), params=params)
-        res, _ = handler.execute(state=state, message=message)
-
-        self.assertEqual(state_exp, res)
-        self.assertEqual(0, len(tell_mock.call_list()))
 
 
 class TestBackwardMessageHandler(unittest.TestCase):
@@ -200,7 +170,7 @@ class TestBackwardMessageHandler(unittest.TestCase):
                                 path_node=['de'], return_path_node=['de', 'fr'])
 
         # Test
-        handler = BackwardMessageHandler(next=ReturnHandler(), params=params, type='tell')
+        handler = BackwardMessageHandler(after_backward=ReturnHandler(), on_resume=ReturnHandler(), params=params, type='tell')
         res, _ = handler.execute(state=state, message=message)
 
         self.assertEqual(state, res)
@@ -222,15 +192,31 @@ class TestBackwardMessageHandler(unittest.TestCase):
         state = State(name='fr', consumptions=None, borders=None, productions=None, rac=0, cost=0)
 
         # Test
-        handler = BackwardMessageHandler(next=ReturnHandler(), params=params, type='ask')
+        handler = BackwardMessageHandler(after_backward=ReturnHandler(), on_resume=ReturnHandler(), params=params, type='ask')
         res_state, res_message = handler.execute(state=state, message=message)
 
         self.assertEqual(state, res_state)
         self.assertEqual(return_expected, res_message)
         ask_mock.assert_called_with(to='de', mes=ask_expected)
 
+    def test_execute_resume(self):
+        # Create mock
+        params = HandlerParameter()
 
-class TestCreateAvailableExchangeHandler(unittest.TestCase):
+        # Input
+        message = ProposalOffer(production_id=1, cost=10, quantity=10,
+                                path_node=['de'], return_path_node=['fr', 'be'])
+        state = State(name='de', consumptions=None, borders=None, productions=None, rac=0, cost=0)
+
+        # Test
+        handler = BackwardMessageHandler(after_backward=ReturnHandler(), on_resume=ReturnHandler(), params=params, type='ask')
+        res_state, res_message = handler.execute(state=state, message=message)
+
+        self.assertEqual(state, res_state)
+        self.assertEqual(message, res_message)
+
+
+class TestAcceptAvailableExchangeHandler(unittest.TestCase):
     def test_execute(self):
         # Input
         uuid_mock = MockUUID()
@@ -254,7 +240,7 @@ class TestCreateAvailableExchangeHandler(unittest.TestCase):
         response_exp = [Exchange(quantity=5, id=2, production_id=1, path_node=['de'])]
 
         # Test
-        handler = CreateAvailableExchangeHandler(next=ReturnHandler(), min_exchange=5, params=params)
+        handler = AcceptAvailableExchangeHandler(next=ReturnHandler(), min_exchange=5, params=params)
         state_res, response_res = handler.execute(state, offer)
 
         self.assertEqual(state_exp, state_res)
@@ -263,7 +249,7 @@ class TestCreateAvailableExchangeHandler(unittest.TestCase):
     def test_generate_exchange(self):
         # Input
         params = HandlerParameter(uuid_generate=lambda: 42)
-        handler = CreateAvailableExchangeHandler(next=ReturnHandler(), min_exchange=10, params=params)
+        handler = AcceptAvailableExchangeHandler(next=ReturnHandler(), min_exchange=10, params=params)
 
         # Expected
         expected = [

@@ -63,7 +63,11 @@ class CancelUselessImportationHandler(Handler):
         """
         Handler.__init__(self, params)
         self.next = next
-        self.next.set_params(self.params)
+        self.set_params(params)
+
+    def set_params(self, params: HandlerParameter):
+        self.params = params
+        self.next.set_params(params)
 
     def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
         """
@@ -115,7 +119,11 @@ class ProposeFreeProductionHandler(Handler):
         """
         Handler.__init__(self, params)
         self.next = next
-        self.next.set_params(self.params)
+        self.set_params(params)
+
+    def set_params(self, params: HandlerParameter):
+        self.params = params
+        self.next.set_params(params)
 
     def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
         """
@@ -142,20 +150,21 @@ class ProposeFreeProductionHandler(Handler):
 
 
 class CancelExportationHandler(Handler):
-    """Cancel exchange. If middle node then forward cancel"""
-    def __init__(self, on_producer: Handler, on_forward: Handler, params: HandlerParameter = None):
+    """Cancel exchange."""
+    def __init__(self, next: Handler, params: HandlerParameter = None):
         """
         Create handler.
 
-        :param on_producer: handler to execute if node is the producer of exchange.
-        :param on_forward: handler to execute when node is intermediate.
+        :param next: handler to execute after delete exchange.
         :param params: handler parameters (use only if handler is first of the chain)
         """
         Handler.__init__(self, params)
-        self.on_producer = on_producer
-        self.on_producer.set_params(self.params)
-        self.on_forward = on_forward
-        self.on_forward.set_params(self.params)
+        self.next = next
+        self.next.set_params(params)
+
+    def set_params(self, params: HandlerParameter):
+        self.params = params
+        self.next.set_params(params)
 
     def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
         """
@@ -168,38 +177,44 @@ class CancelExportationHandler(Handler):
         # delete exchange in ledger
         state.exchanges.delete_all(message.exchanges)
 
-        # Forward if path node has next
-        if len(message.path_node) > 1:
-            return self.on_forward.execute(deepcopy(state), message)
-
-        return self.on_producer.execute(deepcopy(state), deepcopy(message))
+        return self.next.execute(deepcopy(state), deepcopy(message))
 
 
 class BackwardMessageHandler(Handler):
     """Forward message to border"""
-    def __init__(self, next: Handler, type: str, params: HandlerParameter = None):
+    def __init__(self, after_backward: Handler, on_resume: Handler, type: str, params: HandlerParameter = None):
         """
         Create Handler
-        :param next: handler to execute after backward
+        :param after_backward: handler to execute after backward
+        :param on_resume: handler to execute if not backward
         :param type: give what kind of connection 'ask' or 'tell'
         """
         Handler.__init__(self, params)
         self.type = type
-        self.next = next
-        self.next.set_params(params)
+        self.after_backward = after_backward
+        self.on_resume = on_resume
+        self.set_params(params)
+
+    def set_params(self, params: HandlerParameter):
+        self.params = params
+        self.after_backward.set_params(params)
+        self.on_resume.set_params(params)
 
     def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
-        message.path_node = message.path_node[1:]
-        if self.type == 'ask':
-            res = self.params.ask(to=message.path_node[0], mes=message)
-            return self.next.execute(deepcopy(state), deepcopy(res))
+        if len(message.path_node) > 1:
+            message.path_node = message.path_node[1:]
+            if self.type == 'ask':
+                res = self.params.ask(to=message.path_node[0], mes=message)
+                return self.after_backward.execute(deepcopy(state), deepcopy(res))
 
-        elif self.type == 'tell':
-            self.params.tell(to=message.path_node[0], mes=message)
-            return self.next.execute(deepcopy(state), None)
+            elif self.type == 'tell':
+                self.params.tell(to=message.path_node[0], mes=message)
+                return self.after_backward.execute(deepcopy(state), None)
+
+        return self.on_resume.execute(deepcopy(state), deepcopy(message))
 
 
-class CreateAvailableExchangeHandler(Handler):
+class AcceptAvailableExchangeHandler(Handler):
     """Create available exchanges according to proposal"""
     def __init__(self, next: Handler, min_exchange: int = 1, params: HandlerParameter = None):
         """
@@ -212,6 +227,10 @@ class CreateAvailableExchangeHandler(Handler):
         Handler.__init__(self, params)
         self.next = next
         self.min_exchange = min_exchange
+        self.set_params(params)
+
+    def set_params(self, params: HandlerParameter):
+        self.params = params
         self.next.set_params(params)
 
     def execute(self, state: State, proposal: Any = None) -> Tuple[State, Any]:
@@ -256,3 +275,10 @@ class CreateAvailableExchangeHandler(Handler):
         if remain:
             exchanges += [Exchange(quantity=remain, id=self.params.uuid_generate(), production_id=production_id, path_node=path_node)]
         return exchanges
+
+
+class CheckOfferBorderCapacityHandler(Handler):
+    """Check border capacity to respond to offer"""
+    def __init__(self, next: Handler, params: HandlerParameter = None):
+        Handler.__init__(self, params)
+        next.set_params(params)

@@ -18,10 +18,9 @@ class CanceledCustomerExchangeHandler(Handler):
     def __init__(self, params: HandlerParameter):
         Handler.__init__(self, params=params)
         self.handler = CancelExportationHandler(params=params,
-                    on_forward=BackwardMessageHandler(type='tell',
-                        next=ReturnHandler()),
-                    on_producer=ProposeFreeProductionHandler(
-                        next=ReturnHandler()
+                    next=BackwardMessageHandler(type='tell',
+                            after_backward=ReturnHandler(),
+                            on_resume=ProposeFreeProductionHandler(next=ReturnHandler()),
                     ))
 
     def execute(self, state: State, message=None) -> Tuple[State, Any]:
