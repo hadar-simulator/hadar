@@ -214,7 +214,7 @@ class BackwardMessageHandler(Handler):
         return self.on_resume.execute(deepcopy(state), deepcopy(message))
 
 
-class AcceptAvailableExchangeHandler(Handler):
+class AcceptExchangeHandler(Handler):
     """Create available exchanges according to proposal"""
     def __init__(self, next: Handler, min_exchange: int = 1, params: HandlerParameter = None):
         """
@@ -250,9 +250,7 @@ class AcceptAvailableExchangeHandler(Handler):
         ex = self._generate_exchanges(quantity=quantity_exchange,
                                       production_id=proposal.production_id,
                                       path_node=proposal.return_path_node)
-        # Save exchange in ledger
-        if quantity_exchange > 0:
-            state.exchanges.add_all(ex)
+
         return self.next.execute(deepcopy(state), deepcopy(ex))
 
     def _generate_exchanges(self, production_id: int, quantity: int, path_node: List[str]):
@@ -275,6 +273,47 @@ class AcceptAvailableExchangeHandler(Handler):
         if remain:
             exchanges += [Exchange(quantity=remain, id=self.params.uuid_generate(), production_id=production_id, path_node=path_node)]
         return exchanges
+
+
+class SaveExchangeHandler(Handler):
+    """Save exchange to ledger"""
+    def __init__(self, next: Handler, params: HandlerParameter = None):
+        Handler.__init__(self, params)
+        self.next = next
+        self.set_params(params)
+
+    def set_params(self, params: HandlerParameter):
+        self.params = params
+        self.next.set_params(params)
+
+    def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
+        """
+        Save exchanges in ledger.
+
+        :param state: current state
+        :param message: exchanges
+        :return: new sate, same exchanges
+        """
+
+        for e in deepcopy(message):
+            if e.quantity > 0:
+                e.path_node = SaveExchangeHandler.trim_path(state, deepcopy(e.path_node))
+                state.exchanges.add(e)
+        return self.next.execute(deepcopy(state), deepcopy(message))
+    
+    @staticmethod
+    def trim_path(state: State, path: List[str]):
+        """
+        trim uphill nodes in path.
+
+        :param state: current state
+        :param path: whole path from exchange producer
+        :return: trimed path with only next nodes
+        """
+        while len(path) > 0 and path[0] != state.name:
+            del path[0]
+        del path[0]
+        return path
 
 
 class CheckOfferBorderCapacityHandler(Handler):

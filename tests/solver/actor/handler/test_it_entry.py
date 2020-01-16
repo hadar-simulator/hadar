@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from solver.actor.common import State
 from solver.actor.domain.message import *
-from solver.actor.handler.entry import CanceledCustomerExchangeHandler
+from solver.actor.handler.entry import CanceledCustomerExchangeHandler, ProposalOfferHandler
 from solver.actor.ledger import *
 from solver.actor.handler.handler import *
 
@@ -45,6 +45,81 @@ class TestCanceledCustomerExchangeHandler(unittest.TestCase):
 
         self.assertEqual(state_exp, res)
         tell_mock.assert_called_with(to='be', mes=Proposal(production_id=1, cost=12, quantity=10, path_node=['fr']))
+
+
+class TestProposalOfferHandler(unittest.TestCase):
+    def test_execute_produce(self):
+        # Create mock
+        ask_mock = MagicMock()
+        uuid_mock = MockUUID()
+        params = HandlerParameter(ask=ask_mock, uuid_generate=uuid_mock.generate)
+
+        # Input
+        productions = LedgerProduction(uuid_generate=uuid_mock.generate)
+        productions.add_production(cost=10, quantity=10, type='solar')
+
+        borders = LedgerBorder()
+        borders.add(dest='be', cost=10, quantity=8)
+
+        state = State(name='fr', consumptions=None, borders=borders, productions=productions, rac=0, cost=0)
+        state.exchanges = LedgerExchange()
+        state.exchanges.add(Exchange(id=0, production_id=1, quantity=5, path_node=['be']))
+
+        offer = ProposalOffer(production_id=1, cost=10, quantity=5, path_node=['fr'], return_path_node=['fr', 'be'])
+
+        # Expected
+        message_exp = [Exchange(id=2, production_id=1, quantity=1, path_node=['fr', 'be']),
+                       Exchange(id=3, production_id=1, quantity=1, path_node=['fr', 'be']),
+                       Exchange(id=4, production_id=1, quantity=1, path_node=['fr', 'be'])]
+        exchanges_exp = [Exchange(id=2, production_id=1, quantity=1, path_node=['be']),
+                         Exchange(id=3, production_id=1, quantity=1, path_node=['be']),
+                         Exchange(id=4, production_id=1, quantity=1, path_node=['be'])]
+        state_exp = deepcopy(state)
+        state_exp.exchanges.add_all(exchanges_exp)
+
+        # Test
+        handler = ProposalOfferHandler(params=params, min_exchange=1)
+        state_res, message_res = handler.execute(state=state, message=offer)
+
+        self.assertEqual(state_exp, state_res)
+        self.assertEqual(message_exp, message_res)
+
+    def test_execute_backward(self):
+        # Create mock
+        message_mock = [Exchange(id=2, production_id=1, quantity=1, path_node=['de', 'fr', 'be']),
+                        Exchange(id=3, production_id=1, quantity=1, path_node=['de', 'fr', 'be']),
+                        Exchange(id=4, production_id=1, quantity=1, path_node=['de', 'fr', 'be'])]
+        ask_mock = MagicMock(return_value=message_mock)
+        uuid_mock = MockUUID()
+        params = HandlerParameter(ask=ask_mock, uuid_generate=uuid_mock.generate)
+
+        # Input
+        productions = LedgerProduction(uuid_generate=uuid_mock.generate)
+        productions.add_production(cost=10, quantity=10, type='solar')
+
+        borders = LedgerBorder()
+        borders.add(dest='be', cost=10, quantity=8)
+
+        state = State(name='fr', consumptions=None, borders=borders, productions=productions, rac=0, cost=0)
+        state.exchanges = LedgerExchange()
+        state.exchanges.add(Exchange(id=0, production_id=1, quantity=5, path_node=['be']))
+
+        offer = ProposalOffer(production_id=1, cost=10, quantity=5, path_node=['fr', 'de'],
+                              return_path_node=['de', 'fr', 'be'])
+
+        # Expected
+        exchanges_exp = [Exchange(id=2, production_id=1, quantity=1, path_node=['be']),
+                         Exchange(id=3, production_id=1, quantity=1, path_node=['be']),
+                         Exchange(id=4, production_id=1, quantity=1, path_node=['be'])]
+        state_exp = deepcopy(state)
+        state_exp.exchanges.add_all(exchanges_exp)
+
+        # Test
+        handler = ProposalOfferHandler(params=params, min_exchange=1)
+        state_res, message_res = handler.execute(state=state, message=offer)
+
+        self.assertEqual(state_exp, state_res)
+        self.assertEqual(message_mock, message_res)
 
 
 class MockUUID:

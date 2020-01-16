@@ -16,8 +16,6 @@ class Ledger:
         return hash(self.ledger)
 
     def __eq__(self, other):
-        print('Original', self.ledger)
-        print('Other', other.ledger)
         return isinstance(other, type(self)) and self.ledger.equals(other.ledger)
 
     def __str__(self):

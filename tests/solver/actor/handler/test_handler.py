@@ -232,24 +232,19 @@ class TestAcceptAvailableExchangeHandler(unittest.TestCase):
         offer = ProposalOffer(production_id=1, cost=12, quantity=10, path_node=['fr'], return_path_node=['de'])
 
         # Expected
-        state_exp = State(name='fr', consumptions=None, productions=productions, borders=None, rac=0, cost=0)
-        state_exp.exchanges = LedgerExchange()
-        state_exp.exchanges.add(Exchange(quantity=5, id=1, production_id=1, path_node=['be']))
-        state_exp.exchanges.add(Exchange(quantity=5, id=2, production_id=1, path_node=['de']))
-
         response_exp = [Exchange(quantity=5, id=2, production_id=1, path_node=['de'])]
 
         # Test
-        handler = AcceptAvailableExchangeHandler(next=ReturnHandler(), min_exchange=5, params=params)
+        handler = AcceptExchangeHandler(next=ReturnHandler(), min_exchange=5, params=params)
         state_res, response_res = handler.execute(state, offer)
 
-        self.assertEqual(state_exp, state_res)
+        self.assertEqual(state, state_res)
         self.assertEqual(response_exp, response_res)
 
     def test_generate_exchange(self):
         # Input
         params = HandlerParameter(uuid_generate=lambda: 42)
-        handler = AcceptAvailableExchangeHandler(next=ReturnHandler(), min_exchange=10, params=params)
+        handler = AcceptExchangeHandler(next=ReturnHandler(), min_exchange=10, params=params)
 
         # Expected
         expected = [
