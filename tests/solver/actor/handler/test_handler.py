@@ -64,7 +64,7 @@ class TestCancelExchangeUselessHandler(unittest.TestCase):
              call(to='be', mes=ConsumerCanceledExchange(exchanges=[exchange3, exchange4], path_node=['be']))])
 
 
-class ProposeFreeProduction(unittest.TestCase):
+class TestProposeFreeProduction(unittest.TestCase):
 
     def test_execute_enough_border(self):
         # Create mock
@@ -232,11 +232,11 @@ class TestAcceptAvailableExchangeHandler(unittest.TestCase):
         offer = ProposalOffer(production_type='nuclear', cost=12, quantity=10, path_node=['fr'], return_path_node=['de'])
 
         # Expected
-        response_exp = [Exchange(quantity=1, id=2, production_type='nuclear', path_node=['de']),
-                        Exchange(quantity=1, id=3, production_type='nuclear', path_node=['de']),
-                        Exchange(quantity=1, id=4, production_type='nuclear', path_node=['de']),
-                        Exchange(quantity=1, id=5, production_type='nuclear', path_node=['de']),
-                        Exchange(quantity=1, id=6, production_type='nuclear', path_node=['de'])]
+        response_exp = [Exchange(quantity=1, id=11, production_type='nuclear', path_node=['de']),
+                        Exchange(quantity=1, id=12, production_type='nuclear', path_node=['de']),
+                        Exchange(quantity=1, id=13, production_type='nuclear', path_node=['de']),
+                        Exchange(quantity=1, id=14, production_type='nuclear', path_node=['de']),
+                        Exchange(quantity=1, id=15, production_type='nuclear', path_node=['de'])]
 
         # Test
         handler = AcceptExchangeHandler(next=ReturnHandler(), params=params)

@@ -2,7 +2,7 @@ import uuid
 from typing import List
 
 import pandas as pd
-
+import numpy as np
 from hadar.solver.actor.domain.message import Exchange
 
 
@@ -169,21 +169,25 @@ class LedgerProduction(Ledger):
         """
         return self.ledger[self.ledger['exchange'].notnull() & ~self.ledger['used']]
 
-    def filter_free_productions(self) -> pd.DataFrame:
-        """
-        Get internal production not used.
+    # def filter_free_productions(self) -> pd.DataFrame:
+    #     """
+    #     Get internal production not used.
 
-        :return: DataFrame with only internal production not used
-        """
-        return self.ledger[self.ledger['exchange'].isnull() & ~self.ledger['used']]
+    #     :return: DataFrame with only internal production not used
+    #     """
+    #     return self.ledger[self.ledger['exchange'].isnull() & ~self.ledger['used']]
 
-    def filter_productions(self) -> pd.DataFrame:
-        """
-        Get only internal production.
+    def group_free_productions(self) -> pd.DataFrame:
+        df = self.ledger[self.ledger['exchange'].isnull() & ~self.ledger['used']]
+        return pd.pivot_table(df, values=['cost', 'quantity'], index=['type'], aggfunc={'cost': np.mean, 'quantity': np.sum})
 
-        :return: dataframe with internal production
-        """
-        return self.ledger[self.ledger['exchange'].isnull()]
+    # def filter_productions(self) -> pd.DataFrame:
+    #     """
+    #     Get only internal production.
+
+    #     :return: dataframe with internal production
+    #     """
+    #     return self.ledger[self.ledger['exchange'].isnull()]
 
     def get_production_quantity(self, type: str, used: bool) -> int:
         """
@@ -194,6 +198,7 @@ class LedgerProduction(Ledger):
         :return:
         """
         return self.ledger[(self.ledger['type'] == type) & (self.ledger['used'] == used)]['quantity'].sum()
+
 
 
 class LedgerConsumption(Ledger):

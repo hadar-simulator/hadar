@@ -133,7 +133,7 @@ class ProposeFreeProductionHandler(Handler):
         :param message: message received from dispatcher. Not used by this handler
         :return: new state, response message (Not response from this handler)
         """
-        for p_id, (p_cost, p_quantity, p_type, _, _ ) in state.productions.filter_free_productions().iterrows():
+        for p_type, (p_cost, p_quantity) in state.productions.group_free_productions().iterrows():
             prod_sent = state.exchanges.sum_production(production_type=p_type)
             qt = p_quantity - prod_sent
 

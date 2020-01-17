@@ -62,7 +62,7 @@ class TestDispatcher(unittest.TestCase):
         dispatcher.state = State(name='fr', consumptions=ledger_cons, borders=ledger_border,
                                  productions=ledger_prod, cost=0, rac=0)
         dispatcher.state.exchanges = LedgerExchange()
-        dispatcher.state.exchanges.add(Exchange(id=0, production_id=3, quantity=3, path_node=['be']))
+        dispatcher.state.exchanges.add(Exchange(id=0, production_type='nuclear', quantity=3, path_node=['be']), type='export')
 
         # Expected
         expected = OutputNode()

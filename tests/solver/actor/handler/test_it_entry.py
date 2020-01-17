@@ -68,12 +68,12 @@ class TestProposalOfferHandler(unittest.TestCase):
         offer = ProposalOffer(production_type='solar', cost=10, quantity=5, path_node=['fr'], return_path_node=['fr', 'be'])
 
         # Expected
-        message_exp = [Exchange(id=2, production_type='solar', quantity=1, path_node=['fr', 'be']),
-                       Exchange(id=3, production_type='solar', quantity=1, path_node=['fr', 'be']),
-                       Exchange(id=4, production_type='solar', quantity=1, path_node=['fr', 'be'])]
-        exchanges_exp = [Exchange(id=2, production_type='solar', quantity=1, path_node=['be']),
-                         Exchange(id=3, production_type='solar', quantity=1, path_node=['be']),
-                         Exchange(id=4, production_type='solar', quantity=1, path_node=['be'])]
+        message_exp = [Exchange(id=11, production_type='solar', quantity=1, path_node=['fr', 'be']),
+                       Exchange(id=12, production_type='solar', quantity=1, path_node=['fr', 'be']),
+                       Exchange(id=13, production_type='solar', quantity=1, path_node=['fr', 'be'])]
+        exchanges_exp = [Exchange(id=11, production_type='solar', quantity=1, path_node=['be']),
+                         Exchange(id=12, production_type='solar', quantity=1, path_node=['be']),
+                         Exchange(id=13, production_type='solar', quantity=1, path_node=['be'])]
         state_exp = deepcopy(state)
         state_exp.exchanges.add_all(exchanges_exp, type='export')
 

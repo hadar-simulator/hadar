@@ -165,10 +165,10 @@ class Dispatcher(ThreadingActor):
             type = self.out_node.consumptions[i].type
             self.out_node.consumptions[i].quantity[t] = self.state.consumptions.find_consumption(type)['quantity']
 
+
         for i, _ in enumerate(self.out_node.productions):
             type = self.out_node.productions[i].type
-            p = self.state.productions.find_production_by_type(type)
-            qt = p['quantity'] if p['used'] else 0
+            qt = self.state.productions.get_production_quantity(type=type, used=True)
             self.out_node.productions[i].quantity[t] = qt
 
         for i, _ in enumerate(self.out_node.borders):
