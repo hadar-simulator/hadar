@@ -63,17 +63,21 @@ class TestProposalOfferHandler(unittest.TestCase):
 
         state = State(name='fr', consumptions=None, borders=borders, productions=productions, rac=0, cost=0)
         state.exchanges = LedgerExchange()
-        state.exchanges.add(Exchange(id=0, production_type='solar', quantity=5, path_node=['be']), 'export')
+        state.exchanges.add_all([Exchange(id=1, production_type='solar', quantity=1, path_node=['be']),
+                                 Exchange(id=2, production_type='solar', quantity=1, path_node=['be']),
+                                 Exchange(id=3, production_type='solar', quantity=1, path_node=['be']),
+                                 Exchange(id=4, production_type='solar', quantity=1, path_node=['be']),
+                                 Exchange(id=5, production_type='solar', quantity=1, path_node=['be'])], 'export')
 
         offer = ProposalOffer(production_type='solar', cost=10, quantity=5, path_node=['fr'], return_path_node=['fr', 'be'])
 
         # Expected
-        message_exp = [Exchange(id=11, production_type='solar', quantity=1, path_node=['fr', 'be']),
-                       Exchange(id=12, production_type='solar', quantity=1, path_node=['fr', 'be']),
-                       Exchange(id=13, production_type='solar', quantity=1, path_node=['fr', 'be'])]
-        exchanges_exp = [Exchange(id=11, production_type='solar', quantity=1, path_node=['be']),
-                         Exchange(id=12, production_type='solar', quantity=1, path_node=['be']),
-                         Exchange(id=13, production_type='solar', quantity=1, path_node=['be'])]
+        message_exp = [Exchange(id=6, production_type='solar', quantity=1, path_node=['fr', 'be']),
+                       Exchange(id=7, production_type='solar', quantity=1, path_node=['fr', 'be']),
+                       Exchange(id=8, production_type='solar', quantity=1, path_node=['fr', 'be'])]
+        exchanges_exp = [Exchange(id=6, production_type='solar', quantity=1, path_node=['be']),
+                         Exchange(id=7, production_type='solar', quantity=1, path_node=['be']),
+                         Exchange(id=8, production_type='solar', quantity=1, path_node=['be'])]
         state_exp = deepcopy(state)
         state_exp.exchanges.add_all(exchanges_exp, type='export')
 

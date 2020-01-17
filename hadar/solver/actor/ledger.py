@@ -1,5 +1,6 @@
 import uuid
-from typing import List
+from copy import deepcopy
+from typing import List, Tuple
 
 import pandas as pd
 import numpy as np
@@ -79,6 +80,15 @@ class LedgerExchange(Ledger):
         ids = [ex.id for ex in exs]
         self.ledger.drop(ids, inplace=True)
 
+    def get_exchanges(self, ids: List[int]) -> List[Exchange]:
+        """
+        Get exchanges by id
+        :param ids: exchange ids
+        :return: slice of ledger with asked exchanges
+        """
+        return [Exchange(id=id, quantity=qt, production_type=prod_type, path_node=path)
+                for id, (prod_type, border, qt, path, _) in self.ledger.loc[ids].iterrows()]
+
     def sum_production(self, production_type):
         """
         Sum production quantity used.
@@ -97,6 +107,15 @@ class LedgerExchange(Ledger):
         """
         return self.ledger[self.ledger['border'] == name]['quantity'].sum()
 
+    def filter_production_available(self, productions: pd.DataFrame) -> pd.DataFrame:
+        """
+        Filter production DataFrame with currently production in exchange
+
+        :param productions: production DataFrame like production ledger
+        :return: production DataFrame without production present in ledger exchange
+        """
+        prod_not_available = productions.index.intersection(self.ledger.index)
+        return productions.drop(prod_not_available)
 
 class LedgerProduction(Ledger):
     """Manage production used by dispatcher"""
@@ -104,7 +123,7 @@ class LedgerProduction(Ledger):
     def __init__(self, uuid_generate=uuid.uuid4):
         self.uuid_generate = uuid_generate
         Ledger.__init__(self, [['cost', 'int64'], ['quantity', 'int64'], ['type', 'object'],
-                               ['used', 'bool'], ['exchange', 'object']])
+                               ['used', 'bool'], ['path_node', 'object']])
 
     def __eq__(self, other):
         if not hasattr(other, 'ledger'):
@@ -133,7 +152,7 @@ class LedgerProduction(Ledger):
         :param ex: exchange object where production comes
         :return:
         """
-        self.ledger.loc[ex.id] = [cost, ex.quantity, 'import', used, ex]
+        self.ledger.loc[ex.id] = [cost, ex.quantity, 'import', used, ex.path_node]
 
     def delete(self, id: uuid):
         """
@@ -159,7 +178,7 @@ class LedgerProduction(Ledger):
 
         :return: dataframe with external production
         """
-        return self.ledger[self.ledger['exchange'].notnull()]
+        return self.ledger[self.ledger['path_node'].notnull()]
 
     def filter_useless_exchanges(self) -> pd.DataFrame:
         """
@@ -167,27 +186,25 @@ class LedgerProduction(Ledger):
 
         :return: DataFrame with only exchange not used
         """
-        return self.ledger[self.ledger['exchange'].notnull() & ~self.ledger['used']]
-
-    # def filter_free_productions(self) -> pd.DataFrame:
-    #     """
-    #     Get internal production not used.
-
-    #     :return: DataFrame with only internal production not used
-    #     """
-    #     return self.ledger[self.ledger['exchange'].isnull() & ~self.ledger['used']]
+        return self.ledger[self.ledger['path_node'].notnull() & ~self.ledger['used']]
 
     def group_free_productions(self) -> pd.DataFrame:
-        df = self.ledger[self.ledger['exchange'].isnull() & ~self.ledger['used']]
+        """
+        Regroup free productions by type.
+        :return: dataframe with each production type sum up on one row (quantities are sum up)
+        """
+        df = self.ledger[self.ledger['path_node'].isnull() & ~self.ledger['used']]
         return pd.pivot_table(df, values=['cost', 'quantity'], index=['type'], aggfunc={'cost': np.mean, 'quantity': np.sum})
 
-    # def filter_productions(self) -> pd.DataFrame:
-    #     """
-    #     Get only internal production.
+    def get_free_productions_by_type(self, type: str) -> pd.DataFrame:
+        """
+        Get a slice of ledger with internal productions with same type.
 
-    #     :return: dataframe with internal production
-    #     """
-    #     return self.ledger[self.ledger['exchange'].isnull()]
+        :param type: type of production asked
+        :return: slice of global ledger
+        """
+        slice = self.ledger[(self.ledger['path_node'].isnull()) & (~self.ledger['used']) & (self.ledger['type'] == type)]
+        return deepcopy(slice)
 
     def get_production_quantity(self, type: str, used: bool) -> int:
         """
@@ -198,6 +215,17 @@ class LedgerProduction(Ledger):
         :return:
         """
         return self.ledger[(self.ledger['type'] == type) & (self.ledger['used'] == used)]['quantity'].sum()
+
+    @classmethod
+    def split_by_quantity(cls, prod: pd.DataFrame, quantity: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Split DataFrame between production used and productions free according quantity production asked.
+
+        :return: DataFrame productions used, DataFrame productions free
+        """
+        prod = prod.sort_values(by='quantity', ascending=False)
+        index_split = prod['quantity'].cumsum() <= quantity
+        return prod[index_split], prod[~index_split]
 
 
 

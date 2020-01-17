@@ -17,19 +17,21 @@ class TestCancelExchangeUselessHandler(unittest.TestCase):
         tell_mock = MagicMock()
 
         # Input
+        exchange0 = Exchange(id=0, production_type='solar', quantity=1, path_node=['fr'])
+        exchange1 = Exchange(id=1, production_type='solar', quantity=1, path_node=['fr'])
         exchange2 = Exchange(id=2, production_type='solar', quantity=1, path_node=['fr'])
         exchange3 = Exchange(id=3, production_type='solar', quantity=1, path_node=['be'])
         exchange4 = Exchange(id=4, production_type='solar', quantity=1, path_node=['be'])
 
         productions = LedgerProduction(uuid_generate=lambda: None)
-        productions.add_exchange(cost=10, used=True, ex=Exchange(id=0, production_type='solar', quantity=1, path_node=['fr']))
-        productions.add_exchange(cost=10, used=True, ex=Exchange(id=1, production_type='solar', quantity=1, path_node=['fr']))
+        productions.add_exchange(cost=10, used=True, ex=exchange0)
+        productions.add_exchange(cost=10, used=True, ex=exchange1)
         productions.add_exchange(cost=10, used=False, ex=exchange2)  # Should be canceled
         productions.add_exchange(cost=10, used=False, ex=exchange3)  # Should be canceled
         productions.add_exchange(cost=10, used=False, ex=exchange4)  # Should be canceled
 
         exchanges = LedgerExchange()
-        exchanges.add_all(productions.filter_exchanges()['exchange'].values, 'export')
+        exchanges.add_all([exchange0, exchange1, exchange2, exchange3, exchange4], 'export')
 
         state = State(name='fr',
                       consumptions=LedgerConsumption(),
@@ -45,7 +47,8 @@ class TestCancelExchangeUselessHandler(unittest.TestCase):
                                      ex=Exchange(id=1, production_type='solar', quantity=1, path_node=['fr']))
 
         exp_exchanges = LedgerExchange()
-        exp_exchanges.add_all(exp_productions.filter_exchanges()['exchange'].values, 'export')
+        exp_exchanges.add_all([Exchange(id=0, production_type='solar', quantity=1, path_node=['fr']),
+                               Exchange(id=1, production_type='solar', quantity=1, path_node=['fr'])], 'export')
 
         exp_state = State(name='fr',
                           consumptions=LedgerConsumption(),
@@ -227,16 +230,20 @@ class TestAcceptAvailableExchangeHandler(unittest.TestCase):
 
         state = State(name='fr', consumptions=None, productions=productions, borders=None, rac=0, cost=0)
         state.exchanges = LedgerExchange()
-        state.exchanges.add(Exchange(quantity=5, id=1, production_type='nuclear', path_node=['be']), 'export')
+        state.exchanges.add_all([Exchange(quantity=1, id=1, production_type='nuclear', path_node=['be']),
+                                 Exchange(quantity=1, id=2, production_type='nuclear', path_node=['be']),
+                                 Exchange(quantity=1, id=3, production_type='nuclear', path_node=['be']),
+                                 Exchange(quantity=1, id=4, production_type='nuclear', path_node=['be']),
+                                 Exchange(quantity=1, id=5, production_type='nuclear', path_node=['be'])], 'export')
 
         offer = ProposalOffer(production_type='nuclear', cost=12, quantity=10, path_node=['fr'], return_path_node=['de'])
 
         # Expected
-        response_exp = [Exchange(quantity=1, id=11, production_type='nuclear', path_node=['de']),
-                        Exchange(quantity=1, id=12, production_type='nuclear', path_node=['de']),
-                        Exchange(quantity=1, id=13, production_type='nuclear', path_node=['de']),
-                        Exchange(quantity=1, id=14, production_type='nuclear', path_node=['de']),
-                        Exchange(quantity=1, id=15, production_type='nuclear', path_node=['de'])]
+        response_exp = [Exchange(quantity=1, id=6, production_type='nuclear', path_node=['de']),
+                        Exchange(quantity=1, id=7, production_type='nuclear', path_node=['de']),
+                        Exchange(quantity=1, id=8, production_type='nuclear', path_node=['de']),
+                        Exchange(quantity=1, id=9, production_type='nuclear', path_node=['de']),
+                        Exchange(quantity=1, id=10, production_type='nuclear', path_node=['de'])]
 
         # Test
         handler = AcceptExchangeHandler(next=ReturnHandler(), params=params)
@@ -244,28 +251,6 @@ class TestAcceptAvailableExchangeHandler(unittest.TestCase):
 
         self.assertEqual(state, state_res)
         self.assertEqual(response_exp, response_res)
-
-    def test_generate_exchange(self):
-        # Input
-        params = HandlerParameter(uuid_generate=lambda: 42)
-        handler = AcceptExchangeHandler(next=ReturnHandler(), params=params)
-
-        # Expected
-        expected = [
-            Exchange(id=42, production_type='solar', quantity=1, path_node=['fr']),
-            Exchange(id=42, production_type='solar', quantity=1, path_node=['fr']),
-            Exchange(id=42, production_type='solar', quantity=1, path_node=['fr']),
-            Exchange(id=42, production_type='solar', quantity=1, path_node=['fr']),
-            Exchange(id=42, production_type='solar', quantity=1, path_node=['fr'])
-        ]
-
-        # Test complete
-        res = handler._generate_exchanges(production_type='solar', quantity=5, path_node=['fr'])
-        self.assertEqual(expected, res, 'Wrong exchange generation')
-
-        # Test empty
-        res = handler._generate_exchanges(production_type='solar', quantity=0, path_node=['fr'])
-        self.assertEqual([], res, 'Wrong empty exchange generation')
 
 
 class TestCheckOfferBorderCapacityHandler(unittest.TestCase):

@@ -6,7 +6,7 @@ from typing import List, Tuple, Any
 import pandas as pd
 import numpy as np
 
-from hadar.solver.actor.common import State
+from hadar.solver.actor.common import State, LedgerProduction
 from hadar.solver.actor.domain.message import *
 
 
@@ -78,7 +78,7 @@ class CancelUselessImportationHandler(Handler):
         :return: new state, response message. (Not response from handler)
         """
         useless = state.productions.filter_useless_exchanges()
-        exs = useless['exchange'].values
+        exs = state.exchanges.get_exchanges(useless.index.values)
 
         state.exchanges.delete_all(exs)
         state.productions.delete_all(useless.index)
@@ -88,7 +88,7 @@ class CancelUselessImportationHandler(Handler):
 
     def _send_cancel_exchange(self, exchanges: List[Exchange]):
         """
-        Send canceled exchange order regrouped by production.
+        Send canceled exchange order regrouped by producer.
 
         :param exchanges: exchanges to cancel
         :return:
@@ -240,34 +240,13 @@ class AcceptExchangeHandler(Handler):
         :param offer: ProposalOffer message
         :return: (state, [available exchanges])
         """
-        # Check production remain capacity
-        quantity_available = state.productions.get_production_quantity(type=offer.production_type, used=False)
-        quantity_used = state.exchanges.sum_production(offer.production_type)
-
-        # Send available exchange
-        quantity_exchange = min(offer.quantity, quantity_available - quantity_used)
-        ex = self._generate_exchanges(production_type=offer.production_type,
-                                      quantity=quantity_exchange,
-                                      path_node=offer.return_path_node)
+        prod_total = state.productions.get_free_productions_by_type(type=offer.production_type)
+        prod_available = state.exchanges.filter_production_available(productions=prod_total)
+        prod_needed, _ = LedgerProduction.split_by_quantity(prod_available, offer.quantity)
+        ex = [Exchange(quantity=p_qt, id=p_id, production_type=p_type, path_node=offer.return_path_node)
+              for p_id, (_, p_qt, p_type, _, _) in prod_needed.iterrows()]
 
         return self.next.execute(deepcopy(state), deepcopy(ex))
-
-    def _generate_exchanges(self, production_type: str, quantity: int, path_node: List[str]):
-        """
-        Generate list to exchanges to fill available quantity with minimum exchange capacity.
-
-        :param production_id: id production to embedded
-        :param quantity:  quantity to use to generate exchange list
-        :param path_node: path node to embedded
-        :return: list of exchanges. sum of capacities equals or less quantity asked
-        """
-        exchanges = [Exchange(quantity=1,
-                              id=self.params.uuid_generate(),
-                              production_type=production_type,
-                              path_node=path_node)
-                     for i in range(0, quantity)]
-
-        return exchanges
 
 
 class SaveExchangeHandler(Handler):

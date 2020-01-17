@@ -24,6 +24,31 @@ class TestLedgerExchange(unittest.TestCase):
         self.assertEqual(20, ledger.sum_production(production_type='solar'), "Wrong ledger behaviour")
         self.assertEqual(20, ledger.sum_border(name='fr'), 'Wrong ledger behaviour')
 
+    def test_filter_production_available(self):
+        # Input
+        ex = [
+            Exchange(id=1, production_type='solar', quantity=1, path_node=['be']),
+            Exchange(id=2, production_type='nuclear', quantity=1, path_node=['fr'])
+        ]
+        ledger = LedgerExchange()
+        ledger.add_all(ex, 'export')
+
+        prod = pd.DataFrame({'type': ['nuclear', 'wind'],
+                             'quantity': [1, 1],
+                             'used': [False, False],
+                             'cost': [10, 10]},
+                            index=[2, 3])
+
+        # Expected
+        prod_exp = pd.DataFrame({'type': ['wind'],
+                                 'quantity': [1],
+                                 'used': [False],
+                                 'cost': [10]},
+                                index=[3])
+
+        # Test
+        pd.testing.assert_frame_equal(prod_exp, ledger.filter_production_available(productions=prod))
+
 
 class TestLedgerProduction(unittest.TestCase):
 
@@ -42,7 +67,7 @@ class TestLedgerProduction(unittest.TestCase):
                                   'quantity': [1, 1, 1, 1, 1, 1],
                                   'type': ['nuclear', 'nuclear', 'solar', 'solar', 'solar', 'import'],
                                   'used': [False, False, True, True, True, False],
-                                  'exchange': [None, None, None, None, None, ex]},
+                                  'path_node': [None, None, None, None, None, ['fr']]},
                                  index=[1, 2, 3, 4, 5, 1234])
         pd.testing.assert_frame_equal(expectedA, ledger.ledger)
 
@@ -54,7 +79,7 @@ class TestLedgerProduction(unittest.TestCase):
                                   'quantity': [1, 1, 1, 1, 1],
                                   'type': ['nuclear', 'solar', 'solar', 'solar', 'import'],
                                   'used': [False, True, True, True, False],
-                                  'exchange': [None, None, None, None, ex]},
+                                  'path_node': [None, None, None, None, ['fr']]},
                                  index=[1, 3, 4, 5, 1234])
         pd.testing.assert_frame_equal(expectedB, ledger.ledger)
 
@@ -89,6 +114,32 @@ class TestLedgerProduction(unittest.TestCase):
         self.assertEqual(30, ledger.get_production_quantity(type='nuclear', used=False))
         self.assertEqual(15, ledger.get_production_quantity(type='nuclear', used=True))
         self.assertEqual(20, ledger.get_production_quantity(type='solar', used=True))
+
+    def test_split_quantity(self):
+        # Input
+        prod = pd.DataFrame({'quantity': [8, 6, 4],
+                             'cost': [10, 10, 10],
+                             'type': ['solar', 'solar', 'solar'],
+                             'used': [False, False, False]},
+                            index=[1, 2, 3])
+
+        # Expected
+        used = pd.DataFrame({'quantity': [8, 6],
+                             'cost': [10, 10],
+                             'type': ['solar', 'solar'],
+                             'used': [False, False]},
+                            index=[1, 2])
+
+        free = pd.DataFrame({'quantity': [4],
+                             'cost': [10],
+                             'type': ['solar'],
+                             'used': [False]},
+                            index=[3])
+
+        # Test
+        res_used, res_free = LedgerProduction.split_by_quantity(prod=prod, quantity=15)
+        pd.testing.assert_frame_equal(used, res_used)
+        pd.testing.assert_frame_equal(free, res_free)
 
 
 class TestLedgerConsumption(unittest.TestCase):
