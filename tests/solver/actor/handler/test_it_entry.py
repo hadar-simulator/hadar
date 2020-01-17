@@ -17,8 +17,8 @@ class TestCanceledCustomerExchangeHandler(unittest.TestCase):
         uuid_mock = MockUUID()
 
         # Input
-        ex_cancel = Exchange(id=10, production_id=1, quantity=10, path_node=['fr', 'be', 'de'])
-        ex_keep = Exchange(id=5, production_id=1, quantity=10, path_node=['fr', 'be', 'de'])
+        ex_cancel = Exchange(id=10, production_type='nuclear', quantity=10, path_node=['fr', 'be', 'de'])
+        ex_keep = Exchange(id=5, production_type='nuclear', quantity=10, path_node=['fr', 'be', 'de'])
 
         borders = LedgerBorder()
         borders.add(dest='be', cost=2, quantity=10)
@@ -29,7 +29,7 @@ class TestCanceledCustomerExchangeHandler(unittest.TestCase):
         state = State(name='fr', consumptions=LedgerConsumption(),
                       borders=borders, productions=productions, rac=0, cost=0)
         state.exchanges = LedgerExchange()
-        state.exchanges.add_all([ex_cancel, ex_keep])
+        state.exchanges.add_all([ex_cancel, ex_keep], 'export')
 
         message = ConsumerCanceledExchange(path_node=['fr'], exchanges=[ex_cancel])
 
@@ -37,14 +37,14 @@ class TestCanceledCustomerExchangeHandler(unittest.TestCase):
         state_exp = State(name='fr', consumptions=LedgerConsumption(),
                           borders=borders, productions=productions, rac=0, cost=0)
         state_exp.exchanges = LedgerExchange()
-        state_exp.exchanges.add(ex_keep)
+        state_exp.exchanges.add(ex_keep, 'export')
 
         # Test
         handler = CanceledCustomerExchangeHandler(params=params)
         res, _ = handler.execute(state=state, message=message)
 
         self.assertEqual(state_exp, res)
-        tell_mock.assert_called_with(to='be', mes=Proposal(production_id=1, cost=12, quantity=10, path_node=['fr']))
+        tell_mock.assert_called_with(to='be', mes=Proposal(production_type='nuclear', cost=12, quantity=10, path_node=['fr']))
 
 
 class TestProposalOfferHandler(unittest.TestCase):
@@ -63,19 +63,19 @@ class TestProposalOfferHandler(unittest.TestCase):
 
         state = State(name='fr', consumptions=None, borders=borders, productions=productions, rac=0, cost=0)
         state.exchanges = LedgerExchange()
-        state.exchanges.add(Exchange(id=0, production_id=1, quantity=5, path_node=['be']))
+        state.exchanges.add(Exchange(id=0, production_type='solar', quantity=5, path_node=['be']), 'export')
 
-        offer = ProposalOffer(production_id=1, cost=10, quantity=5, path_node=['fr'], return_path_node=['fr', 'be'])
+        offer = ProposalOffer(production_type='solar', cost=10, quantity=5, path_node=['fr'], return_path_node=['fr', 'be'])
 
         # Expected
-        message_exp = [Exchange(id=2, production_id=1, quantity=1, path_node=['fr', 'be']),
-                       Exchange(id=3, production_id=1, quantity=1, path_node=['fr', 'be']),
-                       Exchange(id=4, production_id=1, quantity=1, path_node=['fr', 'be'])]
-        exchanges_exp = [Exchange(id=2, production_id=1, quantity=1, path_node=['be']),
-                         Exchange(id=3, production_id=1, quantity=1, path_node=['be']),
-                         Exchange(id=4, production_id=1, quantity=1, path_node=['be'])]
+        message_exp = [Exchange(id=2, production_type='solar', quantity=1, path_node=['fr', 'be']),
+                       Exchange(id=3, production_type='solar', quantity=1, path_node=['fr', 'be']),
+                       Exchange(id=4, production_type='solar', quantity=1, path_node=['fr', 'be'])]
+        exchanges_exp = [Exchange(id=2, production_type='solar', quantity=1, path_node=['be']),
+                         Exchange(id=3, production_type='solar', quantity=1, path_node=['be']),
+                         Exchange(id=4, production_type='solar', quantity=1, path_node=['be'])]
         state_exp = deepcopy(state)
-        state_exp.exchanges.add_all(exchanges_exp)
+        state_exp.exchanges.add_all(exchanges_exp, type='export')
 
         # Test
         handler = ProposalOfferHandler(params=params, min_exchange=1)
@@ -86,9 +86,9 @@ class TestProposalOfferHandler(unittest.TestCase):
 
     def test_execute_backward(self):
         # Create mock
-        message_mock = [Exchange(id=2, production_id=1, quantity=1, path_node=['de', 'fr', 'be']),
-                        Exchange(id=3, production_id=1, quantity=1, path_node=['de', 'fr', 'be']),
-                        Exchange(id=4, production_id=1, quantity=1, path_node=['de', 'fr', 'be'])]
+        message_mock = [Exchange(id=2, production_type='solar', quantity=1, path_node=['de', 'fr', 'be']),
+                        Exchange(id=3, production_type='solar', quantity=1, path_node=['de', 'fr', 'be']),
+                        Exchange(id=4, production_type='solar', quantity=1, path_node=['de', 'fr', 'be'])]
         ask_mock = MagicMock(return_value=message_mock)
         uuid_mock = MockUUID()
         params = HandlerParameter(ask=ask_mock, uuid_generate=uuid_mock.generate)
@@ -102,17 +102,17 @@ class TestProposalOfferHandler(unittest.TestCase):
 
         state = State(name='fr', consumptions=None, borders=borders, productions=productions, rac=0, cost=0)
         state.exchanges = LedgerExchange()
-        state.exchanges.add(Exchange(id=0, production_id=1, quantity=5, path_node=['be']))
+        state.exchanges.add(Exchange(id=0, production_type='solar', quantity=5, path_node=['be']), type='transfer')
 
-        offer = ProposalOffer(production_id=1, cost=10, quantity=5, path_node=['fr', 'de'],
+        offer = ProposalOffer(production_type='solar', cost=10, quantity=5, path_node=['fr', 'de'],
                               return_path_node=['de', 'fr', 'be'])
 
         # Expected
-        exchanges_exp = [Exchange(id=2, production_id=1, quantity=1, path_node=['be']),
-                         Exchange(id=3, production_id=1, quantity=1, path_node=['be']),
-                         Exchange(id=4, production_id=1, quantity=1, path_node=['be'])]
+        exchanges_exp = [Exchange(id=2, production_type='solar', quantity=1, path_node=['be']),
+                         Exchange(id=3, production_type='solar', quantity=1, path_node=['be']),
+                         Exchange(id=4, production_type='solar', quantity=1, path_node=['be'])]
         state_exp = deepcopy(state)
-        state_exp.exchanges.add_all(exchanges_exp)
+        state_exp.exchanges.add_all(exchanges_exp, type='transfer')
 
         # Test
         handler = ProposalOfferHandler(params=params, min_exchange=1)

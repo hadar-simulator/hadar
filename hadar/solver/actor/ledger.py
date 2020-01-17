@@ -29,29 +29,36 @@ class LedgerExchange(Ledger):
     """
     Manage exchange ledger for a dispatcher.
     """
-    def __init__(self):
-        Ledger.__init__(self, [['prod_id', 'int64'], ['border', 'object'], ['quantity', 'int64'], ['path_node', 'object']])
+    TYPES = ['import', 'export', 'transfer']
 
-    def add_all(self, ex: List[Exchange]):
+    def __init__(self):
+        Ledger.__init__(self, [['prod_type', 'object'], ['border', 'object'],
+                               ['quantity', 'int64'], ['path_node', 'object'], ['type', 'object']])
+
+    def add_all(self, ex: List[Exchange], type: str):
         """
         Add many exchanges to ledger
 
         :param ex: list of exchange to add
+        :param type: exchange type [import/export/transfer]
         """
         for e in ex:
-            self.add(e)
+            self.add(e, type)
 
-    def add(self, ex: Exchange):
+    def add(self, ex: Exchange, type: str):
         """
         Add exchange to ledger
 
         :param ex: exchange object to add
+        :param type: exchange type [import/export/transfer]
         :return:
         """
+        if type not in LedgerExchange.TYPES:
+            raise ValueError("exchange type should be [import/export/transfer], you give {}".format(type))
         if ex.id in self.ledger.index:
             raise ValueError('Exchange already stored in ledger')
         border = ex.path_node[0]
-        self.ledger.loc[ex.id] = [ex.production_id, border, ex.quantity, ex.path_node]
+        self.ledger.loc[ex.id] = [ex.production_type,  border, ex.quantity, ex.path_node, type]
 
     def delete(self, ex: Exchange):
         """
@@ -72,14 +79,14 @@ class LedgerExchange(Ledger):
         ids = [ex.id for ex in exs]
         self.ledger.drop(ids, inplace=True)
 
-    def sum_production(self, production_id):
+    def sum_production(self, production_type):
         """
         Sum production quantity used.
 
-        :param production_id: production id
+        :param production_type: production type
         :return: quantity produce by this production
         """
-        return self.ledger[self.ledger['prod_id'] == production_id]['quantity'].sum()
+        return self.ledger[(self.ledger['prod_type'] == production_type) & (self.ledger['type'] == 'export')]['quantity'].sum()
 
     def sum_border(self, name: str):
         """
@@ -114,7 +121,8 @@ class LedgerProduction(Ledger):
         :param used: set used or not
         :return:
         """
-        self.ledger.loc[self.uuid_generate()] = [cost, quantity, type, used, None]
+        for q in range(quantity):
+            self.ledger.loc[self.uuid_generate()] = [cost, 1, type, used, None]
 
     def add_exchange(self, cost: int, ex: Exchange, used: bool = False):
         """
@@ -177,21 +185,15 @@ class LedgerProduction(Ledger):
         """
         return self.ledger[self.ledger['exchange'].isnull()]
 
-    def find_production(self, id: uuid) -> pd.Series:
+    def get_production_quantity(self, type: str, used: bool) -> int:
         """
-        Get production by id
-        :param id: production id
-        :return: Series with asked production
-        """
-        return self.ledger.loc[id]
+        Get total quantity production if used or not.
 
-    def find_production_by_type(self, type: str) -> pd.Series:
+        :param type: type of production
+        :param used: get used or free quantity
+        :return:
         """
-        Get production by type
-        :param type: production type
-        :return: Series with asked production
-        """
-        return self.ledger[self.ledger['type'] == type].iloc[0]
+        return self.ledger[(self.ledger['type'] == type) & (self.ledger['used'] == used)]['quantity'].sum()
 
 
 class LedgerConsumption(Ledger):

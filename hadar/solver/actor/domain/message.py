@@ -21,24 +21,24 @@ class Message:
 
 class Exchange(Message):
     """Exchange message to tokenize shared production"""
-    def __init__(self, quantity=0, id: uuid = 0, production_id: uuid = 0, path_node: List[str] = []):
+    def __init__(self, quantity=0, id: uuid = 0, production_type: str = '', path_node: List[str] = []):
         self.quantity = quantity
         self.id = id
-        self.production_id = production_id
+        self.production_type = production_type
         self.path_node = path_node
 
 
 class Proposal(Message):
-    def __init__(self, production_id: uuid, cost: int, quantity: int, path_node: List[str]):
-        self.production_id = production_id
+    def __init__(self, production_type: str, cost: int, quantity: int, path_node: List[str]):
+        self.production_type = production_type
         self.cost = cost
         self.quantity = quantity
         self.path_node = path_node
 
 
 class ProposalOffer(Proposal):
-    def __init__(self, production_id: uuid, cost: int, quantity: int, path_node: List[str], return_path_node: List[str]):
-        Proposal.__init__(self, production_id, cost, quantity, path_node)
+    def __init__(self, production_type: str, cost: int, quantity: int, path_node: List[str], return_path_node: List[str]):
+        Proposal.__init__(self, production_type, cost, quantity, path_node)
         self.return_path_node = return_path_node
 
 

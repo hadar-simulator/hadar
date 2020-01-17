@@ -33,22 +33,22 @@ class TestLedgerProduction(unittest.TestCase):
         ledger = LedgerProduction(uuid_generate=mock.generate)
 
         # Add production
-        ledger.add_production(cost=10, quantity=15, type='nuclear')
-        ledger.add_production(cost=10, quantity=20, type='solar')
-        ex = Exchange(id=1234, production_id=3, quantity=10, path_node=['fr'])
+        ledger.add_production(cost=10, quantity=2, type='nuclear')
+        ledger.add_production(cost=10, quantity=3, type='solar')
+        ex = Exchange(id=1234, production_type='wind', quantity=1, path_node=['fr'])
         ledger.add_exchange(cost=10, ex=ex)
 
         # Inspect ledger
-        expectedA = pd.DataFrame({'cost': [10, 10],
-                                  'quantity': [15, 20],
-                                  'type': ['nuclear', 'solar'],
-                                  'used': [False, False],
-                                  'exchange': [None, None]},
-                                 index=[1, 2])
+        expectedA = pd.DataFrame({'cost': [10, 10, 10, 10, 10],
+                                  'quantity': [1, 1, 1, 1, 1],
+                                  'type': ['nuclear', 'nuclear', 'solar', 'solar', 'solar'],
+                                  'used': [False, False, False, False, False],
+                                  'exchange': [None, None, None, None, None]},
+                                 index=[1, 2, 3, 4, 5])
         pd.testing.assert_frame_equal(expectedA, ledger.filter_productions())
 
         expectedB = pd.DataFrame({'cost': [10],
-                                  'quantity': [10],
+                                  'quantity': [1],
                                   'type': ['import'],
                                   'used': [False],
                                   'exchange': [ex]},
@@ -60,16 +60,30 @@ class TestLedgerProduction(unittest.TestCase):
         ledger.delete(id=2)
 
         # Inspect ledger
-        expectedC = pd.DataFrame({'cost': [10],
-                                  'quantity': [15],
-                                  'type': ['nuclear'],
-                                  'used': [False],
-                                  'exchange': [None]},
-                                 index=[1])
+        expectedC = pd.DataFrame({'cost': [10, 10, 10, 10],
+                                  'quantity': [1, 1, 1, 1],
+                                  'type': ['nuclear', 'solar', 'solar', 'solar'],
+                                  'used': [False, False, False, False],
+                                  'exchange': [None, None, None, None]},
+                                 index=[1, 3, 4, 5])
         pd.testing.assert_frame_equal(expectedC, ledger.filter_productions())
-        pd.testing.assert_series_equal(expectedC.iloc[0], ledger.find_production(1))
-
         pd.testing.assert_frame_equal(expectedB, ledger.filter_exchanges())
+
+    def test_quantity(self):
+
+        mock = MockUUID()
+        ledger = LedgerProduction(uuid_generate=mock.generate)
+
+        # Add production
+        ledger.add_production(cost=10, quantity=15, type='nuclear')
+        ledger.add_production(cost=10, quantity=15, type='nuclear')
+        ledger.add_production(cost=10, quantity=15, type='nuclear', used=True)
+        ledger.add_production(cost=10, quantity=20, type='solar', used=True)
+
+        self.assertEqual(30, ledger.get_production_quantity(type='nuclear', used=False))
+        self.assertEqual(15, ledger.get_production_quantity(type='nuclear', used=True))
+        self.assertEqual(20, ledger.get_production_quantity(type='solar', used=True))
+
 
 
 class TestLedgerConsumption(unittest.TestCase):

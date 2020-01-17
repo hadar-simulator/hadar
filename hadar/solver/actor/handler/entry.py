@@ -32,9 +32,9 @@ class ProposalOfferHandler(Handler):
         Handler.__init__(self, params=params)
         self.handler = CheckOfferBorderCapacityHandler(params=params,
                     next=BackwardMessageHandler(type='ask',
-                        after_backward=SaveExchangeHandler(next=ReturnHandler()),
-                        on_resume=AcceptExchangeHandler(min_exchange=min_exchange,
-                            next=SaveExchangeHandler(next=ReturnHandler()))
+                        after_backward=SaveExchangeHandler(exchange_type='transfer', next=ReturnHandler()),
+                        on_resume=AcceptExchangeHandler(
+                            next=SaveExchangeHandler(exchange_type='export', next=ReturnHandler()))
                     ))
 
     def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:

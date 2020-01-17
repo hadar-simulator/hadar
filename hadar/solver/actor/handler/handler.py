@@ -95,13 +95,13 @@ class CancelUselessImportationHandler(Handler):
         """
         productions = {}
         for ex in exchanges:
-            if ex.production_id not in productions.keys():
-                productions[ex.production_id] = [[], []]
-            productions[ex.production_id][0].append(ex)
-            productions[ex.production_id][1] = ex.path_node
+            path = tuple(ex.path_node)
+            if path not in productions.keys():
+                productions[path] = []
+            productions[path].append(ex)
 
-        for prod_id, (ex, path) in productions.items():
-            cancel = ConsumerCanceledExchange(exchanges=ex, path_node=path)
+        for path, exchanges in productions.items():
+            cancel = ConsumerCanceledExchange(exchanges=exchanges, path_node=list(path))
             self.params.tell(to=path[0], mes=cancel)
 
 
@@ -133,14 +133,14 @@ class ProposeFreeProductionHandler(Handler):
         :param message: message received from dispatcher. Not used by this handler
         :return: new state, response message (Not response from this handler)
         """
-        for p_id, (p_cost, p_quantity, _, _, _ ) in state.productions.filter_free_productions().iterrows():
-            prod_sent = state.exchanges.sum_production(production_id=p_id)
+        for p_id, (p_cost, p_quantity, p_type, _, _ ) in state.productions.filter_free_productions().iterrows():
+            prod_sent = state.exchanges.sum_production(production_type=p_type)
             qt = p_quantity - prod_sent
 
             for b_id, (b_cost, b_quantity) in state.borders.ledger.iterrows():
                 export = state.exchanges.sum_border(name=b_id)
                 qt = min(qt, b_quantity - export)
-                prop = Proposal(production_id=p_id,
+                prop = Proposal(production_type=p_type,
                                 cost=p_cost + b_cost,
                                 quantity=qt,
                                 path_node=[state.name])
@@ -216,7 +216,7 @@ class BackwardMessageHandler(Handler):
 
 class AcceptExchangeHandler(Handler):
     """Create available exchanges according to proposal"""
-    def __init__(self, next: Handler, min_exchange: int = 1, params: HandlerParameter = None):
+    def __init__(self, next: Handler, params: HandlerParameter = None):
         """
         Create Handler.
 
@@ -226,34 +226,33 @@ class AcceptExchangeHandler(Handler):
         """
         Handler.__init__(self, params)
         self.next = next
-        self.min_exchange = min_exchange
         self.set_params(params)
 
     def set_params(self, params: HandlerParameter):
         self.params = params
         self.next.set_params(params)
 
-    def execute(self, state: State, proposal: Any = None) -> Tuple[State, Any]:
+    def execute(self, state: State, offer: Any = None) -> Tuple[State, Any]:
         """
         Compute available exchanges according to production already sent.
 
         :param state: current state
-        :param proposal: ProposalOffer message
+        :param offer: ProposalOffer message
         :return: (state, [available exchanges])
         """
         # Check production remain capacity
-        quantity_available = state.productions.find_production(proposal.production_id).quantity
-        quantity_used = state.exchanges.sum_production(proposal.production_id)
+        quantity_available = state.productions.get_production_quantity(type=offer.production_type, used=False)
+        quantity_used = state.exchanges.sum_production(offer.production_type)
 
         # Send available exchange
-        quantity_exchange = min(proposal.quantity, quantity_available - quantity_used)
-        ex = self._generate_exchanges(quantity=quantity_exchange,
-                                      production_id=proposal.production_id,
-                                      path_node=proposal.return_path_node)
+        quantity_exchange = min(offer.quantity, quantity_available - quantity_used)
+        ex = self._generate_exchanges(production_type=offer.production_type,
+                                      quantity=quantity_exchange,
+                                      path_node=offer.return_path_node)
 
         return self.next.execute(deepcopy(state), deepcopy(ex))
 
-    def _generate_exchanges(self, production_id: int, quantity: int, path_node: List[str]):
+    def _generate_exchanges(self, production_type: str, quantity: int, path_node: List[str]):
         """
         Generate list to exchanges to fill available quantity with minimum exchange capacity.
 
@@ -262,25 +261,29 @@ class AcceptExchangeHandler(Handler):
         :param path_node: path node to embedded
         :return: list of exchanges. sum of capacities equals or less quantity asked
         """
-        length = int(quantity / self.min_exchange)
-        exchanges = [Exchange(quantity=self.min_exchange,
+        exchanges = [Exchange(quantity=1,
                               id=self.params.uuid_generate(),
-                              production_id=production_id,
+                              production_type=production_type,
                               path_node=path_node)
-                     for i in range(0, length)]
+                     for i in range(0, quantity)]
 
-        remain = quantity - length*self.min_exchange
-        if remain:
-            exchanges += [Exchange(quantity=remain, id=self.params.uuid_generate(), production_id=production_id, path_node=path_node)]
         return exchanges
 
 
 class SaveExchangeHandler(Handler):
     """Save exchange to ledger"""
-    def __init__(self, next: Handler, params: HandlerParameter = None):
+    def __init__(self, next: Handler, exchange_type: str, params: HandlerParameter = None):
+        """
+        Create Handler
+
+        :param next: handler to execute after save exchanges
+        :param params: handler global paramaters
+        :param exchange_type: which kind of exchanges is saved [import/export/transfer]
+        """
         Handler.__init__(self, params)
         self.next = next
         self.set_params(params)
+        self.type = exchange_type
 
     def set_params(self, params: HandlerParameter):
         self.params = params
@@ -298,7 +301,7 @@ class SaveExchangeHandler(Handler):
         for e in deepcopy(message):
             if e.quantity > 0:
                 e.path_node = SaveExchangeHandler.trim_path(state, deepcopy(e.path_node))
-                state.exchanges.add(e)
+                state.exchanges.add(e, self.type)
         return self.next.execute(deepcopy(state), deepcopy(message))
     
     @staticmethod
