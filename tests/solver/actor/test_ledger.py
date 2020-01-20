@@ -115,6 +115,29 @@ class TestLedgerProduction(unittest.TestCase):
         self.assertEqual(15, ledger.get_production_quantity(type='nuclear', used=True))
         self.assertEqual(20, ledger.get_production_quantity(type='solar', used=True))
 
+    def test_apply_adequacy(self):
+        # Input
+        uuid_mock = MockUUID()
+        ledger = LedgerProduction(uuid_generate=uuid_mock.generate)
+        ledger.add_production(cost=10, quantity=5, type='solar')
+        ledger.add_production(cost=15, quantity=3, type='nuclear')
+        ledger.add_production(cost=5, quantity=2, type='wind')
+
+        # Expected
+        expected = pd.DataFrame({'cost': [5] * 2 + [10] * 5 + [15] * 3,
+                                 'quantity': [1] * 10,
+                                 'type': ['wind'] * 2 + ['solar'] * 5 + ['nuclear'] * 3,
+                                 'used': [True] * 7 + [False] * 3,
+                                 'path_node': [None] * 10},
+                                index=[9, 10, 1, 2, 3, 4, 5, 6, 7, 8])
+
+        # Test
+        cost, power = ledger.apply_adequacy(quantity=7)
+
+        self.assertEqual(60, cost)
+        self.assertEqual(7, power)
+        pd.testing.assert_frame_equal(expected, ledger.ledger)
+
     def test_split_quantity(self):
         # Input
         prod = pd.DataFrame({'quantity': [8, 6, 4],
@@ -158,6 +181,22 @@ class TestLedgerConsumption(unittest.TestCase):
         ledger.delete(type='load')
         expected = pd.DataFrame({'cost': [20], 'quantity': [200]}, index=['stockage'])
         pd.testing.assert_frame_equal(expected, ledger.ledger)
+
+    def test_compute_cost(self):
+        ledger = LedgerConsumption()
+        ledger.add(type='load', cost=10, quantity=100)
+
+        self.assertEqual(0, ledger.compute_cost(quantity=150))
+        self.assertEqual(500, ledger.compute_cost(quantity=50))
+
+        ledger = LedgerConsumption()
+        ledger.add(type='load1', cost=1, quantity=10)
+        ledger.add(type='load2', cost=2, quantity=10)
+        ledger.add(type='load3', cost=3, quantity=10)
+        ledger.add(type='load4', cost=4, quantity=10)
+
+        self.assertEqual(0, ledger.compute_cost(quantity=40))
+        self.assertEqual(16, ledger.compute_cost(quantity=27))
 
 
 class TestLedgerBorder(unittest.TestCase):

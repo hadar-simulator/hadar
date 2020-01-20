@@ -216,6 +216,24 @@ class LedgerProduction(Ledger):
         """
         return self.ledger[(self.ledger['type'] == type) & (self.ledger['used'] == used)]['quantity'].sum()
 
+
+    def apply_adequacy(self, quantity: int):
+        """
+        Split current production state between used and free production according quantity consumption needed.
+
+        :param quantity: consumption quantity
+        :return: new cost, power used
+        """
+        used, free = LedgerProduction.split_by_quantity(self.ledger, quantity)
+        used['used'] = True
+        free['used'] = False
+        self.ledger = pd.concat([used, free])
+
+        cost = (used['cost'] * used['quantity']).sum()
+        power = used['quantity'].sum()
+        return cost, power
+
+
     @classmethod
     def split_by_quantity(cls, prod: pd.DataFrame, quantity: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
@@ -223,7 +241,7 @@ class LedgerProduction(Ledger):
 
         :return: DataFrame productions used, DataFrame productions free
         """
-        prod = prod.sort_values(by='quantity', ascending=False)
+        prod = prod.sort_values(by=['cost', 'quantity'], ascending=[True, False])
         index_split = prod['quantity'].cumsum() <= quantity
         return prod[index_split], prod[~index_split]
 
@@ -237,12 +255,26 @@ class LedgerConsumption(Ledger):
 
     def add(self, type: str, cost: int, quantity: int):
         self.ledger.loc[type] = [cost, quantity]
+        self.ledger.sort_values(by='cost', ascending=False, inplace=True)
+
 
     def delete(self, type: str):
         self.ledger.drop(type, inplace=True)
 
     def find_consumption(self, type: str) -> pd.Series:
         return self.ledger.loc[type]
+
+    def sum_quantity(self):
+        return self.ledger['quantity'].sum()
+
+    def compute_cost(self, quantity: int) -> int:
+        cum = self.ledger['quantity'].cumsum()
+        rac = cum - quantity
+        rac[rac < 0] = 0
+        unit = rac.diff()
+        unit.iloc[0] = rac.iloc[0]
+
+        return (self.ledger['cost']*unit).sum()
 
 
 class LedgerBorder(Ledger):

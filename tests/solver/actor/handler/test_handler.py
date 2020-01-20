@@ -277,6 +277,37 @@ class TestCheckOfferBorderCapacityHandler(unittest.TestCase):
         self.assertEqual(offer_exp, res_message)
 
 
+class TestAdequacyHandler(unittest.TestCase):
+    def test_execute(self):
+        # Input
+        params = HandlerParameter()
+
+        consumptions = LedgerConsumption()
+        consumptions.add(type='load', cost=100, quantity=10)
+
+        uuid_mock = MockUUID()
+        productions = LedgerProduction(uuid_generate=uuid_mock.generate)
+        productions.add_production(type='solar', cost=10, quantity=4)
+        productions.add_production(type='nuclear', cost=20, quantity=4)
+
+        state = State(name='fr', consumptions=consumptions, borders=None, productions=productions, rac=0, cost=0)
+
+        # Expected
+        consumptions = LedgerConsumption()
+        consumptions.ledger = pd.DataFrame({'cost': [100], 'quantity': [10]}, index=['load'])
+
+        productions = LedgerProduction()
+        productions.ledger = pd.DataFrame({'cost': [10] * 4 + [20] * 4,
+                                           'quantity': [4] * 8,
+                                           'type': ['solar'] * 4 + ['nuclear'] * 4,
+                                           'path_node': [None] * 8},
+                                          index=[1, 2, 3, 4, 5, 6, 7, 8])
+        expected = State(name='fr', consumptions=consumptions, borders=None, productions=productions, rac=-2, cost=320)
+
+        handler = AdequacyHandler(next=ReturnHandler(), params=params)
+        new_state, _ = handler.execute(state=state, message=None)
+
+
 class MockUUID:
     def __init__(self):
         self.inc = 0

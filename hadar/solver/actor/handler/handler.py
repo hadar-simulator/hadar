@@ -329,3 +329,38 @@ class CheckOfferBorderCapacityHandler(Handler):
 
         message.quantity = min(free_border_capacity, message.quantity)
         return self.next.execute(deepcopy(state), deepcopy(message))
+
+
+class AdequacyHandler(Handler):
+    """Compute power mix to used for reach local adequacy"""
+    def __init__(self, next: Handler, params: HandlerParameter = None):
+        """
+        Create handler
+        :param next: handler to execute after check border capacity
+        :param params: parameters to use
+        """
+        Handler.__init__(self, params)
+        self.next = next
+        self.set_params(params)
+
+    def set_params(self, params: HandlerParameter):
+        self.params = params
+        self.next.set_params(params)
+
+    def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
+        """
+        Compute adequacy.
+
+        :param state: current state
+        :param message: message receive by dispatcher (not used by handler)
+        :return: new state with new production stack & rac & cost, message send by dispatcher (not given by this handler)
+        """
+        load = state.consumptions.sum_quantity()
+        cost, prod = state.productions.apply_adequacy(quantity=load)
+
+        cost += state.consumptions.compute_cost(quantity=prod)
+
+        state.cost = cost
+        state.rac = prod - load
+
+        return self.next.execute(state, message)
