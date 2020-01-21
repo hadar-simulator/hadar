@@ -128,6 +128,39 @@ class TestProposeFreeProduction(unittest.TestCase):
         tell_mock.assert_called_with(to='be', mes=Proposal(production_type='nuclear', cost=30, quantity=2, path_node=['fr']))
 
 
+class TestForwardMessageHandler(unittest.TestCase):
+    def test_execute(self):
+        # Create mock
+        tell_mock = MagicMock()
+        params = HandlerParameter(tell=tell_mock)
+
+        # Input
+        borders = LedgerBorder()
+        borders.add(dest='be', cost=2, quantity=10)
+        borders.add(dest='de', cost=4, quantity=5)
+        borders.add(dest='uk', cost=10, quantity=10)
+
+        state = State(name='fr', consumptions=None, borders=borders, productions=None, rac=0, cost=0)
+        state.exchanges = LedgerExchange()
+        state.exchanges.add(ex=Exchange(quantity=5, id=0, production_type='solar', path_node=['uk', 'fr']), type='transfer')
+
+        prop = Proposal(production_type='solar', cost=10, quantity=7, path_node=['it'])
+
+        # Expected
+        be_prop = Proposal(production_type='solar', cost=12, quantity=7, path_node=['fr', 'it'])
+        de_prop = Proposal(production_type='solar', cost=14, quantity=5, path_node=['fr', 'it'])
+        uk_prop = Proposal(production_type='solar', cost=20, quantity=5, path_node=['fr', 'it'])
+
+        # Test
+        handler = ForwardMessageHandler(next=ReturnHandler(), params=params)
+        res_state, res_message = handler.execute(state=state, message=prop)
+
+        tell_mock.assert_has_calls(
+            [call(to='be', mes=be_prop),
+             call(to='de', mes=de_prop),
+             call(to='uk', mes=uk_prop)])
+
+
 class TestCancelExportationHandler(unittest.TestCase):
     def test_execute(self):
         # Create mock
@@ -251,6 +284,67 @@ class TestAcceptAvailableExchangeHandler(unittest.TestCase):
 
         self.assertEqual(state, state_res)
         self.assertEqual(response_exp, response_res)
+
+
+class TestCompareNewProduction(unittest.TestCase):
+    def test_execute_on_expensive(self):
+        # Input
+        params = HandlerParameter()
+
+        consumptions = LedgerConsumption()
+        consumptions.add(type='load', cost=10**3, quantity=2)
+
+        uuid_mock = MockUUID()
+        productions = LedgerProduction(uuid_generate=uuid_mock.generate)
+        productions.add_production(type='solar', cost=10, quantity=2, used=True)
+
+        state = State(name='fr', consumptions=consumptions, borders=None, productions=productions, rac=0, cost=20)
+        proposal = Proposal(production_type='nuclear', cost=12, quantity=10, path_node=['it'])
+
+        # Create mock
+
+        on_expensive = ReturnHandler()
+        on_expensive.execute = MagicMock(return_value=(state, proposal))
+
+        on_cheaper = ReturnHandler()
+        on_cheaper.execute = MagicMock()
+
+        # Test
+        handler = CompareNewProduction(on_expensive=ReturnHandler(), on_cheaper=ReturnHandler(), params=params)
+        state_res, mes_res = handler.execute(state, proposal)
+
+        self.assertEqual(state, state_res)
+        self.assertEqual(proposal, mes_res)
+
+    def test_execute_on_cheaper(self):
+        # Input
+        params = HandlerParameter()
+
+        consumptions = LedgerConsumption()
+        consumptions.add(type='load', cost=10**3, quantity=2)
+
+        uuid_mock = MockUUID()
+        productions = LedgerProduction(uuid_generate=uuid_mock.generate)
+        productions.add_production(type='solar', cost=15, quantity=2, used=True)
+
+        state = State(name='fr', consumptions=consumptions, borders=None, productions=productions, rac=0, cost=20)
+        proposal = Proposal(production_type='nuclear', cost=12, quantity=10, path_node=['it'])
+
+        # Create mock
+
+        on_expensive = ReturnHandler()
+        on_expensive.execute = MagicMock()
+
+        on_cheaper = ReturnHandler()
+        on_cheaper.execute = MagicMock(return_value=(state, proposal))
+
+        # Test
+        handler = CompareNewProduction(on_expensive=ReturnHandler(), on_cheaper=ReturnHandler(), params=params)
+        state_res, mes_res = handler.execute(state, proposal)
+
+        self.assertEqual(state, state_res)
+        self.assertEqual(proposal, mes_res)
+
 
 
 class TestCheckOfferBorderCapacityHandler(unittest.TestCase):
