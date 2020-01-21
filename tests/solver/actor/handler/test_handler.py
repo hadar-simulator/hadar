@@ -303,14 +303,14 @@ class TestCompareNewProduction(unittest.TestCase):
 
         # Create mock
 
-        on_expensive = ReturnHandler()
-        on_expensive.execute = MagicMock(return_value=(state, proposal))
+        for_prod_useless = ReturnHandler()
+        for_prod_useless.execute = MagicMock(return_value=(state, proposal))
 
-        on_cheaper = ReturnHandler()
-        on_cheaper.execute = MagicMock()
+        for_prod_useful = ReturnHandler()
+        for_prod_useful.execute = MagicMock()
 
         # Test
-        handler = CompareNewProduction(on_expensive=ReturnHandler(), on_cheaper=ReturnHandler(), params=params)
+        handler = CompareNewProduction(for_prod_useless=for_prod_useless, for_prod_useful=for_prod_useful, params=params)
         state_res, mes_res = handler.execute(state, proposal)
 
         self.assertEqual(state, state_res)
@@ -327,24 +327,27 @@ class TestCompareNewProduction(unittest.TestCase):
         productions = LedgerProduction(uuid_generate=uuid_mock.generate)
         productions.add_production(type='solar', cost=15, quantity=2, used=True)
 
-        state = State(name='fr', consumptions=consumptions, borders=None, productions=productions, rac=0, cost=20)
-        proposal = Proposal(production_type='nuclear', cost=12, quantity=10, path_node=['it'])
+        state = State(name='fr', consumptions=consumptions, borders=None, productions=productions, rac=0, cost=30)
+        proposal = Proposal(production_type='nuclear', cost=12, quantity=4, path_node=['it'])
 
         # Create mock
+        for_prod_useless = ReturnHandler()
+        for_prod_useless.execute = MagicMock()
 
-        on_expensive = ReturnHandler()
-        on_expensive.execute = MagicMock()
+        for_prod_useful = ReturnHandler()
+        for_prod_useful.execute = MagicMock(return_value=(state, proposal))
 
-        on_cheaper = ReturnHandler()
-        on_cheaper.execute = MagicMock(return_value=(state, proposal))
+        # Expected
+        expected_prop = Proposal(production_type='nuclear', cost=12, quantity=2, path_node=['it'])
 
         # Test
-        handler = CompareNewProduction(on_expensive=ReturnHandler(), on_cheaper=ReturnHandler(), params=params)
+        handler = CompareNewProduction(for_prod_useless=for_prod_useless, for_prod_useful=for_prod_useful,
+                                       params=params)
         state_res, mes_res = handler.execute(state, proposal)
 
         self.assertEqual(state, state_res)
         self.assertEqual(proposal, mes_res)
-
+        for_prod_useless.execute.assert_called_with(state=state, message=expected_prop)
 
 
 class TestCheckOfferBorderCapacityHandler(unittest.TestCase):

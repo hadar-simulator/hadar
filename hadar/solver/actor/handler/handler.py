@@ -365,23 +365,23 @@ class CheckOfferBorderCapacityHandler(Handler):
 
 class CompareNewProduction(Handler):
     """Compare cost with a new production"""
-    def __init__(self, on_expensive: Handler, on_cheaper: Handler, params: HandlerParameter = None):
+    def __init__(self, for_prod_useless: Handler, for_prod_useful: Handler, params: HandlerParameter = None):
         """
         Create Handler
-        :param on_expensive: handler to execute if old state is cheaper
-        :param on_cheaper: handler to execute if new state is cheaper
+        :param for_prod_useless: handler to execute if some of new production is useless
+        :param for_prod_useful: handler to execute if some of new production is useful
         :param params: global parameters
         """
         Handler.__init__(self, params)
-        self.on_expensive = on_expensive
-        self.on_cheaper = on_cheaper
+        self.for_prod_useless = for_prod_useless
+        self.for_prod_useful = for_prod_useful
         self.adequacy = AdequacyHandler(next=ReturnHandler())
         self.set_params(params)
 
     def set_params(self, params: HandlerParameter):
         self.params = params
-        self.on_cheaper.set_params(params)
-        self.on_expensive.set_params(params)
+        self.for_prod_useful.set_params(params)
+        self.for_prod_useless.set_params(params)
         self.adequacy.set_params(params)
 
     def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
@@ -397,16 +397,24 @@ class CompareNewProduction(Handler):
         test, _ = self.adequacy.execute(test)
 
         if state.cost > test.cost:
-            return self.on_cheaper.execute(deepcopy(state), deepcopy(message))
+            used_qt = test.productions.get_production_quantity(type='test', used=True)
+            remain_qt = message.quantity - used_qt
+
+            if remain_qt > 0:
+                remain = deepcopy(message)
+                remain.quantity = remain_qt
+                self.for_prod_useless.execute(state=deepcopy(state), message=deepcopy(remain))
+
+            message.quantity = used_qt
+            return self.for_prod_useful.execute(deepcopy(state), deepcopy(message))
         else:
-            return self.on_expensive.execute(deepcopy(state), deepcopy(message))
+            return self.for_prod_useless.execute(deepcopy(state), deepcopy(message))
 
 
 class MakerOfferHandler(Handler):
     """Respond to a proposal or forward proposal"""
     def __init__(self, on_exchange_accepted: Handler,
                  on_remain_proposal: Handler,
-                 on_no_offer: Handler,
                  params: HandlerParameter = None):
         """
         Create handler
@@ -433,32 +441,16 @@ class MakerOfferHandler(Handler):
         :param proposal:
         :return:
         """
-        test = deepcopy(state)
-        test.productions.add_production(cost=proposal.cost, quantity=proposal.quantity, type='test')
-        test, _ = self.adequacy.execute(test)
+        offer = ProposalOffer(production_type=proposal.production_type, cost=proposal.cost,
+                              quantity=proposal.quantity,
+                              path_node=proposal.path_node,
+                              return_path_node=proposal.path_node[-2::-1] + [state.name])
 
-        if state.cost > test.cost:
-            used_qt = test.productions.get_production_quantity(type='test', used=True)
-            remain_qt = proposal.quantity - used_qt
+        exchanges = self.params.ask(to=proposal.path_node[0], mes=offer)
+        for ex in exchanges:
+            state.productions.add_exchange(cost=proposal.cost, ex=ex)
 
-            if remain_qt > 0:
-                remain = deepcopy(proposal)
-                remain.quantity = remain_qt
-                self.on_remain_proposal.execute(deepcopy(state), deepcopy(remain))
-
-            offer = ProposalOffer(production_type=proposal.production_type, cost=proposal.cost,
-                                  quantity=used_qt,
-                                  path_node=proposal.path_node,
-                                  return_path_node=proposal.path_node[-2::-1] + [state.name])
-
-            exchanges = self.params.ask(to=proposal.path_node[0], mes=offer)
-            for ex in exchanges:
-                state.productions.add_exchange(cost=proposal.cost, ex=ex)
-
-            return self.on_exchange_accepted.execute(deepcopy(state), deepcopy(exchanges))
-
-        else:
-            return self.on_remain_proposal.execute(deepcopy(state), deepcopy(proposal))
+        return self.on_exchange_accepted.execute(deepcopy(state), deepcopy(exchanges))
 
 
 class AdequacyHandler(Handler):
