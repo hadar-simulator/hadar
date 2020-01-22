@@ -1,9 +1,9 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, call
 
 from solver.actor.common import State
 from solver.actor.domain.message import *
-from solver.actor.handler.entry import CanceledCustomerExchangeHandler, ProposalOfferHandler
+from solver.actor.handler.entry import CanceledCustomerExchangeHandler, ProposalOfferHandler, ProposalHandler
 from solver.actor.ledger import *
 from solver.actor.handler.handler import *
 
@@ -44,7 +44,8 @@ class TestCanceledCustomerExchangeHandler(unittest.TestCase):
         res, _ = handler.execute(state=state, message=message)
 
         self.assertEqual(state_exp, res)
-        tell_mock.assert_called_with(to='be', mes=Proposal(production_type='nuclear', cost=12, quantity=10, path_node=['fr']))
+        tell_mock.assert_called_with(to='be',
+                                     mes=Proposal(production_type='nuclear', cost=12, quantity=10, path_node=['fr']))
 
 
 class TestProposalOfferHandler(unittest.TestCase):
@@ -69,7 +70,8 @@ class TestProposalOfferHandler(unittest.TestCase):
                                  Exchange(id=4, production_type='solar', quantity=1, path_node=['be']),
                                  Exchange(id=5, production_type='solar', quantity=1, path_node=['be'])], 'export')
 
-        offer = ProposalOffer(production_type='solar', cost=10, quantity=5, path_node=['fr'], return_path_node=['fr', 'be'])
+        offer = ProposalOffer(production_type='solar', cost=10, quantity=5, path_node=['fr'],
+                              return_path_node=['fr', 'be'])
 
         # Expected
         message_exp = [Exchange(id=6, production_type='solar', quantity=1, path_node=['fr', 'be']),
@@ -82,7 +84,7 @@ class TestProposalOfferHandler(unittest.TestCase):
         state_exp.exchanges.add_all(exchanges_exp, type='export')
 
         # Test
-        handler = ProposalOfferHandler(params=params, min_exchange=1)
+        handler = ProposalOfferHandler(params=params)
         state_res, message_res = handler.execute(state=state, message=offer)
 
         self.assertEqual(state_exp, state_res)
@@ -119,11 +121,69 @@ class TestProposalOfferHandler(unittest.TestCase):
         state_exp.exchanges.add_all(exchanges_exp, type='transfer')
 
         # Test
-        handler = ProposalOfferHandler(params=params, min_exchange=1)
+        handler = ProposalOfferHandler(params=params)
         state_res, message_res = handler.execute(state=state, message=offer)
 
         self.assertEqual(state_exp, state_res)
         self.assertEqual(message_mock, message_res)
+
+
+class TestProposalHandler(unittest.TestCase):
+    def test_execute(self):
+        # Mock
+        expected_exs = [Exchange(id=100, quantity=1, production_type='solar', path_node=['it']),
+                        Exchange(id=101, quantity=1, production_type='solar', path_node=['it']),
+                        Exchange(id=102, quantity=1, production_type='solar', path_node=['it']),
+                        Exchange(id=103, quantity=1, production_type='solar', path_node=['it']),
+                        Exchange(id=104, quantity=1, production_type='solar', path_node=['it'])]
+        ask_mock = MagicMock(return_value=expected_exs)
+        tell_mock = MagicMock()
+        params = HandlerParameter(ask=ask_mock, tell=tell_mock)
+
+        uuid_mock = MockUUID()
+
+        # Input
+        consumptions = LedgerConsumption()
+        consumptions.add(type='load', quantity=10, cost=10 ** 6)
+
+        productions = LedgerProduction(uuid_generate=uuid_mock.generate)
+        productions.add_production(type='solar', cost=5, quantity=5, used=True)
+        productions.add_production(type='nuclear', cost=10, quantity=5, used=True)
+
+        borders = LedgerBorder()
+        borders.add(dest='be', cost=2, quantity=10)
+
+        state = State(name='fr', consumptions=consumptions, borders=borders, productions=productions, rac=0, cost=75)
+        proposal = Proposal(production_type='wind', cost=7, quantity=10, path_node=['it'])
+
+        # Expected
+        proposal_forward = Proposal(production_type='wind', cost=9, quantity=5, path_node=['fr', 'it'])
+        proposal_nuclear = Proposal(production_type='nuclear', cost=12, quantity=5, path_node=['fr'])
+        offer_expected = ProposalOffer(production_type='wind', cost=7, quantity=5, path_node=['it'],
+                                       return_path_node=['fr'])
+
+        state_expected = deepcopy(state)
+        state_expected.cost = 60
+        state_expected.exchanges.add_all(expected_exs, type='import')
+        state_expected.productions.ledger = \
+            pd.DataFrame({'cost': [5] * 5 + [7] * 5 + [10] * 5,
+                          'quantity': [1] * 15,
+                          'type': ['solar'] * 5 + ['import'] * 5 + ['nuclear'] * 5,
+                          'used': [True] * 10 + [False] * 5,
+                          'path_node': [None, None, None, None, None,
+                                        ['it'], ['it'], ['it'], ['it'], ['it'],
+                                        None, None, None, None, None]},
+                         index=[1, 2, 3, 4, 5, 100, 101, 102, 103, 104, 6, 7, 8, 9, 10])
+
+        # Test
+        handler = ProposalHandler(params=params)
+        state_res, _ = handler.execute(deepcopy(state), deepcopy(proposal))
+        self.assertEqual(state_expected, state_res)
+
+        ask_mock.assert_called_with(to='it', mes=offer_expected)
+        tell_mock.assert_has_calls(
+            [call(to='be', mes=proposal_forward),
+             call(to='be', mes=proposal_nuclear)])
 
 
 class MockUUID:

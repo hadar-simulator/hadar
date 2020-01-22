@@ -55,3 +55,6 @@ class ProposalHandler(Handler):
                                     )
                                 )
                             ))
+
+    def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
+        return self.handler.execute(deepcopy(state), deepcopy(message))

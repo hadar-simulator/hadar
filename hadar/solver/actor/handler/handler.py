@@ -441,8 +441,8 @@ class MakerOfferHandler(Handler):
 
         exchanges = self.params.ask(to=proposal.path_node[0], mes=offer)
         for ex in exchanges:
-            ex.path_node = proposal.path_node
             state.productions.add_exchange(cost=proposal.cost, ex=ex)
+            ex.path_node = [state.name] + proposal.path_node
 
         return self.next.execute(deepcopy(state), deepcopy(exchanges))
 

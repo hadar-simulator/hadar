@@ -353,8 +353,8 @@ class TestCompareNewProduction(unittest.TestCase):
 class TestMakeOfferHandler(unittest.TestCase):
     def test_execute(self):
         # Mock
-        exs_expected = [Exchange(quantity=1, id=0, production_type='solar', path_node=['it'])]
-        ask_mock = MagicMock(return_value=exs_expected)
+        exs_return = [Exchange(quantity=1, id=0, production_type='solar', path_node=['it'])]
+        ask_mock = MagicMock(return_value=exs_return)
         params = HandlerParameter(ask=ask_mock)
 
         # Input
@@ -363,6 +363,9 @@ class TestMakeOfferHandler(unittest.TestCase):
 
         # Expected
         offer_expected = ProposalOffer(production_type='solar', cost=10, quantity=1, path_node=['it'], return_path_node=['fr'])
+
+        exs_expected = [Exchange(quantity=1, id=0, production_type='solar', path_node=['fr', 'it'])]
+
         state_expected = deepcopy(state)
         state_expected.productions.add_exchange(cost=10, ex=exs_expected[0])
 
