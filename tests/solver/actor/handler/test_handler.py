@@ -161,6 +161,14 @@ class TestForwardMessageHandler(unittest.TestCase):
              call(to='uk', mes=uk_prop)])
 
 
+class TestSaveExchangeHandler(unittest.TestCase):
+    def test_trim_path(self):
+        self.assertEqual(['be'], SaveExchangeHandler.trim_path('fr', ['it', 'fr', 'be']))
+        self.assertEqual(['be'], SaveExchangeHandler.trim_path('fr', ['fr', 'be']))
+        self.assertEqual(['be'], SaveExchangeHandler.trim_path('fr', ['be']))
+        self.assertEqual([], SaveExchangeHandler.trim_path('be', ['be']))
+
+
 class TestCancelExportationHandler(unittest.TestCase):
     def test_execute(self):
         # Create mock

@@ -1,7 +1,3 @@
-import uuid
-from typing import List
-
-import numpy as np
 from hadar.solver.actor.domain.input import *
 
 
@@ -34,24 +30,24 @@ class DTO:
 
 class OutputConsumption(DTO):
 
-    def __init__(self, quantity: np.ndarray, cost: int = 0, type: str = ''):
+    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, type: str = ''):
         self.cost = cost
-        self.quantity = quantity
+        self.quantity = np.array(quantity)
         self.type = type
 
 
 class OutputProduction(DTO):
 
-    def __init__(self, quantity: np.ndarray, cost: int = 0, type: str = 'in'):
+    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, type: str = 'in'):
         self.type = type
         self.cost = cost
-        self.quantity = quantity
+        self.quantity = np.array(quantity)
 
 
 class OutputBorder(DTO):
-    def __init__(self, dest: str, quantity: np.ndarray, cost: int = 0):
+    def __init__(self, dest: str, quantity: Union[np.ndarray, list], cost: int = 0):
         self.dest = dest
-        self.quantity = quantity
+        self.quantity = np.array(quantity)
         self.cost = cost
 
 

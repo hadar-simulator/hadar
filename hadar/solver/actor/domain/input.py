@@ -1,4 +1,5 @@
 import uuid
+from typing import List, Dict, Union
 
 import numpy as np
 
@@ -21,22 +22,32 @@ class DTO:
 
 class InputConsumption(DTO):
 
-    def __init__(self, quantity: np.ndarray, cost: int = 0, type: str = ''):
+    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, type: str = ''):
         self.cost = cost
-        self.quantity = quantity
+        self.quantity = np.array(quantity)
         self.type = type
 
 
 class InputProduction(DTO):
 
-    def __init__(self, quantity: np.ndarray, cost: int = 0, type: str = 'in'):
+    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, type: str = 'in'):
         self.type = type
         self.cost = cost
-        self.quantity = quantity
+        self.quantity = np.array(quantity)
 
 
 class InputBorder(DTO):
-    def __init__(self, dest: str, quantity: np.ndarray, cost: int = 0):
+    def __init__(self, dest: str, quantity: Union[np.ndarray, list], cost: int = 0):
         self.dest = dest
-        self.quantity = quantity
+        self.quantity = np.array(quantity)
         self.cost = cost
+
+class InputNode(DTO):
+    def __init__(self, consumptions: List[InputConsumption] = [], productions: List[InputProduction] = [], borders: List[InputBorder] = []):
+        self.consumptions = consumptions
+        self.productions = productions
+        self.borders = borders
+
+class Study(DTO):
+    def __init__(self, nodes: Dict[str, InputNode]):
+        self.nodes = nodes

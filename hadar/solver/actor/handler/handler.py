@@ -311,12 +311,12 @@ class SaveExchangeHandler(Handler):
 
         for e in deepcopy(message):
             if e.quantity > 0:
-                e.path_node = SaveExchangeHandler.trim_path(state, deepcopy(e.path_node))
+                e.path_node = SaveExchangeHandler.trim_path(state.name, deepcopy(e.path_node))
                 state.exchanges.add(e, self.type)
         return self.next.execute(deepcopy(state), deepcopy(message))
     
     @staticmethod
-    def trim_path(state: State, path: List[str]):
+    def trim_path(name: str, path: List[str]):
         """
         trim uphill nodes in path.
 
@@ -324,10 +324,11 @@ class SaveExchangeHandler(Handler):
         :param path: whole path from exchange producer
         :return: trimed path with only next nodes
         """
-        while len(path) > 0 and path[0] != state.name:
-            del path[0]
-        del path[0]
-        return path
+        try:
+            i = path.index(name) + 1
+        except ValueError:
+            i = 0
+        return path[i:]
 
 
 class CheckOfferBorderCapacityHandler(Handler):
@@ -442,7 +443,7 @@ class MakerOfferHandler(Handler):
         exchanges = self.params.ask(to=proposal.path_node[0], mes=offer)
         for ex in exchanges:
             state.productions.add_exchange(cost=proposal.cost, ex=ex)
-            ex.path_node = [state.name] + proposal.path_node
+            ex.path_node = proposal.path_node
 
         return self.next.execute(deepcopy(state), deepcopy(exchanges))
 

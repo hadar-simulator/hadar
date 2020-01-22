@@ -68,7 +68,7 @@ class TestDispatcher(unittest.TestCase):
         expected = OutputNode()
         expected.consumptions = [OutputConsumption(type='load', quantity=np.array([7, 0]), cost=2)]
         expected.productions = [OutputProduction(type='solar', cost=3, quantity=np.array([5, 0])),
-                                OutputProduction(type='nuclear', cost=3, quantity=np.array([2, 0]))]
+                                OutputProduction(type='nuclear', cost=3, quantity=np.array([5, 0]))]
         expected.borders = [OutputBorder(dest='be', cost=2, quantity=np.array([3, 0]))]
 
         # Start test

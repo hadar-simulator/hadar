@@ -2,12 +2,12 @@ import unittest
 
 import logging
 
-from tests.utils import assert_study
+from tests.utils import assert_study, plot
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('pykka').setLevel(logging.INFO)
 
-from solver.actor.domain import *
+from hadar.solver.actor.domain.input import *
 from hadar.solver.actor_solver import solve
 
 
@@ -32,22 +32,20 @@ class TestSolver(unittest.TestCase):
         :return:
         """
         nodes = dict()
-        nodes['a'] = NodeQuantity(min_exchange=1,
-                                  consumptions=[Consumption(cost=10 ** 6, quantity=30, type='load')],
-                                  productions=[
-                                      Production(type='nuclear', cost=20, quantity=15),
-                                      Production(type='solar', cost=10, quantity=10),
-                                      Production(type='oil', cost=30, quantity=10)],
-                                  borders=[])
+        nodes['a'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[30], type='load')],
+                               productions=[
+                                   InputProduction(type='nuclear', cost=20, quantity=[15]),
+                                   InputProduction(type='solar', cost=10, quantity=[10]),
+                                   InputProduction(type='oil', cost=30, quantity=[10])],
+                               borders=[])
 
         nodes_expected = dict()
-        nodes_expected['a'] = NodeQuantity(min_exchange=1,
-                                           consumptions=[Consumption(cost=10 ** 6, quantity=30, type='load')],
-                                           productions=[
-                                               Production(type='nuclear', cost=20, quantity=15),
-                                               Production(type='solar', cost=10, quantity=10),
-                                               Production(type='oil', cost=30, quantity=5)],
-                                           borders=[])
+        nodes_expected['a'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[30], type='load')],
+                                        productions=[
+                                            InputProduction(type='nuclear', cost=20, quantity=[15]),
+                                            InputProduction(type='solar', cost=10, quantity=[10]),
+                                            InputProduction(type='oil', cost=30, quantity=[5])],
+                                        borders=[])
 
         res = solve(Study(nodes=nodes))
         assert_study(self, Study(nodes_expected), res)
@@ -75,34 +73,28 @@ class TestSolver(unittest.TestCase):
         """
 
         nodes = {}
-        nodes['a'] = NodeQuantity(min_exchange=1,
-                                  consumptions=[Consumption(cost=10 ** 6, quantity=10, type='load')],
-                                  productions=[Production(cost=10, quantity=30, type='nuclear')],
-                                  borders=[Border(dest='b', capacity=20, cost=2),
-                                           Border(dest='c', capacity=20, cost=2)])
+        nodes['a'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[10], type='load')],
+                               productions=[InputProduction(cost=10, quantity=[30], type='nuclear')],
+                               borders=[InputBorder(dest='b', quantity=[20], cost=2),
+                                        InputBorder(dest='c', quantity=[20], cost=2)])
 
-        nodes['b'] = NodeQuantity(min_exchange=1,
-                                  consumptions=[Consumption(cost=10 ** 6, quantity=10, type='load')],
-                                  productions=[Production(cost=20, quantity=10, type='nuclear')])
+        nodes['b'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[10], type='load')],
+                               productions=[InputProduction(cost=20, quantity=[10], type='nuclear')])
 
-        nodes['c'] = NodeQuantity(min_exchange=1,
-                                  consumptions=[Consumption(cost=10 ** 6, quantity=10, type='load')],
-                                  productions=[Production(cost=20, quantity=10, type='nuclear')])
+        nodes['c'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[10], type='load')],
+                               productions=[InputProduction(cost=20, quantity=[10], type='nuclear')])
 
         nodes_expected = {}
-        nodes_expected['a'] = NodeQuantity(min_exchange=1,
-                                           consumptions=[Consumption(cost=10 ** 6, quantity=10, type='load')],
-                                           productions=[Production(cost=10, quantity=30, type='nuclear')],
-                                           borders=[Border(dest='b', capacity=10, cost=2),
-                                                    Border(dest='c', capacity=10, cost=2)])
+        nodes_expected['a'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[10], type='load')],
+                                        productions=[InputProduction(cost=10, quantity=[30], type='nuclear')],
+                                        borders=[InputBorder(dest='b', quantity=[10], cost=2),
+                                                 InputBorder(dest='c', quantity=[10], cost=2)])
 
-        nodes_expected['b'] = NodeQuantity(min_exchange=1,
-                                           consumptions=[Consumption(cost=10 ** 6, quantity=10, type='load')],
-                                           productions=[Production(cost=20, quantity=0, type='nuclear')])
+        nodes_expected['b'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[10], type='load')],
+                                        productions=[InputProduction(cost=20, quantity=[0], type='nuclear')])
 
-        nodes_expected['c'] = NodeQuantity(min_exchange=1,
-                                           consumptions=[Consumption(cost=10 ** 6, quantity=10, type='load')],
-                                           productions=[Production(cost=20, quantity=0, type='nuclear')])
+        nodes_expected['c'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[10], type='load')],
+                                        productions=[InputProduction(cost=20, quantity=[0], type='nuclear')])
 
         res = solve(Study(nodes=nodes))
 
@@ -122,28 +114,22 @@ class TestSolver(unittest.TestCase):
         :return:
         """
         nodes = {}
-        nodes['a'] = NodeQuantity(min_exchange=1,
-                                  productions=[Production(cost=10, quantity=30, type='nuclear')],
-                                  borders=[Border(dest='b', capacity=20, cost=2)])
+        nodes['a'] = InputNode(productions=[InputProduction(cost=10, quantity=[30], type='nuclear')],
+                               borders=[InputBorder(dest='b', quantity=[20], cost=2)])
 
-        nodes['b'] = NodeQuantity(min_exchange=1,
-                                  consumptions=[Consumption(cost=10**6, quantity=10)],
-                                  borders=[Border(dest='c', capacity=15, cost=2)])
+        nodes['b'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[10])],
+                               borders=[InputBorder(dest='c', quantity=[15], cost=2)])
 
-        nodes['c'] = NodeQuantity(min_exchange=1,
-                                  consumptions=[Consumption(cost=10 ** 6, quantity=20, type='load')])
+        nodes['c'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[20], type='load')])
 
         nodes_expected = {}
-        nodes_expected['a'] = NodeQuantity(min_exchange=1,
-                                           productions=[Production(cost=10, quantity=20, type='nuclear')],
-                                           borders=[Border(dest='b', capacity=20, cost=2)])
+        nodes_expected['a'] = InputNode(productions=[InputProduction(cost=10, quantity=[20], type='nuclear')],
+                                        borders=[InputBorder(dest='b', quantity=[20], cost=2)])
 
-        nodes_expected['b'] = NodeQuantity(min_exchange=1,
-                                           consumptions=[Consumption(cost=10**6, quantity=10)],
-                                           borders=[Border(dest='c', capacity=10, cost=2)])
+        nodes_expected['b'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[10])],
+                                        borders=[InputBorder(dest='c', quantity=[10], cost=2)])
 
-        nodes_expected['c'] = NodeQuantity(min_exchange=1,
-                                           consumptions=[Consumption(cost=10 ** 6, quantity=20, type='load')])
+        nodes_expected['c'] = InputNode(consumptions=[InputConsumption(cost=10 ** 6, quantity=[20], type='load')])
 
         res = solve(Study(nodes=nodes))
 

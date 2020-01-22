@@ -1,16 +1,11 @@
 import time
-from typing import Tuple
-
-import numpy as np
-import pandas as pd
 
 from pykka import ThreadingActor, ActorRegistry
 
-from hadar.solver.actor.common import State
-from hadar.solver.actor.domain.input import *
-from hadar.solver.actor.domain.message import *
-from hadar.solver.actor.ledger import LedgerConsumption, LedgerProduction, LedgerBorder
 from hadar.solver.actor.domain.output import *
+from hadar.solver.actor.ledger import LedgerConsumption, LedgerBorder
+from hadar.solver.actor.handler.entry import *
+from hadar.solver.actor.handler.handler import AdequacyHandler, ReturnHandler, HandlerParameter
 
 
 def singleton(class_):
@@ -46,7 +41,6 @@ class Event:
 class Dispatcher(ThreadingActor):
 
     def __init__(self, name,
-                 min_exchange: int=1,
                  uuid_generate=uuid.uuid4,
                  consumptions: List[InputConsumption] = [],
                  productions: List[InputProduction] = [],
@@ -54,23 +48,44 @@ class Dispatcher(ThreadingActor):
                  ):
         super().__init__()
 
+        # Save constructor params
         self.name = name
         self.consumptions = consumptions
         self.productions = productions
         self.borders = borders
         self.uuid_generate = uuid_generate
 
+        # Instantiate output data
         self.out_node = OutputNode(in_consumptions=self.consumptions,
                                    in_productions=self.productions,
                                    in_borders=self.borders)
 
-        self.limit = self.consumptions[0].quantity.size
+        # Set time horizon
+        if self.consumptions:
+            self.limit = self.consumptions[0].quantity.size
+        elif self.productions:
+            self.limit = self.productions[0].quantity.size
+        elif self.borders:
+            self.limit = self.borders[0].quantity.size
         self.t = 0
-        self.state = self.build_state(self.t)
 
+        # Setup waiter and and event sink
         self.waiter = Waiter()
         self.events = []
 
+        # Setup handlers
+        params = HandlerParameter(ask=self.ask_to, tell=self.tell_to, uuid_generate=self.uuid_generate)
+        self.adequacy = AdequacyHandler(next=ReturnHandler())
+        self.start = StartHandler(params=params)
+        self.proposal = ProposalHandler(params=params)
+        self.offer = ProposalOfferHandler(params=params)
+        self.cancel_consumer_exchange = CanceledCustomerExchangeHandler(params=params)
+
+        # Build first state
+        self.state = self.build_state(self.t)
+        self.state, _ = self.adequacy.execute(self.state)
+
+        # Registry actor
         self.actor_ref.actor_urn = name
         ActorRegistry.register(self.actor_ref)
 
@@ -111,19 +126,19 @@ class Dispatcher(ThreadingActor):
         self.events.append(Event(type='recv', message=message))
 
         if isinstance(message, Start):
-            self.broker.init()
+            self.state, _ = self.start.execute(self.state, message)
         elif isinstance(message, Snapshot):
             return self
         elif isinstance(message, Next):
             return self.name, self.next()
         elif isinstance(message, ProposalOffer):
-            ex = self.broker.receive_proposal_offer(proposal=message)
+            self.state, ex = self.offer.execute(self.state, message)
             self.events.append(Event(type='recv res', message=ex))
             return ex
         elif isinstance(message, Proposal):
-            self.broker.receive_proposal(proposal=message)
+            self.state, _ = self.proposal.execute(self.state, message)
         elif isinstance(message, ConsumerCanceledExchange):
-            self.broker.receive_cancel_exchange(cancel=message)
+            self.state, _ = self.cancel_consumer_exchange.execute(self.state, message)
 
     def on_stop(self):
         ActorRegistry.unregister(self.actor_ref)
@@ -165,10 +180,10 @@ class Dispatcher(ThreadingActor):
             type = self.out_node.consumptions[i].type
             self.out_node.consumptions[i].quantity[t] = self.state.consumptions.find_consumption(type)['quantity']
 
-
         for i, _ in enumerate(self.out_node.productions):
             type = self.out_node.productions[i].type
             qt = self.state.productions.get_production_quantity(type=type, used=True)
+            qt += self.state.exchanges.sum_production(production_type=type)
             self.out_node.productions[i].quantity[t] = qt
 
         for i, _ in enumerate(self.out_node.borders):
