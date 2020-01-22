@@ -28,7 +28,7 @@ class CanceledCustomerExchangeHandler(Handler):
 
 
 class ProposalOfferHandler(Handler):
-    def __init__(self, params: HandlerParameter, min_exchange: int = 1):
+    def __init__(self, params: HandlerParameter):
         Handler.__init__(self, params=params)
         self.handler = CheckOfferBorderCapacityHandler(params=params,
                     next=BackwardMessageHandler(type='ask',
@@ -39,3 +39,19 @@ class ProposalOfferHandler(Handler):
 
     def execute(self, state: State, message: Any = None) -> Tuple[State, Any]:
         return self.handler.execute(deepcopy(state), deepcopy(message))
+
+
+class ProposalHandler(Handler):
+    def __init__(self, params: HandlerParameter):
+        Handler.__init__(self, params=params)
+        self.handler = CompareNewProduction(params=params,
+                            for_prod_useless=ForwardMessageHandler(next=ReturnHandler()),
+                            for_prod_useful=MakerOfferHandler(
+                                next=SaveExchangeHandler(exchange_type='import',
+                                    next=AdequacyHandler(
+                                        next=ProposeFreeProductionHandler(
+                                            next=CancelUselessImportationHandler(next=ReturnHandler())
+                                        )
+                                    )
+                                )
+                            ))

@@ -350,6 +350,31 @@ class TestCompareNewProduction(unittest.TestCase):
         for_prod_useless.execute.assert_called_with(state=state, message=expected_prop)
 
 
+class TestMakeOfferHandler(unittest.TestCase):
+    def test_execute(self):
+        # Mock
+        exs_expected = [Exchange(quantity=1, id=0, production_type='solar', path_node=['it'])]
+        ask_mock = MagicMock(return_value=exs_expected)
+        params = HandlerParameter(ask=ask_mock)
+
+        # Input
+        state = State(name='fr', consumptions=None, borders=None, productions=LedgerProduction(), rac=0, cost=0)
+        proposal = Proposal(production_type='solar', cost=10, quantity=1, path_node=['it'])
+
+        # Expected
+        offer_expected = ProposalOffer(production_type='solar', cost=10, quantity=1, path_node=['it'], return_path_node=['fr'])
+        state_expected = deepcopy(state)
+        state_expected.productions.add_exchange(cost=10, ex=exs_expected[0])
+
+        # Test
+        handler = MakerOfferHandler(next=ReturnHandler(), params=params)
+        res_state, res_mes = handler.execute(deepcopy(state), deepcopy(proposal))
+
+        self.assertEqual(state_expected, res_state)
+        self.assertEqual(exs_expected, res_mes)
+        ask_mock.assert_called_with(to='it', mes=offer_expected)
+
+
 class TestCheckOfferBorderCapacityHandler(unittest.TestCase):
     def test_execute_available(self):
         # Input

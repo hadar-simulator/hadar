@@ -413,32 +413,25 @@ class CompareNewProduction(Handler):
 
 class MakerOfferHandler(Handler):
     """Respond to a proposal or forward proposal"""
-    def __init__(self, on_exchange_accepted: Handler,
-                 on_remain_proposal: Handler,
-                 params: HandlerParameter = None):
+    def __init__(self, next: Handler, params: HandlerParameter = None):
         """
         Create handler
-        :param on_exchange_accepted: handler to execute when exchange from offer respond are received
-        :param on_remain_proposal: handler to execute when proposal quantity is not full used.
+        :param next: handler to execute when exchange from offer respond are received
         :param params: parameters to use
         """
         Handler.__init__(self, params)
-        self.on_exchange_accepted = on_exchange_accepted
-        self.on_remain_proposal = on_remain_proposal
-        self.adequacy = AdequacyHandler(next=ReturnHandler(), params=params)
+        self.next = next
         self.set_params(params)
 
     def set_params(self, params: HandlerParameter):
         self.params = params
-        self.on_exchange_accepted.set_params(params)
-        self.on_remain_proposal.set_params(params)
-        self.adequacy.set_params(params)
+        self.next.set_params(params)
 
     def execute(self, state: State, proposal: Any = None) -> Tuple[State, Any]:
         """
-        Respond to proposal if it's improve. Forward proposal else
-        :param state:
-        :param proposal:
+        Respond to proposal. Save new productions
+        :param state: current state
+        :param proposal: proposal to respond
         :return:
         """
         offer = ProposalOffer(production_type=proposal.production_type, cost=proposal.cost,
@@ -448,9 +441,10 @@ class MakerOfferHandler(Handler):
 
         exchanges = self.params.ask(to=proposal.path_node[0], mes=offer)
         for ex in exchanges:
+            ex.path_node = proposal.path_node
             state.productions.add_exchange(cost=proposal.cost, ex=ex)
 
-        return self.on_exchange_accepted.execute(deepcopy(state), deepcopy(exchanges))
+        return self.next.execute(deepcopy(state), deepcopy(exchanges))
 
 
 class AdequacyHandler(Handler):
