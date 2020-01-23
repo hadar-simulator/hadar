@@ -14,7 +14,7 @@ def create_dispatcher(name: str, node: InputNode) -> Dispatcher:
 
 
 def solve(study: Study) -> Study:
-    waiter = Waiter(wait_ms=2000)
+    waiter = Waiter(wait_ms=300)
 
     dispatchers = [create_dispatcher(name, node) for name, node in study.nodes.items()]
     for d in dispatchers:

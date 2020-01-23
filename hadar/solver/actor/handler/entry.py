@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from hadar.solver.actor.common import State
+from hadar.solver.actor.handler.handler import State
 from hadar.solver.actor.handler.handler import *
 
 

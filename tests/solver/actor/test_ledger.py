@@ -1,8 +1,8 @@
 import unittest
 import pandas as pd
 
-from solver.actor.domain.message import Exchange
-from solver.actor.ledger import LedgerExchange, LedgerProduction, LedgerConsumption, LedgerBorder
+from hadar.solver.actor.domain.message import Exchange
+from hadar.solver.actor.ledger import LedgerExchange, LedgerProduction, LedgerConsumption, LedgerBorder
 
 
 class TestLedgerExchange(unittest.TestCase):
@@ -60,7 +60,7 @@ class TestLedgerProduction(unittest.TestCase):
         ledger.add_production(cost=10, quantity=2, type='nuclear')
         ledger.add_production(cost=10, quantity=3, type='solar', used=True)
         ex = Exchange(id=1234, production_type='wind', quantity=1, path_node=['fr'])
-        ledger.add_exchange(cost=10, ex=ex)
+        ledger.add_exchanges(cost=10, ex=[ex])
 
         # Inspect ledger
         expectedA = pd.DataFrame({'cost': [10, 10, 10, 10, 10, 10],

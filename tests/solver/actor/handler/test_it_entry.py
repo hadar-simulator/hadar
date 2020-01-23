@@ -1,11 +1,11 @@
 import unittest
 from unittest.mock import MagicMock, call
 
-from solver.actor.common import State
-from solver.actor.domain.message import *
-from solver.actor.handler.entry import CanceledCustomerExchangeHandler, ProposalOfferHandler, ProposalHandler
-from solver.actor.ledger import *
-from solver.actor.handler.handler import *
+from hadar.solver.actor.handler.handler import State
+from hadar.solver.actor.domain.message import *
+from hadar.solver.actor.handler.entry import CanceledCustomerExchangeHandler, ProposalOfferHandler, ProposalHandler
+from hadar.solver.actor.ledger import *
+from hadar.solver.actor.handler.handler import *
 
 
 class TestCanceledCustomerExchangeHandler(unittest.TestCase):
