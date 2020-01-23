@@ -1,15 +1,9 @@
-import time
-import uuid
 from abc import ABC, abstractmethod
-from copy import deepcopy
-from typing import List, Tuple, Any
-
-import pandas as pd
-import numpy as np
+from typing import Any
 
 from hadar.solver.actor.domain.message import *
 from hadar.solver.actor.ledger import *
-from hadar.solver.actor.domain.input import DTO
+from solver.input import DTO
 
 
 class State(DTO):

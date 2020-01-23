@@ -1,7 +1,8 @@
-from hadar.solver.actor.domain.input import *
+from hadar.solver.input import *
+from hadar.solver.output import Result
 
 
-def assert_study(self, expected: Study, result: Study):
+def assert_study(self, expected: Result, result: Result):
     for name, node in expected.nodes.items():
         if name not in result.nodes.keys():
             self.fail('Node {} expected but not'.format(name))

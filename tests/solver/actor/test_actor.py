@@ -1,10 +1,8 @@
-import numpy as np
 import unittest
 
 from hadar.solver.actor.ledger import *
-from hadar.solver.actor.domain.input import *
 from hadar.solver.actor.actor import Dispatcher, State
-from hadar.solver.actor.domain.output import *
+from solver.output import *
 
 
 class TestDispatcher(unittest.TestCase):
@@ -13,9 +11,9 @@ class TestDispatcher(unittest.TestCase):
         # Input
         dispatcher = Dispatcher(name='fr',
                                 uuid_generate=lambda: 42,
-                                consumptions=[InputConsumption(type='load', quantity=np.array([10]), cost=20)],
-                                productions=[InputProduction(type='solar', quantity=np.array([10]), cost=23)],
-                                borders=[InputBorder(dest='be', quantity=np.array([10]), cost=2)])
+                                consumptions=[Consumption(type='load', quantity=np.array([10]), cost=20)],
+                                productions=[Production(type='solar', quantity=np.array([10]), cost=23)],
+                                borders=[Border(dest='be', quantity=np.array([10]), cost=2)])
 
         # Expected
         cons = LedgerConsumption()
@@ -39,12 +37,12 @@ class TestDispatcher(unittest.TestCase):
         dispatcher = Dispatcher(name='fr',
                                 uuid_generate=mock_id.generate,
                                 consumptions=[
-                                    InputConsumption(cost=2, type='load', quantity=np.array([7, 7]))],
+                                    Consumption(cost=2, type='load', quantity=np.array([7, 7]))],
                                 productions=[
-                                    InputProduction(cost=3, type='solar', quantity=np.array([5, 6])),
-                                    InputProduction(cost=3, type='nuclear', quantity=np.array([5, 6]))],
+                                    Production(cost=3, type='solar', quantity=np.array([5, 6])),
+                                    Production(cost=3, type='nuclear', quantity=np.array([5, 6]))],
                                 borders=[
-                                    InputBorder(dest='be', cost=2, quantity=np.array([7, 8]))
+                                    Border(dest='be', cost=2, quantity=np.array([7, 8]))
                                 ])
 
         ledger_cons = LedgerConsumption()

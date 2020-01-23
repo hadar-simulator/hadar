@@ -1,4 +1,4 @@
-from hadar.solver.actor.domain.input import *
+from solver.input import *
 
 
 class DTO:
@@ -53,9 +53,9 @@ class OutputBorder(DTO):
 
 class OutputNode(DTO):
     def __init__(self,
-                 in_consumptions: List[InputConsumption] = [],
-                 in_productions: List[InputProduction] = [],
-                 in_borders: List[InputBorder] = []):
+                 in_consumptions: List[Consumption] = [],
+                 in_productions: List[Production] = [],
+                 in_borders: List[Border] = []):
         self.consumptions = [OutputConsumption(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
                              for i in in_consumptions]
         self.productions = [OutputProduction(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
@@ -66,3 +66,8 @@ class OutputNode(DTO):
         size = in_consumptions[0].quantity.size if len(in_consumptions) > 0 else 0
         self.rac = np.zeros_like(size)
         self.cost = np.zeros_like(size)
+
+
+class Result(DTO):
+    def __init__(self, nodes: Dict[str, OutputNode]):
+        self._node = nodes

@@ -1,9 +1,8 @@
 from pykka import ActorRegistry
 
-from hadar.solver.actor.actor import Dispatcher, Waiter
-from hadar.solver.actor.domain.input import Study, InputNode
-from hadar.solver.actor.domain.message import Start, Next, Snapshot
-from tests.utils import plot
+from hadar.solver.actor.actor import Dispatcher, Waiter, Result
+from hadar.solver.input import *
+from hadar.solver.actor.domain.message import Start, Next
 
 
 def create_dispatcher(name: str, node: InputNode) -> Dispatcher:
@@ -13,7 +12,7 @@ def create_dispatcher(name: str, node: InputNode) -> Dispatcher:
                             borders=node.borders)
 
 
-def solve(study: Study) -> Study:
+def solve(study: Study) -> Result:
     waiter = Waiter(wait_ms=300)
 
     dispatchers = [create_dispatcher(name, node) for name, node in study.nodes.items()]
@@ -31,4 +30,4 @@ def solve(study: Study) -> Study:
     #    plot(d.ask(Snapshot()))
 
     ActorRegistry.stop_all()
-    return Study(nodes=nodes)
+    return Result(nodes=nodes)
