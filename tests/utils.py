@@ -1,4 +1,4 @@
-from solver.actor.domain.input import *
+from hadar.solver.actor.domain.input import *
 
 
 def assert_study(self, expected: Study, result: Study):

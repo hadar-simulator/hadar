@@ -1,7 +1,7 @@
 from copy import deepcopy
 
-from solver.actor.common import State
-from solver.actor.handler.handler import *
+from hadar.solver.actor.common import State
+from hadar.solver.actor.handler.handler import *
 
 
 class StartHandler(Handler):

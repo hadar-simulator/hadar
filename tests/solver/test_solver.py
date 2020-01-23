@@ -1,14 +1,15 @@
+import logging
 import unittest
 
-import logging
-
-from tests.utils import assert_study, plot
+from tests.utils import assert_study
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('pykka').setLevel(logging.INFO)
 
 from hadar.solver.actor.domain.input import *
-from hadar.solver.actor_solver import solve
+
+# from hadar.solver.actor_solver import solve
+from hadar.solver.mathprog_solver import solve
 
 
 class TestSolver(unittest.TestCase):
