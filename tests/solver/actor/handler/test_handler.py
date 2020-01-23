@@ -5,7 +5,7 @@ import numpy as np
 import unittest
 
 from hadar.solver.actor.actor import Exchange
-from hadar.solver.actor.common import State
+from hadar.solver.actor.handler.handler import State
 from hadar.solver.actor.handler.handler import *
 from hadar.solver.actor.ledger import *
 
@@ -372,7 +372,7 @@ class TestMakeOfferHandler(unittest.TestCase):
         # Expected
         offer_expected = ProposalOffer(production_type='solar', cost=10, quantity=1, path_node=['it'], return_path_node=['fr'])
 
-        exs_expected = [Exchange(quantity=1, id=0, production_type='solar', path_node=['fr', 'it'])]
+        exs_expected = [Exchange(quantity=1, id=0, production_type='solar', path_node=['it'])]
 
         state_expected = deepcopy(state)
         state_expected.productions.add_exchange(cost=10, ex=exs_expected[0])

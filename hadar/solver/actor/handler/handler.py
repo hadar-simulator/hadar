@@ -6,8 +6,24 @@ from typing import List, Tuple, Any
 import pandas as pd
 import numpy as np
 
-from hadar.solver.actor.common import State, LedgerProduction
 from hadar.solver.actor.domain.message import *
+from hadar.solver.actor.ledger import *
+from hadar.solver.actor.domain.input import DTO
+
+
+class State(DTO):
+    """
+    Represent current adequacy configuration. Each Handler has to update and forward this state.
+    """
+    def __init__(self, name: str, consumptions: LedgerConsumption, borders: LedgerBorder,
+                 productions: LedgerProduction, rac: int, cost: int):
+        self.name = name
+        self.consumptions = consumptions
+        self.borders = borders
+        self.productions = productions
+        self.exchanges = LedgerExchange()
+        self.rac = rac
+        self.cost = cost
 
 
 class HandlerParameter:
@@ -442,8 +458,8 @@ class MakerOfferHandler(Handler):
 
         exchanges = self.params.ask(to=proposal.path_node[0], mes=offer)
         for ex in exchanges:
-            state.productions.add_exchange(cost=proposal.cost, ex=ex)
             ex.path_node = proposal.path_node
+            state.productions.add_exchange(cost=proposal.cost, ex=ex)
 
         return self.next.execute(deepcopy(state), deepcopy(exchanges))
 

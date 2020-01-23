@@ -3,7 +3,7 @@ import time
 from pykka import ThreadingActor, ActorRegistry
 
 from hadar.solver.actor.domain.output import *
-from hadar.solver.actor.ledger import LedgerConsumption, LedgerBorder
+from hadar.solver.actor.ledger import LedgerConsumption, LedgerBorder, LedgerExchange
 from hadar.solver.actor.handler.entry import *
 from hadar.solver.actor.handler.handler import AdequacyHandler, ReturnHandler, HandlerParameter
 

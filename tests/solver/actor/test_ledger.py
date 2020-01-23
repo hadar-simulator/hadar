@@ -1,8 +1,8 @@
 import unittest
 import pandas as pd
 
-from solver.actor.domain.message import Exchange
-from solver.actor.ledger import LedgerExchange, LedgerProduction, LedgerConsumption, LedgerBorder
+from hadar.solver.actor.domain.message import Exchange
+from hadar.solver.actor.ledger import LedgerExchange, LedgerProduction, LedgerConsumption, LedgerBorder
 
 
 class TestLedgerExchange(unittest.TestCase):

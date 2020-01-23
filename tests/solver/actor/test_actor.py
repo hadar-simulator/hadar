@@ -3,8 +3,7 @@ import unittest
 
 from hadar.solver.actor.ledger import *
 from hadar.solver.actor.domain.input import *
-from hadar.solver.actor.actor import Dispatcher
-from hadar.solver.actor.common import State
+from hadar.solver.actor.actor import Dispatcher, State
 from hadar.solver.actor.domain.output import *
 
 
