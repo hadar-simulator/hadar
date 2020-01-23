@@ -268,6 +268,8 @@ class LedgerConsumption(Ledger):
         return self.ledger['quantity'].sum()
 
     def compute_cost(self, quantity: int) -> int:
+        if self.ledger.size == 0:
+            return 0
         cum = self.ledger['quantity'].cumsum()
         rac = cum - quantity
         rac[rac < 0] = 0
