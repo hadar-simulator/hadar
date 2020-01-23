@@ -1,3 +1,4 @@
+import time
 import uuid
 from abc import ABC, abstractmethod
 from copy import deepcopy
@@ -412,7 +413,6 @@ class CompareNewProduction(Handler):
         test = deepcopy(state)
         test.productions.add_production(cost=message.cost, quantity=message.quantity, type='test')
         test, _ = self.adequacy.execute(test)
-
         if state.cost > test.cost:
             used_qt = test.productions.get_production_quantity(type='test', used=True)
             remain_qt = message.quantity - used_qt
@@ -423,6 +423,7 @@ class CompareNewProduction(Handler):
                 self.for_prod_useless.execute(state=deepcopy(state), message=deepcopy(remain))
 
             message.quantity = used_qt
+
             return self.for_prod_useful.execute(deepcopy(state), deepcopy(message))
         else:
             return self.for_prod_useless.execute(deepcopy(state), deepcopy(message))
@@ -457,11 +458,14 @@ class MakerOfferHandler(Handler):
                               return_path_node=proposal.path_node[-2::-1] + [state.name])
 
         exchanges = self.params.ask(to=proposal.path_node[0], mes=offer)
-        for ex in exchanges:
-            ex.path_node = proposal.path_node
-            state.productions.add_exchange(cost=proposal.cost, ex=ex)
+        exchanges = [self.change_path(ex, proposal.path_node) for ex in exchanges]
+        state.productions.add_exchanges(cost=proposal.cost, ex=exchanges)
 
         return self.next.execute(deepcopy(state), deepcopy(exchanges))
+
+    def change_path(self, ex: Exchange, path_node: List[str]) -> Exchange:
+        ex.path_node = path_node
+        return ex
 
 
 class AdequacyHandler(Handler):

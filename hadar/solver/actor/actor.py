@@ -122,23 +122,35 @@ class Dispatcher(ThreadingActor):
         :param message: next message to process
         :return:
         """
-        self.waiter.update()
         self.events.append(Event(type='recv', message=message))
-
+        res = None
+        start = time.time()
         if isinstance(message, Start):
             self.state, _ = self.start.execute(self.state, message)
+
         elif isinstance(message, Snapshot):
-            return self
+            res =  self
+
         elif isinstance(message, Next):
-            return self.name, self.next()
+            res = self.name, self.next()
+
         elif isinstance(message, ProposalOffer):
+            self.waiter.update()
             self.state, ex = self.offer.execute(self.state, message)
             self.events.append(Event(type='recv res', message=ex))
-            return ex
+            res = ex
+
         elif isinstance(message, Proposal):
+            self.waiter.update()
             self.state, _ = self.proposal.execute(self.state, message)
+
         elif isinstance(message, ConsumerCanceledExchange):
+            self.waiter.update()
             self.state, _ = self.cancel_consumer_exchange.execute(self.state, message)
+
+        end = time.time()
+        print('On node', self.state.name, 'for', message.__class__, int((end-start)*1000), 'ms')
+        return res
 
     def on_stop(self):
         ActorRegistry.unregister(self.actor_ref)

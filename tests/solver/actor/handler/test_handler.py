@@ -24,11 +24,8 @@ class TestCancelExchangeUselessHandler(unittest.TestCase):
         exchange4 = Exchange(id=4, production_type='solar', quantity=1, path_node=['be'])
 
         productions = LedgerProduction(uuid_generate=lambda: None)
-        productions.add_exchange(cost=10, used=True, ex=exchange0)
-        productions.add_exchange(cost=10, used=True, ex=exchange1)
-        productions.add_exchange(cost=10, used=False, ex=exchange2)  # Should be canceled
-        productions.add_exchange(cost=10, used=False, ex=exchange3)  # Should be canceled
-        productions.add_exchange(cost=10, used=False, ex=exchange4)  # Should be canceled
+        productions.add_exchanges(cost=10, used=True, ex=[exchange0, exchange1])
+        productions.add_exchanges(cost=10, used=False, ex=[exchange2, exchange3, exchange4])
 
         exchanges = LedgerExchange()
         exchanges.add_all([exchange0, exchange1, exchange2, exchange3, exchange4], 'export')
@@ -41,10 +38,10 @@ class TestCancelExchangeUselessHandler(unittest.TestCase):
 
         # Expected
         exp_productions = LedgerProduction(uuid_generate=lambda: None)
-        exp_productions.add_exchange(cost=10, used=True,
-                                     ex=Exchange(id=0, production_type='solar', quantity=1, path_node=['fr']))
-        exp_productions.add_exchange(cost=10, used=True,
-                                     ex=Exchange(id=1, production_type='solar', quantity=1, path_node=['fr']))
+        exp_productions.add_exchanges(cost=10, used=True,
+                                     ex=[Exchange(id=0, production_type='solar', quantity=1, path_node=['fr'])])
+        exp_productions.add_exchanges(cost=10, used=True,
+                                     ex=[Exchange(id=1, production_type='solar', quantity=1, path_node=['fr'])])
 
         exp_exchanges = LedgerExchange()
         exp_exchanges.add_all([Exchange(id=0, production_type='solar', quantity=1, path_node=['fr']),
@@ -375,7 +372,7 @@ class TestMakeOfferHandler(unittest.TestCase):
         exs_expected = [Exchange(quantity=1, id=0, production_type='solar', path_node=['it'])]
 
         state_expected = deepcopy(state)
-        state_expected.productions.add_exchange(cost=10, ex=exs_expected[0])
+        state_expected.productions.add_exchanges(cost=10, ex=exs_expected)
 
         # Test
         handler = MakerOfferHandler(next=ReturnHandler(), params=params)

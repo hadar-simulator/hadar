@@ -140,10 +140,18 @@ class LedgerProduction(Ledger):
         :param used: set used or not
         :return:
         """
-        for q in range(quantity):
-            self.ledger.loc[self.uuid_generate()] = [cost, 1, type, used, None]
+        append = pd.DataFrame(data={
+            'cost': np.ones(quantity, dtype=int) * cost,
+            'quantity': np.ones(quantity, dtype=int),
+            'type': [type] * quantity,
+            'used': [used] * quantity,
+            'path_node': [None] * quantity},
+            index=[self.uuid_generate() for i in range(quantity)])
 
-    def add_exchange(self, cost: int, ex: Exchange, used: bool = False):
+        self.ledger = pd.concat([self.ledger, append])
+
+
+    def add_exchanges(self, cost: int, ex: List[Exchange], used: bool = False):
         """
         Add production from external.
 
@@ -152,7 +160,16 @@ class LedgerProduction(Ledger):
         :param ex: exchange object where production comes
         :return:
         """
-        self.ledger.loc[ex.id] = [cost, ex.quantity, 'import', used, ex.path_node]
+        quantity = len(ex)
+        append = pd.DataFrame(data={
+            'cost': np.ones(quantity, dtype=int) * cost,
+            'quantity': [e.quantity for e in ex],
+            'type': ['import'] * quantity,
+            'used': [used] * quantity,
+            'path_node': [e.path_node for e in ex]},
+            index=[e.id for e in ex])
+
+        self.ledger = pd.concat([self.ledger, append])
 
     def delete(self, id: uuid):
         """
