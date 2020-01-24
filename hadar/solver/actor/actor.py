@@ -9,11 +9,14 @@ from hadar.solver.actor.handler.handler import AdequacyHandler, ReturnHandler, H
 
 def singleton(class_):
     instances = {}
+
     def getinstance(*args, **kwargs):
         if class_ not in instances:
             instances[class_] = class_(*args, **kwargs)
         return instances[class_]
+
     return getinstance
+
 
 @singleton
 class Waiter:
@@ -55,9 +58,9 @@ class Dispatcher(ThreadingActor):
         self.uuid_generate = uuid_generate
 
         # Instantiate output data
-        self.out_node = OutputNode(in_consumptions=self.consumptions,
-                                   in_productions=self.productions,
-                                   in_borders=self.borders)
+        self.out_node = OutputNode.build_like_input(in_consumptions=self.consumptions,
+                                                    in_productions=self.productions,
+                                                    in_borders=self.borders)
 
         # Set time horizon
         if self.consumptions:
@@ -113,7 +116,6 @@ class Dispatcher(ThreadingActor):
         return State(name=self.name, consumptions=consumer_ledger, borders=border_ledger,
                      productions=producer_ledger, rac=0, cost=0)
 
-
     def on_receive(self, message):
         """
         Mail box of actor.
@@ -123,12 +125,11 @@ class Dispatcher(ThreadingActor):
         """
         self.events.append(Event(type='recv', message=message))
         res = None
-        start = time.time()
         if isinstance(message, Start):
             self.state, _ = self.start.execute(self.state, message)
 
         elif isinstance(message, Snapshot):
-            res =  self
+            res = self
 
         elif isinstance(message, Next):
             res = self.name, self.next()
@@ -147,8 +148,6 @@ class Dispatcher(ThreadingActor):
             self.waiter.update()
             self.state, _ = self.cancel_consumer_exchange.execute(self.state, message)
 
-        end = time.time()
-        print('On node', self.state.name, 'for', message.__class__, int((end-start)*1000), 'ms')
         return res
 
     def on_stop(self):

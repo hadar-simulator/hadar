@@ -53,21 +53,40 @@ class OutputBorder(DTO):
 
 class OutputNode(DTO):
     def __init__(self,
-                 in_consumptions: List[Consumption] = [],
-                 in_productions: List[Production] = [],
-                 in_borders: List[Border] = []):
-        self.consumptions = [OutputConsumption(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
-                             for i in in_consumptions]
-        self.productions = [OutputProduction(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
-                            for i in in_productions]
-        self.borders = [OutputBorder(dest=i.dest, cost=i.cost, quantity=np.zeros_like(i.quantity))
-                        for i in in_borders]
+                 consumptions: List[OutputConsumption],
+                 productions: List[OutputProduction],
+                 borders: List[OutputBorder],
+                 rac: Union[np.ndarray, List[int]],
+                 cost: Union[np.ndarray, List[int]]):
+        self.consumptions = consumptions
+        self.productions = productions
+        self.borders = borders
+        self.rac = np.array(rac)
+        self.cost = np.array(cost)
+
+    @staticmethod
+    def build_like_input(in_consumptions: List[Consumption] = [],
+                         in_productions: List[Production] = [],
+                         in_borders: List[Border] = []):
+        output = OutputNode(consumptions=[], productions=[], borders=[], rac=[0], cost=[0])
+
+        output.consumptions = [OutputConsumption(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
+                               for i in in_consumptions]
+        output.productions = [OutputProduction(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
+                              for i in in_productions]
+        output.borders = [OutputBorder(dest=i.dest, cost=i.cost, quantity=np.zeros_like(i.quantity))
+                          for i in in_borders]
 
         size = in_consumptions[0].quantity.size if len(in_consumptions) > 0 else 0
-        self.rac = np.zeros_like(size)
-        self.cost = np.zeros_like(size)
+        output.rac = np.zeros_like(size)
+        output.cost = np.zeros_like(size)
+        return output
 
 
 class Result(DTO):
     def __init__(self, nodes: Dict[str, OutputNode]):
-        self._node = nodes
+        self._nodes = nodes
+
+    @property
+    def nodes(self):
+        return self._nodes

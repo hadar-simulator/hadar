@@ -1,15 +1,9 @@
 import unittest
 
-import logging
-
-from solver.output import Result
+from hadar.solver.output import *
+from hadar.solver.study import solve
+from hadar.solver.input import *
 from tests.utils import assert_study
-
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger('pykka').setLevel(logging.INFO)
-
-from solver.input import *
-from hadar.solver.study import solve, Study
 
 
 class TestSolver(unittest.TestCase):
@@ -38,14 +32,14 @@ class TestSolver(unittest.TestCase):
             .add(node='a', data=Production(type='solar', cost=10, quantity=[10])) \
             .add(node='a', data=Production(type='oil', cost=30, quantity=[10]))
 
-
         nodes_expected = dict()
-        nodes_expected['a'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[30], type='load')],
-                                        productions=[
-                                            Production(type='nuclear', cost=20, quantity=[15]),
-                                            Production(type='solar', cost=10, quantity=[10]),
-                                            Production(type='oil', cost=30, quantity=[5])],
-                                        borders=[])
+        nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[30], type='load')],
+                                         productions=[
+                                             OutputProduction(type='nuclear', cost=20, quantity=[15]),
+                                             OutputProduction(type='solar', cost=10, quantity=[10]),
+                                             OutputProduction(type='oil', cost=30, quantity=[5])],
+                                         borders=[],
+                                         rac=[0], cost=[0])
 
         res = solve(study, kind='actor')
         assert_study(self, Result(nodes_expected), res)
@@ -71,34 +65,36 @@ class TestSolver(unittest.TestCase):
                                            | nuclear: 0           |
         :return:
         """
-
-        nodes = {}
-        nodes['a'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[10], type='load')],
-                               productions=[Production(cost=10, quantity=[30], type='nuclear')],
-                               borders=[Border(dest='b', quantity=[20], cost=2),
-                                        Border(dest='c', quantity=[20], cost=2)])
-
-        nodes['b'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[10], type='load')],
-                               productions=[Production(cost=20, quantity=[10], type='nuclear')])
-
-        nodes['c'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[10], type='load')],
-                               productions=[Production(cost=20, quantity=[10], type='nuclear')])
+        study = Study(node_names=['a', 'b', 'c']) \
+            .add('a', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
+            .add('a', data=Production(cost=10, quantity=[30], type='nuclear')) \
+            .add('a', data=Border(dest='b', quantity=[20], cost=2)) \
+            .add('a', data=Border(dest='c', quantity=[20], cost=2)) \
+            .add('b', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
+            .add('b', data=Production(cost=20, quantity=[10], type='nuclear')) \
+            .add('c', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
+            .add('c', data=Production(cost=20, quantity=[10], type='nuclear'))
 
         nodes_expected = {}
-        nodes_expected['a'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[10], type='load')],
-                                        productions=[Production(cost=10, quantity=[30], type='nuclear')],
-                                        borders=[Border(dest='b', quantity=[10], cost=2),
-                                                 Border(dest='c', quantity=[10], cost=2)])
+        nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
+                                         productions=[OutputProduction(cost=10, quantity=[30], type='nuclear')],
+                                         borders=[OutputBorder(dest='b', quantity=[10], cost=2),
+                                                  OutputBorder(dest='c', quantity=[10], cost=2)],
+                                         rac=[0], cost=[0])
 
-        nodes_expected['b'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[10], type='load')],
-                                        productions=[Production(cost=20, quantity=[0], type='nuclear')])
+        nodes_expected['b'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
+                                         productions=[OutputProduction(cost=20, quantity=[0], type='nuclear')],
+                                         borders=[],
+                                         cost=[0], rac=[0])
 
-        nodes_expected['c'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[10], type='load')],
-                                        productions=[Production(cost=20, quantity=[0], type='nuclear')])
+        nodes_expected['c'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
+                                         productions=[OutputProduction(cost=20, quantity=[0], type='nuclear')],
+                                         borders=[],
+                                         cost=[0], rac=[0])
 
-        res = solve(Study(nodes=nodes))
+        res = solve(study, kind='actor')
 
-        assert_study(self, Study(nodes_expected), res)
+        assert_study(self, Result(nodes_expected), res)
 
     def test_exchange_border_saturation(self):
         """
@@ -113,27 +109,32 @@ class TestSolver(unittest.TestCase):
 
         :return:
         """
-        nodes = {}
-        nodes['a'] = InputNode(productions=[Production(cost=10, quantity=[30], type='nuclear')],
-                               borders=[Border(dest='b', quantity=[20], cost=2)])
-
-        nodes['b'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[10])],
-                               borders=[Border(dest='c', quantity=[15], cost=2)])
-
-        nodes['c'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[20], type='load')])
+        study = Study(node_names=['a', 'b', 'c']) \
+            .add('a', data=Production(cost=10, quantity=[30], type='nuclear')) \
+            .add('a', data=Border(dest='b', quantity=[20], cost=2)) \
+            .add('b', data=Consumption(cost=10 ** 6, quantity=[10])) \
+            .add('b', data=Border(dest='c', quantity=[15], cost=2)) \
+            .add('c', data=Consumption(cost=10 ** 6, quantity=[20], type='load'))
 
         nodes_expected = {}
-        nodes_expected['a'] = InputNode(productions=[Production(cost=10, quantity=[20], type='nuclear')],
-                                        borders=[Border(dest='b', quantity=[20], cost=2)])
+        nodes_expected['a'] = OutputNode(productions=[OutputProduction(cost=10, quantity=[20], type='nuclear')],
+                                         borders=[OutputBorder(dest='b', quantity=[20], cost=2)],
+                                         consumptions=[],
+                                         rac=[0], cost=[0])
 
-        nodes_expected['b'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[10])],
-                                        borders=[Border(dest='c', quantity=[10], cost=2)])
+        nodes_expected['b'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10])],
+                                         borders=[OutputBorder(dest='c', quantity=[10], cost=2)],
+                                         productions=[],
+                                         rac=[0], cost=[0])
 
-        nodes_expected['c'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[20], type='load')])
+        nodes_expected['c'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[20], type='load')],
+                                         productions=[],
+                                         borders=[],
+                                         rac=[0], cost=[0])
 
-        res = solve(Study(nodes=nodes))
+        res = solve(study, kind='actor')
 
-        assert_study(self, Study(nodes_expected), res)
+        assert_study(self, Result(nodes_expected), res)
 
     def test_consumer_cancel_exchange(self):
         """
@@ -151,31 +152,31 @@ class TestSolver(unittest.TestCase):
 
         :return:
         """
-
-        nodes = {}
-        nodes['a'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[10], type='load')],
-                               productions=[Production(cost=10, quantity=[20], type='nuclear')],
-                               borders=[Border(dest='b', quantity=[20], cost=2)])
-
-        nodes['b'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[5], type='load')],
-                               productions=[Production(cost=20, quantity=[15], type='nuclear')],
-                               borders=[Border(dest='c', quantity=[20], cost=2)])
-
-        nodes['c'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[20], type='load')],
-                               productions=[Production(cost=10, quantity=[10], type='nuclear')])
+        study = Study(node_names=['a', 'b', 'c']) \
+            .add('a', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
+            .add('a', data=Production(cost=10, quantity=[20], type='nuclear')) \
+            .add('a', data=Border(dest='b', quantity=[20], cost=2)) \
+            .add('b', data=Consumption(cost=10 ** 6, quantity=[5], type='load')) \
+            .add('b', data=Production(cost=20, quantity=[15], type='nuclear')) \
+            .add('b', data=Border(dest='c', quantity=[20], cost=2)) \
+            .add('c', data=Consumption(cost=10 ** 6, quantity=[20], type='load')) \
+            .add('c', data=Production(cost=10, quantity=[10], type='nuclear'))
 
         nodes_expected = {}
-        nodes_expected['a'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[10], type='load')],
-                                        productions=[Production(cost=10, quantity=[20], type='nuclear')],
-                                        borders=[Border(dest='b', quantity=[10], cost=2)])
+        nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
+                                         productions=[OutputProduction(cost=10, quantity=[20], type='nuclear')],
+                                         borders=[OutputBorder(dest='b', quantity=[10], cost=2)],
+                                         rac=[0], cost=[0])
 
-        nodes_expected['b'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[5], type='load')],
-                                        productions=[Production(cost=20, quantity=[5], type='nuclear')],
-                                        borders=[Border(dest='c', quantity=[10], cost=2)])
+        nodes_expected['b'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[5], type='load')],
+                                         productions=[OutputProduction(cost=20, quantity=[5], type='nuclear')],
+                                         borders=[OutputBorder(dest='c', quantity=[10], cost=2)],
+                                         rac=[0], cost=[0])
 
-        nodes_expected['c'] = InputNode(consumptions=[Consumption(cost=10 ** 6, quantity=[20], type='load')],
-                                        productions=[Production(cost=10, quantity=[10], type='nuclear')])
+        nodes_expected['c'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[20], type='load')],
+                                         productions=[OutputProduction(cost=10, quantity=[10], type='nuclear')],
+                                         borders=[], rac=[0], cost=[0])
 
-        res = solve(Study(nodes=nodes))
+        res = solve(study, kind='actor')
 
-        assert_study(self, Study(nodes_expected), res)
+        assert_study(self, Result(nodes_expected), res)

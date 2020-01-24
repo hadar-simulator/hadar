@@ -3,12 +3,17 @@ from hadar.solver.input import *
 
 class TestNetwork(unittest.TestCase):
     def test_create_study(self):
+        c = Consumption(type='load', cost=20, quantity=[10])
+        p = Production(type='nuclear', cost=20, quantity=[10])
+        b = Border(dest='a', cost=20, quantity=[10])
         study = Study(['a', 'b']) \
-            .add(node='a', data=Consumption(type='load', cost=20, quantity=[10])) \
-            .add(node='a', data=Production(type='nuclear', cost=20, quantity=[10])) \
-            .add(node='b', data=Border(dest='a', cost=20, quantity=[10]))
+            .add(node='a', data=c) \
+            .add(node='a', data=p) \
+            .add(node='b', data=b)
 
-        print(study)
+        self.assertEqual(c, study.nodes['a'].consumptions[0])
+        self.assertEqual(p, study.nodes['a'].productions[0])
+        self.assertEqual(b, study.nodes['b'].borders[0])
 
     def test_wrong_node_list(self):
         def test():

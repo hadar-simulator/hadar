@@ -44,7 +44,7 @@ class Border(DTO):
 
 
 class InputNode(DTO):
-    def __init__(self, consumptions: List[Consumption] = [], productions: List[Production] = [], borders: List[Border] = []):
+    def __init__(self, consumptions: List[Consumption], productions: List[Production], borders: List[Border]):
         self.consumptions = consumptions
         self.productions = productions
         self.borders = borders
@@ -63,7 +63,9 @@ class Study(DTO):
         if len(node_names) > len(set(node_names)):
             raise ValueError('some nodes are not unique')
 
-        self._nodes = {name: InputNode() for name in node_names}
+        self._nodes = {name: InputNode(consumptions=[], productions=[], borders=[]) for name in node_names}
+
+
 
     @property
     def nodes(self):
