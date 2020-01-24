@@ -1,3 +1,5 @@
+import time
+
 from pykka import ActorRegistry
 
 from hadar.solver.actor.actor import Dispatcher, Waiter, Result
@@ -19,7 +21,7 @@ def solve(study: Study) -> Result:
     for d in dispatchers:
         d.tell(Start())
 
-    waiter.wait()
+    time.sleep(2)  # TODO use waiter
 
     nodes = {}
     for d in dispatchers:

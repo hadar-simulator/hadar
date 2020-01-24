@@ -1,8 +1,9 @@
 import time
+from typing import Callable
 
 from pykka import ThreadingActor, ActorRegistry
 
-from solver.output import *
+from hadar.solver.output import *
 from hadar.solver.actor.handler.entry import *
 from hadar.solver.actor.handler.handler import AdequacyHandler, ReturnHandler, HandlerParameter
 
@@ -30,7 +31,7 @@ class Waiter:
             time.sleep(self.wait_ms / 1000)
 
     def update(self):
-        self.updated = True
+        pass  # self.updated = True
 
 
 class Event:
@@ -84,14 +85,20 @@ class Dispatcher(ThreadingActor):
         self.cancel_consumer_exchange = CanceledCustomerExchangeHandler(params=params)
 
         # Build first state
-        self.state = self.build_state(self.t)
+        self.state = Dispatcher.build_state(name=self.name, consumptions=self.consumptions, borders=self.borders,
+                                            productions=self.productions, uuid_generate=self.uuid_generate, t=self.t)
         self.state, _ = self.adequacy.execute(self.state)
 
         # Registry actor
         self.actor_ref.actor_urn = name
         ActorRegistry.register(self.actor_ref)
 
-    def build_state(self, t: int) -> State:
+    @staticmethod
+    def build_state(name: str,
+                    consumptions: List[Consumption],
+                    borders: List[Border],
+                    productions: List[Production],
+                    uuid_generate: Callable, t: int) -> State:
         """
         Build new state according to timestamp.
 
@@ -100,20 +107,20 @@ class Dispatcher(ThreadingActor):
         """
         # Build Consumers
         consumer_ledger = LedgerConsumption()
-        for cons in self.consumptions:
+        for cons in consumptions:
             consumer_ledger.add(type=cons.type, cost=cons.cost, quantity=cons.quantity[t])
 
         # Build Producers
-        producer_ledger = LedgerProduction(uuid_generate=self.uuid_generate)
-        for prod in self.productions:
+        producer_ledger = LedgerProduction(uuid_generate=uuid_generate)
+        for prod in productions:
             producer_ledger.add_production(cost=prod.cost, quantity=prod.quantity[t], type=prod.type)
 
         # Build Border
         border_ledger = LedgerBorder()
-        for b in self.borders:
+        for b in borders:
             border_ledger.add(dest=b.dest, cost=b.cost, quantity=b.quantity[t])
 
-        return State(name=self.name, consumptions=consumer_ledger, borders=border_ledger,
+        return State(name=name, consumptions=consumer_ledger, borders=border_ledger,
                      productions=producer_ledger, rac=0, cost=0)
 
     def on_receive(self, message):
@@ -169,33 +176,40 @@ class Dispatcher(ThreadingActor):
 
         :return: return OutputNode only if they have no more timestamp
         """
-        self.compute_total(self.t)
+        self.out_node = self.compute_total(out_node=self.out_node, state=self.state, t=self.t)
         if self.t + 1 < self.limit:
             self.t += 1
-            self.state = self.build_state(self.t)
+            self.state = Dispatcher.build_state(name=self.name, consumptions=self.consumptions, borders=self.borders,
+                                                productions=self.productions, uuid_generate=self.uuid_generate,
+                                                t=self.t)
         else:
             return self.out_node
 
-    def compute_total(self, t: int):
+    @staticmethod
+    def compute_total(out_node: OutputNode, state: State, t: int):
         """
         Compute dispatcher result:
         - copy initial consumption quantities
         - get production quantity used
         - sum production send to border
 
+        :param out_node: OutputNode used by dispatcher to collect result
+        :param state: current dispatcher state
         :param t: timestamp to update inside output result
-        :return:
+        :return: new out_node with quantities updated
         """
-        for i, _ in enumerate(self.out_node.consumptions):
-            type = self.out_node.consumptions[i].type
-            self.out_node.consumptions[i].quantity[t] = self.state.consumptions.find_consumption(type)['quantity']
+        for i, _ in enumerate(out_node.consumptions):
+            type = out_node.consumptions[i].type
+            out_node.consumptions[i].quantity[t] = state.consumptions.find_consumption(type)['quantity']
 
-        for i, _ in enumerate(self.out_node.productions):
-            type = self.out_node.productions[i].type
-            qt = self.state.productions.get_production_quantity(type=type, used=True)
-            qt += self.state.exchanges.sum_production(production_type=type)
-            self.out_node.productions[i].quantity[t] = qt
+        for i, _ in enumerate(out_node.productions):
+            type = out_node.productions[i].type
+            qt = state.productions.get_production_quantity(type=type, used=True)
+            qt += state.exchanges.sum_production(production_type=type)
+            out_node.productions[i].quantity[t] = qt
 
-        for i, _ in enumerate(self.out_node.borders):
-            dest = self.out_node.borders[i].dest
-            self.out_node.borders[i].quantity[t] = self.state.exchanges.sum_border(name=dest)
+        for i, _ in enumerate(out_node.borders):
+            dest = out_node.borders[i].dest
+            out_node.borders[i].quantity[t] = state.exchanges.sum_border(name=dest)
+
+        return out_node

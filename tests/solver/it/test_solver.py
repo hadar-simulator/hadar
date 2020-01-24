@@ -1,8 +1,8 @@
 import unittest
 
+from hadar.solver.input import *
 from hadar.solver.output import *
 from hadar.solver.study import solve
-from hadar.solver.input import *
 from tests.utils import assert_study
 
 

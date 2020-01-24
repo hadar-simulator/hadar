@@ -1,4 +1,4 @@
-from solver.input import *
+from hadar.solver.input import *
 
 
 class DTO:
@@ -78,8 +78,8 @@ class OutputNode(DTO):
                           for i in in_borders]
 
         size = in_consumptions[0].quantity.size if len(in_consumptions) > 0 else 0
-        output.rac = np.zeros_like(size)
-        output.cost = np.zeros_like(size)
+        output.rac = np.zeros_like(size).reshape(1,)
+        output.cost = np.zeros_like(size).reshape(1,)
         return output
 
 

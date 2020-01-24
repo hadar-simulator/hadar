@@ -3,7 +3,7 @@ from typing import Any
 
 from hadar.solver.actor.domain.message import *
 from hadar.solver.actor.ledger import *
-from solver.input import DTO
+from hadar.solver.input import DTO
 
 
 class State(DTO):

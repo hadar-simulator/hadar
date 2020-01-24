@@ -1,19 +1,14 @@
 import unittest
 
-from hadar.solver.actor.ledger import *
 from hadar.solver.actor.actor import Dispatcher, State
-from solver.output import *
+from hadar.solver.actor.ledger import *
+from hadar.solver.output import *
 
 
 class TestDispatcher(unittest.TestCase):
 
     def test_build_state(self):
         # Input
-        dispatcher = Dispatcher(name='fr',
-                                uuid_generate=lambda: 42,
-                                consumptions=[Consumption(type='load', quantity=np.array([10]), cost=20)],
-                                productions=[Production(type='solar', quantity=np.array([10]), cost=23)],
-                                borders=[Border(dest='be', quantity=np.array([10]), cost=2)])
 
         # Expected
         cons = LedgerConsumption()
@@ -25,26 +20,21 @@ class TestDispatcher(unittest.TestCase):
         border = LedgerBorder()
         border.add(dest='be', cost=2, quantity=10)
 
-        state = State(name='fr', consumptions=cons, productions=prod, borders=border, rac=0, cost=0)
+        exp_state = State(name='fr', consumptions=cons, productions=prod, borders=border, rac=0, cost=0)
 
-        self.assertEqual(state, dispatcher.build_state(0))
+        # Test
+        res_state = Dispatcher.build_state(name='fr',
+                                      uuid_generate=lambda: 42,
+                                      consumptions=[Consumption(type='load', quantity=np.array([10]), cost=20)],
+                                      productions=[Production(type='solar', quantity=np.array([10]), cost=23)],
+                                      borders=[Border(dest='be', quantity=np.array([10]), cost=2)], t=0)
 
+        self.assertEqual(exp_state, res_state)
 
     def test_compute_total(self):
-
         mock_id = MockUUID()
-        # Input
-        dispatcher = Dispatcher(name='fr',
-                                uuid_generate=mock_id.generate,
-                                consumptions=[
-                                    Consumption(cost=2, type='load', quantity=np.array([7, 7]))],
-                                productions=[
-                                    Production(cost=3, type='solar', quantity=np.array([5, 6])),
-                                    Production(cost=3, type='nuclear', quantity=np.array([5, 6]))],
-                                borders=[
-                                    Border(dest='be', cost=2, quantity=np.array([7, 8]))
-                                ])
 
+        # Input
         ledger_cons = LedgerConsumption()
         ledger_cons.add(type='load', cost=2, quantity=7)
 
@@ -56,23 +46,29 @@ class TestDispatcher(unittest.TestCase):
         ledger_border = LedgerBorder()
         ledger_border.add(dest='be', cost=2, quantity=7)
 
-        dispatcher.state = State(name='fr', consumptions=ledger_cons, borders=ledger_border,
+        state = State(name='fr', consumptions=ledger_cons, borders=ledger_border,
                                  productions=ledger_prod, cost=0, rac=0)
-        dispatcher.state.exchanges = LedgerExchange()
-        dispatcher.state.exchanges.add(Exchange(id=0, production_type='nuclear', quantity=3, path_node=['be']), type='export')
+        state.exchanges = LedgerExchange()
+        state.exchanges.add(Exchange(id=0, production_type='nuclear', quantity=3, path_node=['be']),
+                                       type='export')
+
+        out_node = OutputNode(consumptions=[], borders=[], productions=[], cost=[0], rac=[0])
+        out_node.consumptions = [OutputConsumption(type='load', quantity=np.array([0, 0]), cost=2)]
+        out_node.productions = [OutputProduction(type='solar', cost=3, quantity=np.array([0, 0])),
+                                OutputProduction(type='nuclear', cost=3, quantity=np.array([0, 0]))]
+        out_node.borders = [OutputBorder(dest='be', cost=2, quantity=np.array([0, 0]))]
 
         # Expected
-        expected = OutputNode()
+        expected = OutputNode(consumptions=[], borders=[], productions=[], cost=[0], rac=[0])
         expected.consumptions = [OutputConsumption(type='load', quantity=np.array([7, 0]), cost=2)]
         expected.productions = [OutputProduction(type='solar', cost=3, quantity=np.array([5, 0])),
                                 OutputProduction(type='nuclear', cost=3, quantity=np.array([5, 0]))]
         expected.borders = [OutputBorder(dest='be', cost=2, quantity=np.array([3, 0]))]
 
         # Start test
-        dispatcher.compute_total(0)
+        res = Dispatcher.compute_total(out_node=out_node, state=state, t=0)
 
-        self.assertEqual(expected, dispatcher.out_node)
-
+        self.assertEqual(expected, res)
 
 
 class MockUUID:
