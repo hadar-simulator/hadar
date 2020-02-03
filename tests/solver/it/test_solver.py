@@ -41,7 +41,7 @@ class TestSolver(unittest.TestCase):
                                          borders=[],
                                          rac=[0], cost=[0])
 
-        res = solve(study, kind='actor')
+        res = solve(study, kind='lp')
         assert_study(self, Result(nodes_expected), res)
 
     def test_exchange_two_concurrent_nodes(self):
@@ -92,7 +92,7 @@ class TestSolver(unittest.TestCase):
                                          borders=[],
                                          cost=[0], rac=[0])
 
-        res = solve(study, kind='actor')
+        res = solve(study, kind='lp')
 
         assert_study(self, Result(nodes_expected), res)
 
@@ -177,6 +177,6 @@ class TestSolver(unittest.TestCase):
                                          productions=[OutputProduction(cost=10, quantity=[10], type='nuclear')],
                                          borders=[], rac=[0], cost=[0])
 
-        res = solve(study, kind='actor')
+        res = solve(study, kind='lp')
 
         assert_study(self, Result(nodes_expected), res)

@@ -51,6 +51,8 @@ class Dispatcher(ThreadingActor):
                  ):
         super().__init__()
 
+        input = InputNode(consumptions=consumptions, productions=productions, borders=borders)
+
         # Save constructor params
         self.name = name
         self.consumptions = consumptions
@@ -59,9 +61,7 @@ class Dispatcher(ThreadingActor):
         self.uuid_generate = uuid_generate
 
         # Instantiate output data
-        self.out_node = OutputNode.build_like_input(in_consumptions=self.consumptions,
-                                                    in_productions=self.productions,
-                                                    in_borders=self.borders)
+        self.out_node = OutputNode.build_like_input(input)
 
         # Set time horizon
         if self.consumptions:

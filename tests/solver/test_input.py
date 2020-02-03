@@ -14,6 +14,7 @@ class TestNetwork(unittest.TestCase):
         self.assertEqual(c, study.nodes['a'].consumptions[0])
         self.assertEqual(p, study.nodes['a'].productions[0])
         self.assertEqual(b, study.nodes['b'].borders[0])
+        self.assertEqual(1, study.horizon)
 
     def test_wrong_node_list(self):
         def test():

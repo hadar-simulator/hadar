@@ -64,7 +64,7 @@ class Study(DTO):
             raise ValueError('some nodes are not unique')
 
         self._nodes = {name: InputNode(consumptions=[], productions=[], borders=[]) for name in node_names}
-
+        self.horizon = 0
 
 
     @property
@@ -101,6 +101,7 @@ class Study(DTO):
         if prod.type in [p.type for p in self._nodes[node].productions]:
             raise ValueError('production type must be unique on a node')
         self._nodes[node].productions.append(prod)
+        self._update_horizon(prod.quantity)
 
     def _add_consumption(self, node: str, cons: Consumption):
         if cons.cost < 0:
@@ -110,6 +111,7 @@ class Study(DTO):
         if cons.type in [c.type for c in self._nodes[node].consumptions]:
             raise ValueError('consumption type must be unique on a node')
         self._nodes[node].consumptions.append(cons)
+        self._update_horizon(cons.quantity)
 
     def _add_border(self, node: str, border: Border):
         if border.cost < 0:
@@ -121,3 +123,7 @@ class Study(DTO):
         if border.dest in [b.dest for b in self._nodes[node].borders]:
             raise ValueError('border destination must be unique on a node')
         self._nodes[node].borders.append(border)
+        self._update_horizon(border.quantity)
+
+    def _update_horizon(self, quantity):
+        self.horizon = max(self.horizon, quantity.size)

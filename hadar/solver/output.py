@@ -65,19 +65,17 @@ class OutputNode(DTO):
         self.cost = np.array(cost)
 
     @staticmethod
-    def build_like_input(in_consumptions: List[Consumption] = [],
-                         in_productions: List[Production] = [],
-                         in_borders: List[Border] = []):
+    def build_like_input(input: InputNode):
         output = OutputNode(consumptions=[], productions=[], borders=[], rac=[0], cost=[0])
 
         output.consumptions = [OutputConsumption(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
-                               for i in in_consumptions]
+                               for i in input.consumptions]
         output.productions = [OutputProduction(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
-                              for i in in_productions]
+                              for i in input.productions]
         output.borders = [OutputBorder(dest=i.dest, cost=i.cost, quantity=np.zeros_like(i.quantity))
-                          for i in in_borders]
+                          for i in input.borders]
 
-        size = in_consumptions[0].quantity.size if len(in_consumptions) > 0 else 0
+        size = input.consumptions[0].quantity.size if len(input.consumptions) > 0 else 0
         output.rac = np.zeros_like(size).reshape(1,)
         output.cost = np.zeros_like(size).reshape(1,)
         return output
