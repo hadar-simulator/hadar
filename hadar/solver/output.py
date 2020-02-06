@@ -7,7 +7,7 @@ class DTO:
     """
 
     def __hash__(self):
-        return hash(tuple(sorted(self.__dict__.viewitems())))
+        return hash(tuple(sorted(self.__dict__.items())))
 
     def __eq__(self, other):
         if not isinstance(other, type(self)):

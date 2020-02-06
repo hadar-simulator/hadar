@@ -71,7 +71,7 @@ class Study(DTO):
     def nodes(self):
         return self._nodes
 
-    def add(self, node: str, data=Union[Production, Consumption, Border]):
+    def add_on_node(self, node: str, data=Union[Production, Consumption, Border]):
         """
 
         :param node:
@@ -88,8 +88,20 @@ class Study(DTO):
         elif isinstance(data, Consumption):
             self._add_consumption(node, data)
 
-        elif isinstance(data, Border):
-            self._add_border(node, data)
+        return self
+
+    def add_border(self, src: str, dest: str, cost: int, quantity: Union[np.ndarray, List[int]]):
+        quantity = np.array(quantity)
+        if cost < 0:
+            raise ValueError('border cost must be positive')
+        if quantity < 0:
+            raise ValueError('border quantity must be positive')
+        if dest not in self._nodes.keys():
+            raise ValueError('border destination must be a valid node')
+        if dest in [b.dest for b in self._nodes[src].borders]:
+            raise ValueError('border destination must be unique on a node')
+        self._nodes[src].borders.append(Border(dest=dest, quantity=quantity, cost=cost))
+        self._update_horizon(quantity)
 
         return self
 
@@ -112,18 +124,6 @@ class Study(DTO):
             raise ValueError('consumption type must be unique on a node')
         self._nodes[node].consumptions.append(cons)
         self._update_horizon(cons.quantity)
-
-    def _add_border(self, node: str, border: Border):
-        if border.cost < 0:
-            raise ValueError('border cost must be positive')
-        if border.quantity < 0:
-            raise ValueError('border quantity must be positive')
-        if border.dest not in self._nodes.keys():
-            raise ValueError('border destination must be a valid node')
-        if border.dest in [b.dest for b in self._nodes[node].borders]:
-            raise ValueError('border destination must be unique on a node')
-        self._nodes[node].borders.append(border)
-        self._update_horizon(border.quantity)
 
     def _update_horizon(self, quantity):
         self.horizon = max(self.horizon, quantity.size)

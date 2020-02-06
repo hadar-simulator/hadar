@@ -5,15 +5,16 @@ from hadar.solver.lp.domain import *
 from hadar.solver.lp.mapper import InputMapper, OutputMapper
 from hadar.solver.input import *
 from hadar.solver.output import *
+from tests.utils import assert_study
 
 
 class TestInputMapper(unittest.TestCase):
     def test_map_input(self):
         # Input
         study = Study(['a', 'be']) \
-            .add('a', Consumption(type='load', quantity=[10], cost=10)) \
-            .add('a', Production(type='nuclear', quantity=[12], cost=10)) \
-            .add('a', Border(dest='be', quantity=[10], cost=2))
+            .add_on_node('a', Consumption(type='load', quantity=[10], cost=10)) \
+            .add_on_node('a', Production(type='nuclear', quantity=[12], cost=10)) \
+            .add_border(src='a', dest='be', quantity=[10], cost=2)
 
 
 
@@ -36,9 +37,9 @@ class TestOutputMapper(unittest.TestCase):
     def test_map_output(self):
         # Input
         study = Study(['a', 'be']) \
-            .add('a', Consumption(type='load', quantity=[10], cost=10)) \
-            .add('a', Production(type='nuclear', quantity=[12], cost=10)) \
-            .add('a', Border(dest='be', quantity=[10], cost=2))
+            .add_on_node('a', Consumption(type='load', quantity=[10], cost=10)) \
+            .add_on_node('a', Production(type='nuclear', quantity=[12], cost=10)) \
+            .add_border(src='a', dest='be', quantity=[10], cost=2)
 
         s = pywraplp.Solver('simple_lp_program', pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
         mapper = OutputMapper(solver=s, study=study)
@@ -56,5 +57,4 @@ class TestOutputMapper(unittest.TestCase):
                           rac=[0], cost=[0])
         expected = Result(nodes={'a': node, 'be': OutputNode(consumptions=[], productions=[], borders=[], rac=[0], cost=[0])})
 
-        self.assertEqual(expected, mapper.get_result())
-
+        assert_study(self, expected=expected, result=mapper.get_result())

@@ -24,7 +24,7 @@ jobs:
     - name: Test with unittest
       run: |
         pip install coverage
-        coverage run --source=./hadar -m unittest discover
+        coverage run --source=./hadar -m unittest discover tests.solver
         coverage xml -i
 
     - name: SonarCloud Scan

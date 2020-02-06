@@ -27,10 +27,10 @@ class TestSolver(unittest.TestCase):
         :return:
         """
         study = Study(['a']) \
-            .add(node='a', data=Consumption(type='load', cost=10 ** 6, quantity=[30])) \
-            .add(node='a', data=Production(type='nuclear', cost=20, quantity=[15])) \
-            .add(node='a', data=Production(type='solar', cost=10, quantity=[10])) \
-            .add(node='a', data=Production(type='oil', cost=30, quantity=[10]))
+            .add_on_node(node='a', data=Consumption(type='load', cost=10 ** 6, quantity=[30])) \
+            .add_on_node(node='a', data=Production(type='nuclear', cost=20, quantity=[15])) \
+            .add_on_node(node='a', data=Production(type='solar', cost=10, quantity=[10])) \
+            .add_on_node(node='a', data=Production(type='oil', cost=30, quantity=[10]))
 
         nodes_expected = dict()
         nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[30], type='load')],
@@ -66,14 +66,14 @@ class TestSolver(unittest.TestCase):
         :return:
         """
         study = Study(node_names=['a', 'b', 'c']) \
-            .add('a', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
-            .add('a', data=Production(cost=10, quantity=[30], type='nuclear')) \
-            .add('a', data=Border(dest='b', quantity=[20], cost=2)) \
-            .add('a', data=Border(dest='c', quantity=[20], cost=2)) \
-            .add('b', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
-            .add('b', data=Production(cost=20, quantity=[10], type='nuclear')) \
-            .add('c', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
-            .add('c', data=Production(cost=20, quantity=[10], type='nuclear'))
+            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
+            .add_on_node('a', data=Production(cost=10, quantity=[30], type='nuclear')) \
+            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[10], type='nuclear')) \
+            .add_on_node('c', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
+            .add_on_node('c', data=Production(cost=20, quantity=[10], type='nuclear')) \
+            .add_border(src='a', dest='b', quantity=[20], cost=2) \
+            .add_border(src='a', dest='c', quantity=[20], cost=2)
 
         nodes_expected = {}
         nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
@@ -110,11 +110,11 @@ class TestSolver(unittest.TestCase):
         :return:
         """
         study = Study(node_names=['a', 'b', 'c']) \
-            .add('a', data=Production(cost=10, quantity=[30], type='nuclear')) \
-            .add('a', data=Border(dest='b', quantity=[20], cost=2)) \
-            .add('b', data=Consumption(cost=10 ** 6, quantity=[10])) \
-            .add('b', data=Border(dest='c', quantity=[15], cost=2)) \
-            .add('c', data=Consumption(cost=10 ** 6, quantity=[20], type='load'))
+            .add_on_node('a', data=Production(cost=10, quantity=[30], type='nuclear')) \
+            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[10])) \
+            .add_on_node('c', data=Consumption(cost=10 ** 6, quantity=[20], type='load')) \
+            .add_border(src='a', dest='b', quantity=[20], cost=2) \
+            .add_border(src='b', dest='c', quantity=[15], cost=2)
 
         nodes_expected = {}
         nodes_expected['a'] = OutputNode(productions=[OutputProduction(cost=10, quantity=[20], type='nuclear')],
@@ -153,14 +153,14 @@ class TestSolver(unittest.TestCase):
         :return:
         """
         study = Study(node_names=['a', 'b', 'c']) \
-            .add('a', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
-            .add('a', data=Production(cost=10, quantity=[20], type='nuclear')) \
-            .add('a', data=Border(dest='b', quantity=[20], cost=2)) \
-            .add('b', data=Consumption(cost=10 ** 6, quantity=[5], type='load')) \
-            .add('b', data=Production(cost=20, quantity=[15], type='nuclear')) \
-            .add('b', data=Border(dest='c', quantity=[20], cost=2)) \
-            .add('c', data=Consumption(cost=10 ** 6, quantity=[20], type='load')) \
-            .add('c', data=Production(cost=10, quantity=[10], type='nuclear'))
+            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
+            .add_on_node('a', data=Production(cost=10, quantity=[20], type='nuclear')) \
+            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[5], type='load')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[15], type='nuclear')) \
+            .add_on_node('c', data=Consumption(cost=10 ** 6, quantity=[20], type='load')) \
+            .add_on_node('c', data=Production(cost=10, quantity=[10], type='nuclear')) \
+            .add_border(src='a', dest='b', quantity=[20], cost=2) \
+            .add_border(src='b', dest='c', quantity=[20], cost=2)
 
         nodes_expected = {}
         nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],

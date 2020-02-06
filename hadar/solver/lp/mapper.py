@@ -2,7 +2,7 @@ from ortools.linear_solver.pywraplp import Solver
 
 from hadar.solver.input import InputNode, Study
 from hadar.solver.lp.domain import *
-from solver.output import OutputNode, Result
+from hadar.solver.output import OutputNode, Result
 
 
 class InputMapper:
