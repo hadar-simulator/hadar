@@ -7,19 +7,6 @@ from hadar.solver.output import *
 from hadar.solver.actor.handler.entry import *
 from hadar.solver.actor.handler.handler import AdequacyHandler, ReturnHandler, HandlerParameter
 
-
-def singleton(class_):
-    instances = {}
-
-    def getinstance(*args, **kwargs):
-        if class_ not in instances:
-            instances[class_] = class_(*args, **kwargs)
-        return instances[class_]
-
-    return getinstance
-
-
-@singleton
 class Waiter:
     def __init__(self, wait_ms=0):
         self.updated = True
@@ -31,7 +18,7 @@ class Waiter:
             time.sleep(self.wait_ms / 1000)
 
     def update(self):
-        pass  # self.updated = True
+        self.updated = True
 
 
 class Event:
@@ -45,19 +32,15 @@ class Dispatcher(ThreadingActor):
 
     def __init__(self, name,
                  uuid_generate=uuid.uuid4,
-                 consumptions: List[Consumption] = [],
-                 productions: List[Production] = [],
-                 borders: List[Border] = []
-                 ):
+                 waiter: Waiter = None,
+                 input: InputNode = None):
         super().__init__()
-
-        input = InputNode(consumptions=consumptions, productions=productions, borders=borders)
 
         # Save constructor params
         self.name = name
-        self.consumptions = consumptions
-        self.productions = productions
-        self.borders = borders
+        self.consumptions = input.consumptions
+        self.productions = input.productions
+        self.borders = input.borders
         self.uuid_generate = uuid_generate
 
         # Instantiate output data
@@ -73,7 +56,7 @@ class Dispatcher(ThreadingActor):
         self.t = 0
 
         # Setup waiter and and event sink
-        self.waiter = Waiter()
+        self.waiter = waiter
         self.events = []
 
         # Setup handlers
