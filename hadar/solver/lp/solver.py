@@ -11,13 +11,17 @@ class ObjectiveBuilder:
         self.objective = solver.Objective()
         self.objective.SetMinimization()
 
+    def add_consumption(self, consumptions: List[LPConsumption]):
+        for cons in consumptions:
+            self.objective.SetCoefficient(cons.variable, cons.cost)
+
     def add_productions(self, prods: List[LPProduction]):
         for prod in prods:
-            self.objective.SetCoefficient(prod.quantity, prod.cost)
+            self.objective.SetCoefficient(prod.variable, prod.cost)
 
     def add_borders(self, borders: List[LPBorder]):
         for border in borders:
-            self.objective.SetCoefficient(border.quantity, border.cost)
+            self.objective.SetCoefficient(border.variable, border.cost)
 
     def build(self):
         pass
@@ -32,17 +36,20 @@ class AdequacyBuilder:
     def add_node(self, name, node: LPNode):
         load = sum([c.quantity for c in node.consumptions])*1.0
         ct = self.solver.Constraint(load, load)
+        for cons in node.consumptions:
+            ct.SetCoefficient(cons.variable, 1)
+            pass
         for prod in node.productions:
-            ct.SetCoefficient(prod.quantity, 1)
+            ct.SetCoefficient(prod.variable, 1)
         for bord in node.borders:
             self.borders.append(bord)
-            ct.SetCoefficient(bord.quantity, -1)
+            ct.SetCoefficient(bord.variable, -1)
         self.constraints[name] = ct
 
     def build(self):
         # Apply import border in adequacy
         for bord in self.borders:
-            self.constraints[bord.dest].SetCoefficient(bord.quantity, 1)
+            self.constraints[bord.dest].SetCoefficient(bord.variable, 1)
 
 
 def solve_lp(study: Study) -> Result:
@@ -60,6 +67,7 @@ def solve_lp(study: Study) -> Result:
             adequacy_const.add_node(name=name, node=variables[t][name])
             objective.add_productions(variables[t][name].productions)
             objective.add_borders(variables[t][name].borders)
+            objective.add_consumption(variables[t][name].consumptions)
 
     objective.build()
     adequacy_const.build()

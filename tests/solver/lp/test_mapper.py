@@ -24,10 +24,10 @@ class TestInputMapper(unittest.TestCase):
         mapper = InputMapper(solver=s, study=study)
 
         # Expected
-        out_cons = [LPConsumption(type='load', cost=10, quantity=10)]
-        out_prod = [LPProduction(type='nuclear', cost=10, quantity=s.NumVar(0, 12.0, 'prod nuclear on a'))]
+        out_cons = [LPConsumption(type='load', cost=10, quantity=10, variable=s.NumVar(0, 10, 'lol load on a'))]
+        out_prod = [LPProduction(type='nuclear', cost=10, quantity=12, variable=s.NumVar(0, 12.0, 'prod nuclear on a'))]
 
-        out_bord = [LPBorder(src='a', dest='be', cost=2, quantity=s.NumVar(0, 10.0, 'border on a to be'))]
+        out_bord = [LPBorder(src='a', dest='be', cost=2, quantity=10, variable=s.NumVar(0, 10.0, 'border on a to be'))]
         out_node = LPNode(consumptions=out_cons, productions=out_prod, borders=out_bord)
 
         self.assertEqual(out_node, mapper.get_var(name='a', t=0))
@@ -44,10 +44,10 @@ class TestOutputMapper(unittest.TestCase):
         s = pywraplp.Solver('simple_lp_program', pywraplp.Solver.GLOP_LINEAR_PROGRAMMING)
         mapper = OutputMapper(solver=s, study=study)
 
-        out_cons = [LPConsumption(type='load', cost=10, quantity=10)]
-        out_prod = [LPProduction(type='nuclear', cost=10, quantity=s.NumVar(0, 12.0, 'prod nuclear on a'))]
+        out_cons = [LPConsumption(type='load', cost=10, quantity=10, variable=s.NumVar(0, 10.0, 'lol load on a'))]
+        out_prod = [LPProduction(type='nuclear', cost=10, quantity=12, variable=s.NumVar(0, 12.0, 'prod nuclear on a'))]
 
-        out_bord = [LPBorder(src='a', dest='be', cost=2, quantity=s.NumVar(0, 10.0, 'border on a to be'))]
+        out_bord = [LPBorder(src='a', dest='be', cost=2, quantity=10, variable=s.NumVar(0, 10.0, 'border on a to be'))]
         mapper.set_var(name='a', t=0, vars=LPNode(consumptions=out_cons, productions=out_prod, borders=out_bord))
 
         # Expected

@@ -8,25 +8,28 @@ from hadar.solver.input import DTO
 
 class LPConsumption(DTO):
 
-    def __init__(self, quantity: int, cost: float = 0, type: str = ''):
+    def __init__(self, quantity: int, variable=Variable, cost: float = 0, type: str = ''):
         self.cost = cost
         self.quantity = quantity
         self.type = type
+        self.variable = variable
 
 
 class LPProduction(DTO):
 
-    def __init__(self, quantity: Variable, cost: float = 0, type: str = 'in'):
+    def __init__(self, quantity: int, variable: Variable, cost: float = 0, type: str = 'in'):
         self.type = type
         self.cost = cost
+        self.variable = variable
         self.quantity = quantity
 
 
 class LPBorder(DTO):
-    def __init__(self, src: str, dest: str, quantity: Variable, cost: float = 0):
+    def __init__(self, src: str, dest: str, quantity: int, variable: Variable, cost: float = 0):
         self.src = src
         self.dest = dest
         self.quantity = quantity
+        self.variable = variable
         self.cost = cost
 
 
