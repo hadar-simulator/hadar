@@ -1,4 +1,5 @@
 pykka
 gevent
-jupyter
-plotly
+pandas
+numpy
+ortools
