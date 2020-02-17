@@ -33,7 +33,6 @@ class OutputMapper:
 
     def set_var(self, name: str, t: int, vars: LPNode):
         for i in range(len(vars.consumptions)):
-            print(name, vars.consumptions[i].variable.solution_value())
             self.nodes[name].consumptions[i].quantity[t] = vars.consumptions[i].quantity
 
         for i in range(len(vars.productions)):

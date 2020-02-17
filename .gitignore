@@ -1,6 +1,16 @@
+# Pycharm
 **/.idea
+
+# Python cache
 *.pyc
 
+# Virtual env
 /venv
 
+# jupyter notebook
 **/.ipynb_checkpoints
+
+# setuptool dist output
+**/dist
+**/hadar.egg-info
+**/build
