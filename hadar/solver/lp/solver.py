@@ -10,23 +10,62 @@ from hadar.solver.output import OutputNode, Result
 
 logger = logging.getLogger(__name__)
 
+
 class ObjectiveBuilder:
+    """
+    Build objective cost function.
+    """
+
     def __init__(self, solver: Solver):
+        """
+        Initiate new objective to minimize inside ortools solver.
+
+        :param solver: ortools solver instance to use
+        """
         self.objective = solver.Objective()
         self.objective.SetMinimization()
         self.logger = logging.getLogger(__name__ + '.' + __class__.__name__)
 
-    def add_consumption(self, consumptions: List[LPConsumption]):
+    def add_node(self, node: LPNode):
+        """
+        Add cost in objective for each node element.
+
+        :param node: node to add
+        :return:
+        """
+        self._add_consumption(node.consumptions)
+        self._add_productions(node.productions)
+        self._add_borders(node.borders)
+
+    def _add_consumption(self, consumptions: List[LPConsumption]):
+        """
+        Add consumption cost. That mean we add cost of a loss of consumption.
+
+        :param consumptions: consumption with loss variable and cost
+        :return:
+        """
         for cons in consumptions:
             self.objective.SetCoefficient(cons.variable, cons.cost)
             self.logger.debug('Add consumption %s into objective', cons.type)
 
-    def add_productions(self, prods: List[LPProduction]):
+    def _add_productions(self, prods: List[LPProduction]):
+        """
+        Add production cost. That mean the cost to use a production.
+
+        :param prods: production with cost to use and used quantity variable
+        :return:
+        """
         for prod in prods:
             self.objective.SetCoefficient(prod.variable, prod.cost)
             self.logger.debug('Add production %s into objective', prod.type)
 
-    def add_borders(self, borders: List[LPBorder]):
+    def _add_borders(self, borders: List[LPBorder]):
+        """
+        Add border cost. That mean cost to use a border capacity.
+
+        :param borders: borders with cost to use and used quantity variable
+        :return:
+        """
         for border in borders:
             self.objective.SetCoefficient(border.variable, border.cost)
             self.logger.debug('Add border %s->%s to objective', border.src, border.dest)
@@ -36,30 +75,80 @@ class ObjectiveBuilder:
 
 
 class AdequacyBuilder:
+    """
+    Build adequacy flow constraint.
+    """
     def __init__(self, solver: Solver):
+        """
+        Initiate
+        :param solver: ortools solver instance to use
+        """
         self.constraints = {}
         self.borders = []
         self.solver = solver
         self.logger = logging.getLogger(__name__ + '.' + __class__.__name__)
 
     def add_node(self, name, node: LPNode):
+        """
+        Add flow constraint for a specific node.
+
+        :param name: node name. Used to differentiate each equation
+        :param node: node to map constraint
+        :return:
+        """
         load = sum([c.quantity for c in node.consumptions])*1.0
-        ct = self.solver.Constraint(load, load)
-        for cons in node.consumptions:
-            ct.SetCoefficient(cons.variable, 1)
+        self.constraints[name] = self.solver.Constraint(load, load)
+
+        self._add_consumptions(name, node.consumptions)
+        self._add_productions(name, node.productions)
+        self._add_borders(name, node.borders)
+
+    def _add_consumptions(self, name: str, consumptions: List[LPConsumption]):
+        """
+        Add consumption flow. That mean loss of consumption is set a production to match
+        equation in case there are not enough production.
+
+        :param name: node's name
+        :param consumptions: consumptions with loss as variable
+        :return:
+        """
+        for cons in consumptions:
+            self.constraints[name].SetCoefficient(cons.variable, 1)
             self.logger.debug('Add lol %s for %s into adequacy constraint', cons.type, name)
 
-        for prod in node.productions:
-            ct.SetCoefficient(prod.variable, 1)
+    def _add_productions(self, name: str, productions: List[LPProduction]):
+        """
+        Add production flow. That mean production use is like a production.
+
+        :param name: node's name
+        :param productions: productoins with production used as variable
+        :return:
+        """
+        for prod in productions:
+            self.constraints[name].SetCoefficient(prod.variable, 1)
             self.logger.debug('Add prod %s for %s into adequacy constraint', prod.type, name)
 
-        for bord in node.borders:
+    def _add_borders(self, name: str, borders: List[LPBorder]):
+        """
+        Add borders. That mean the border export is like a consumption.
+        After all node added. The same export, become also an import for destination node.
+        Therefore border has to be set like production for destination node.
+
+        :param name: node's name
+        :param borders: border with export quantity as variable
+        :return:
+        """
+        for bord in borders:
             self.borders.append(bord)
-            ct.SetCoefficient(bord.variable, -1)
+            self.constraints[name].SetCoefficient(bord.variable, -1)
             self.logger.debug('Add border %s for %s into adequacy constraint', bord.dest, name)
-        self.constraints[name] = ct
 
     def build(self):
+        """
+        Call when all node are added. Apply all import flow for each node.
+        
+        :return:
+        """
         # Apply import border in adequacy
         for bord in self.borders:
             self.constraints[bord.dest].SetCoefficient(bord.variable, 1)
@@ -78,9 +167,7 @@ def solve_lp(study: Study) -> Result:
             variables[t][name] = in_mapper.get_var(name=name, t=t)
 
             adequacy_const.add_node(name=name, node=variables[t][name])
-            objective.add_productions(variables[t][name].productions)
-            objective.add_borders(variables[t][name].borders)
-            objective.add_consumption(variables[t][name].consumptions)
+            objective.add_node(node=variables[t][name])
 
     objective.build()
     adequacy_const.build()

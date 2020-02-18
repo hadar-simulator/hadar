@@ -8,7 +8,7 @@ class DTO:
     Implement basic method for DTO objects
     """
     def __hash__(self):
-        return hash(tuple(sorted(self.__dict__.viewitems())))
+        return hash(tuple(sorted(self.__dict__.items())))
 
     def __eq__(self, other):
         return isinstance(other, type(self)) and self.__dict__ == other.__dict__

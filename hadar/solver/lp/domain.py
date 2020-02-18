@@ -8,7 +8,7 @@ from hadar.solver.input import DTO
 
 class LPConsumption(DTO):
 
-    def __init__(self, quantity: int, variable=Variable, cost: float = 0, type: str = ''):
+    def __init__(self, quantity: int, variable: Variable, cost: float = 0, type: str = ''):
         self.cost = cost
         self.quantity = quantity
         self.type = type
