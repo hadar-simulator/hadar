@@ -13,7 +13,7 @@ class TestObjectiveBuilder(unittest.TestCase):
     def test_add_node(self):
         # Mock
         objective = MockObjective()
-        solver = MockSolver(objective=objective)
+        solver = MockSolver()
 
         # Input
         consumptions = [LPConsumption(type='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
