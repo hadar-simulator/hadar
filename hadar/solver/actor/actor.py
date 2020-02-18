@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import Callable
 
@@ -35,6 +36,8 @@ class Dispatcher(ThreadingActor):
                  waiter: Waiter = None,
                  input: InputNode = None):
         super().__init__()
+
+        self.logger = logging.getLogger(__name__ + '.' + __class__.__name__)
 
         # Save constructor params
         self.name = name
@@ -113,7 +116,8 @@ class Dispatcher(ThreadingActor):
         :param message: next message to process
         :return:
         """
-        self.events.append(Event(type='recv', message=message))
+        self.logger.debug('%s receive message %s', self.name, message)
+
         res = None
         if isinstance(message, Start):
             self.state, _ = self.start.execute(self.state, message)
@@ -126,9 +130,7 @@ class Dispatcher(ThreadingActor):
 
         elif isinstance(message, ProposalOffer):
             self.waiter.update()
-            self.state, ex = self.offer.execute(self.state, message)
-            self.events.append(Event(type='recv res', message=ex))
-            res = ex
+            self.state, res = self.offer.execute(self.state, message)
 
         elif isinstance(message, Proposal):
             self.waiter.update()
@@ -138,6 +140,8 @@ class Dispatcher(ThreadingActor):
             self.waiter.update()
             self.state, _ = self.cancel_consumer_exchange.execute(self.state, message)
 
+        if res:
+            self.logger.debug('%s response message %s', self.name, res)
         return res
 
     def on_stop(self):
