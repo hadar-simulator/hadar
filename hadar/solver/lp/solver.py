@@ -146,7 +146,7 @@ class AdequacyBuilder:
     def build(self):
         """
         Call when all node are added. Apply all import flow for each node.
-        
+
         :return:
         """
         # Apply import border in adequacy
@@ -154,23 +154,32 @@ class AdequacyBuilder:
             self.constraints[bord.dest].SetCoefficient(bord.variable, 1)
 
 
-def solve_lp(study: Study) -> Result:
-    solver = Solver('simple_lp_program', Solver.GLOP_LINEAR_PROGRAMMING)
+def _solve(study: Study,
+           solver: Solver,
+           objective: ObjectiveBuilder,
+           adequacy: AdequacyBuilder,
+           in_mapper: InputMapper,
+           out_mapper: OutputMapper) -> Result:
+    """
+    Solve adequacy flow problem with a linear optimizer.
 
-    objective = ObjectiveBuilder(solver=solver)
-    adequacy_const = AdequacyBuilder(solver=solver)
+    :param study: study to compute
+    :param solver: solver to used
+    :param objective: objective builder to use
+    :param adequacy: adequacy builder to use
+    :return: Result object with optimal solution
+    """
     variables = [{}] * study.horizon
 
-    in_mapper = InputMapper(solver=solver, study=study)
     for t in range(0, study.horizon):
         for name, node in study.nodes.items():
             variables[t][name] = in_mapper.get_var(name=name, t=t)
 
-            adequacy_const.add_node(name=name, node=variables[t][name])
+            adequacy.add_node(name=name, node=variables[t][name])
             objective.add_node(node=variables[t][name])
 
     objective.build()
-    adequacy_const.build()
+    adequacy .build()
 
     logger.info('Problem build. Start solver')
     solver.EnableOutput()
@@ -179,10 +188,26 @@ def solve_lp(study: Study) -> Result:
     logger.info('Solver finish cost=%d', solver.Objective().Value())
     logger.debug(solver.ExportModelAsLpFormat(False).replace('\\', '').replace(',_', ','))
 
-    out_mapper = OutputMapper(solver=solver, study=study)
     for t in range(0, study.horizon):
         for name, node in study.nodes.items():
             out_mapper.set_var(name=name, t=t, vars=variables[t][name])
 
     return out_mapper.get_result()
 
+
+def solve_lp(study: Study) -> Result:
+    """
+    Solve adequacy flow problem with a linear optimizer.
+
+    :param study: study to compute
+    :return: Result object with optimal solution
+    """
+    solver = Solver('simple_lp_program', Solver.GLOP_LINEAR_PROGRAMMING)
+
+    objective = ObjectiveBuilder(solver=solver)
+    adequacy = AdequacyBuilder(solver=solver)
+
+    in_mapper = InputMapper(solver=solver, study=study)
+    out_mapper = OutputMapper(solver=solver, study=study)
+
+    return _solve(study, solver, objective, adequacy, in_mapper, out_mapper)

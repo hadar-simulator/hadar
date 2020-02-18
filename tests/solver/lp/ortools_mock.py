@@ -34,6 +34,9 @@ class MockObjective(DTO):
     def SetCoefficient(self, var: MockNumVar, cost: int):
         self.coeffs[var] = cost
 
+    def Value(self):
+        return 0
+
 
 class MockSolver:
     def __init__(self):
@@ -44,3 +47,12 @@ class MockSolver:
 
     def Constraint(self, min: int, max: int):
         return MockConstraint(min, max)
+
+    def Solve(self):
+        pass
+
+    def EnableOutput(self):
+        pass
+
+    def ExportModelAsLpFormat(self, toggle: bool):
+        return ''

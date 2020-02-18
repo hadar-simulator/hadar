@@ -1,5 +1,10 @@
 import unittest
+from unittest.mock import MagicMock
+
 from hadar.solver.lp.solver import *
+from hadar.solver.input import *
+from hadar.solver.output import *
+from hadar.solver.lp.solver import _solve
 from tests.solver.lp.ortools_mock import *
 
 
@@ -57,3 +62,53 @@ class TestAdequacyBuilder(unittest.TestCase):
 
         self.assertEqual(fr_constraint, builder.constraints['fr'])
         self.assertEqual(be_constraint, builder.constraints['be'])
+
+
+class TestSolve(unittest.TestCase):
+    def test_solve(self):
+        # Input
+        study = Study(node_names=['a']) \
+            .add_on_node(node='a', data=Consumption(type='load', cost=10, quantity=[10]))
+
+        # Expected
+        out_a = OutputNode(consumptions=[OutputConsumption(type='load', cost=10, quantity=[10])],
+                       productions=[], borders=[], rac=0, cost=0)
+        exp_result = Result(nodes={'a': out_a})
+
+        # Mock
+        solver = MockSolver()
+        solver.Solve = MagicMock()
+
+        objective = ObjectiveBuilder(solver=solver)
+        objective.add_node = MagicMock()
+        objective.build = MagicMock()
+
+        adequacy = AdequacyBuilder(solver=solver)
+        adequacy.add_node = MagicMock()
+        adequacy.build = MagicMock()
+
+        in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))
+        var = LPNode(consumptions=[in_cons], productions=[], borders=[])
+        in_mapper = InputMapper(solver=solver, study=study)
+        in_mapper.get_var = MagicMock(return_value=var)
+
+        out_mapper = OutputMapper(solver=solver, study=study)
+        out_mapper.set_var = MagicMock()
+        out_mapper.get_result = MagicMock(return_value=exp_result)
+
+
+        # Test
+        res = _solve(study, solver, objective, adequacy, in_mapper, out_mapper)
+
+        self.assertEqual(exp_result, res)
+
+        in_mapper.get_var.assert_called_with(name='a', t=0)
+        adequacy.add_node.assert_called_with(name='a', node=var)
+        objective.add_node.assert_called_with(node=var)
+
+        objective.build.assert_called_with()
+        adequacy.build.assert_called_with()
+
+        solver.Solve.assert_called_with()
+
+        out_mapper.set_var.assert_called_with(name='a', t=0, vars=var)
