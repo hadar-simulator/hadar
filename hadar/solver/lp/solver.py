@@ -1,5 +1,6 @@
 import logging
 
+from typing import List
 from ortools.linear_solver.pywraplp import Solver
 
 import hadar
@@ -24,7 +25,7 @@ class ObjectiveBuilder:
         """
         self.objective = solver.Objective()
         self.objective.SetMinimization()
-        self.logger = logging.getLogger(__name__ + '.' + __class__.__name__)
+        self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
 
     def add_node(self, node: LPNode):
         """

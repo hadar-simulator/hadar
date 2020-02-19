@@ -1,12 +1,16 @@
 import logging
 import time
-from typing import Callable
+import uuid
+from typing import Callable, List
 
 from pykka import ThreadingActor, ActorRegistry
 
 from hadar.solver.output import *
+from hadar.solver.input import *
 from hadar.solver.actor.handler.entry import *
-from hadar.solver.actor.handler.handler import AdequacyHandler, ReturnHandler, HandlerParameter
+from hadar.solver.actor.handler.handler import AdequacyHandler, ReturnHandler, HandlerParameter, State
+from hadar.solver.actor.ledger import *
+from hadar.solver.actor.domain.message import *
 
 class Waiter:
     def __init__(self, wait_ms=0):
@@ -37,7 +41,7 @@ class Dispatcher(ThreadingActor):
                  input: InputNode = None):
         super().__init__()
 
-        self.logger = logging.getLogger(__name__ + '.' + __class__.__name__)
+        self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
 
         # Save constructor params
         self.name = name

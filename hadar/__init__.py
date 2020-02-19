@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-level = os.environ['HADAR_LOG'] if 'HADAR_LOG' in os.environ else 'WARNING'
+level = os.getenv('HADAR_LOG', 'WARNING')
 
 if level == 'INFO':
     level = logging.INFO

@@ -1,3 +1,7 @@
+import numpy as np
+
+from typing import Union, List, Dict
+
 from hadar.solver.input import *
 
 
