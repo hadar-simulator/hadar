@@ -4,7 +4,7 @@ from hadar.solver.output import Result
 from hadar.solver.lp.solver import solve_lp
 
 
-def solve(study: Study, kind: str) -> Result:
+def solve(study: Study, kind: str = 'lp') -> Result:
     """
 
     :param study:
