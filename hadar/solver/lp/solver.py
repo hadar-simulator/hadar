@@ -87,7 +87,7 @@ class AdequacyBuilder:
         self.constraints = {}
         self.borders = []
         self.solver = solver
-        self.logger = logging.getLogger(__name__ + '.' + __class__.__name__)
+        self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
 
     def add_node(self, name, node: LPNode):
         """
