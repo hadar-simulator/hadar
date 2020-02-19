@@ -72,7 +72,7 @@ class ObjectiveBuilder:
             self.logger.debug('Add border %s->%s to objective', border.src, border.dest)
 
     def build(self):
-        pass
+        pass  # Currently nothing are need at the end. But we keep builder pattern syntax
 
 
 class AdequacyBuilder:

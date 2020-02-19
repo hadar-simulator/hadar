@@ -80,7 +80,6 @@ class Study(DTO):
         """
         if node not in self._nodes.keys():
             raise ValueError('Node "{}" is not in available nodes'.format(node))
-        pass
 
         if isinstance(data, Production):
             self._add_production(node, data)

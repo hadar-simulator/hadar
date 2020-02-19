@@ -10,7 +10,7 @@ from hadar.solver.actor.domain.message import Exchange
 class Ledger:
     """Meta Ledger to implement eq, hash, str, repr method"""
     def __init__(self, headers: List[List[str]]):
-        self.ledger = pd.DataFrame(columns=[name for name, dtype in headers])
+        self.ledger = pd.DataFrame(columns=[name for name, dtype in headers])  #NOSONAR
         self.ledger = self.ledger.astype({name: dtype for name, dtype in headers})
 
     def __hash__(self):
@@ -146,7 +146,7 @@ class LedgerProduction(Ledger):
             'type': [type] * quantity,
             'used': [used] * quantity,
             'path_node': [None] * quantity},
-            index=[self.uuid_generate() for i in range(quantity)])
+            index=[self.uuid_generate() for _ in range(quantity)])
 
         self.ledger = pd.concat([self.ledger, append])
 

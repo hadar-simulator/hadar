@@ -50,13 +50,13 @@ class ConsumerCanceledExchange(Message):
 
 class Snapshot(Message):
     def __init__(self):
-        pass
+        pass  # Standalone message
 
 
 class Start(Message):
     def __init__(self):
-        pass
+        pass  # Standalone message
 
 class Next(Message):
     def __init__(self):
-        pass
+        pass  # Standalone message
