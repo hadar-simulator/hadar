@@ -1,5 +1,5 @@
 # Hadar
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/hadar-simulator/hadar?sort=semver)
+![PyPI](https://img.shields.io/pypi/v/hadar)
 ![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/hadar-simulator/hadar/main/master)
 ![https://sonarcloud.io/dashboard?id=hadar-solver_hadar](https://sonarcloud.io/api/project_badges/measure?project=hadar-solver_hadar&metric=alert_status)
 ![https://sonarcloud.io/dashboard?id=hadar-solver_hadar](https://sonarcloud.io/api/project_badges/measure?project=hadar-solver_hadar&metric=coverage)
