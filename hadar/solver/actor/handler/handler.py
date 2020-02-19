@@ -15,6 +15,16 @@ class State(DTO):
     """
     def __init__(self, name: str, consumptions: LedgerConsumption, borders: LedgerBorder,
                  productions: LedgerProduction, rac: int, cost: int):
+        """
+        Create instance.
+
+        :param name: node's name
+        :param consumptions: consumptions list to match
+        :param borders: borders capacity list
+        :param productions: productions capacity list
+        :param rac: remain capacity
+        :param cost: global adequacy cost
+        """
         self.name = name
         self.consumptions = consumptions
         self.borders = borders

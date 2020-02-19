@@ -13,20 +13,42 @@ from hadar.solver.actor.ledger import *
 from hadar.solver.actor.domain.message import *
 
 class Waiter:
+    """
+    Waiter are updated by all actor at each message receive.
+    Waiter determine when actor exchanges are finished, when anyone update it.
+    """
     def __init__(self, wait_ms=0):
+        """
+        Create instance.
+
+        :param wait_ms: waiting time for each loop
+        """
         self.updated = True
         self.wait_ms = wait_ms
 
     def wait(self):
+        """
+        Endlessly loop. Stop only when actor don't notify waiter during a full time loop.
+
+        :return:
+        """
         while self.updated:
             self.updated = False
             time.sleep(self.wait_ms / 1000)
 
     def update(self):
+        """
+        Method used by actor to pock waiter that actors still exchange.
+
+        :return:
+        """
         self.updated = True
 
 
 class Event:
+    """
+    Meta object to store message receive by actor.
+    """
     def __init__(self, type: str, message, res=None):
         self.type = type
         self.message = message
@@ -34,11 +56,21 @@ class Event:
 
 
 class Dispatcher(ThreadingActor):
-
+    """
+    Main actor. It optimize it local adequacy by exchange productions with its neighborhood
+    """
     def __init__(self, name,
                  uuid_generate=uuid.uuid4,
                  waiter: Waiter = None,
                  input: InputNode = None):
+        """
+        Initiate actor.
+
+        :param name: actor (node) name
+        :param uuid_generate: uuid generate to use when tokenize production
+        :param waiter: waiter instance to pock
+        :param input: input node data to perform adequacy at best cost
+        """
         super().__init__()
 
         self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
@@ -149,13 +181,31 @@ class Dispatcher(ThreadingActor):
         return res
 
     def on_stop(self):
+        """
+        Unregister actor
+        :return:
+        """
         ActorRegistry.unregister(self.actor_ref)
 
     def tell_to(self, to: str, mes):
+        """
+        Send message to asked actor using actor registry.
+
+        :param to: actor name
+        :param mes: message to send
+        :return:
+        """
         self.events.append(Event(type='tell', message=mes))
         ActorRegistry.get_by_urn(to).tell(mes)
 
     def ask_to(self, to: str, mes):
+        """
+        Send mess to asked actor using actor registry.
+
+        :param to: actor name
+        :param mes: message to send
+        :return: actor response
+        """
         self.events.append(Event(type='ask', message=mes))
         res = ActorRegistry.get_by_urn(to).ask(mes)
         self.events.append(Event(type='ask res', message=res))

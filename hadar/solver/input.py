@@ -21,30 +21,69 @@ class DTO:
 
 
 class Consumption(DTO):
+    """
+    Consumption element.
+    """
 
     def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, type: str = ''):
+        """
+        Create consumption.
+
+        :param quantity: quantity to match
+        :param cost: cost of unavailability
+        :param type: type of consumption (unique for each node)
+        """
         self.cost = cost
         self.quantity = np.array(quantity)
         self.type = type
 
 
 class Production(DTO):
-
+    """
+    Production element
+    """
     def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, type: str = 'in'):
+        """
+        Create production
+
+        :param quantity: capacity production
+        :param cost: cost of use
+        :param type: type of production (unique for each node)
+        """
         self.type = type
         self.cost = cost
         self.quantity = np.array(quantity)
 
 
 class Border(DTO):
+    """
+    Border element
+    """
     def __init__(self, dest: str, quantity: Union[np.ndarray, list], cost: int = 0):
+        """
+        Create border.
+
+        :param dest: node name destination (to export)
+        :param quantity: transfer capacity
+        :param cost: cost of use
+        """
         self.dest = dest
         self.quantity = np.array(quantity)
         self.cost = cost
 
 
 class InputNode(DTO):
+    """
+    Node element
+    """
     def __init__(self, consumptions: List[Consumption], productions: List[Production], borders: List[Border]):
+        """
+        Create node element.
+
+        :param consumptions: list of consumptions inside node
+        :param productions: list of productions inside node
+        :param borders: list of borders inside node
+        """
         self.consumptions = consumptions
         self.productions = productions
         self.borders = borders
@@ -52,13 +91,14 @@ class InputNode(DTO):
 
 class Study(DTO):
     """
-    Main object to parameterize network study
+    Main object to facilitate to build a study
     """
 
     def __init__(self, node_names=List[str]):
         """
+        Instance study.
 
-        :param node_names:
+        :param node_names: list of node names inside network.
         """
         if len(node_names) > len(set(node_names)):
             raise ValueError('some nodes are not unique')
@@ -73,9 +113,10 @@ class Study(DTO):
 
     def add_on_node(self, node: str, data=Union[Production, Consumption, Border]):
         """
+        Attach a production or consumption into a node.
 
-        :param node:
-        :param data:
+        :param node: node name to attach
+        :param data: consumption or production to attach
         :return:
         """
         if node not in self._nodes.keys():
@@ -90,6 +131,15 @@ class Study(DTO):
         return self
 
     def add_border(self, src: str, dest: str, cost: int, quantity: Union[np.ndarray, List[int]]):
+        """
+        Add a border inside network.
+
+        :param src: source node name
+        :param dest: destination node name
+        :param cost: cost of use
+        :param quantity: transfer capacity
+        :return:
+        """
         quantity = np.array(quantity)
         if cost < 0:
             raise ValueError('border cost must be positive')

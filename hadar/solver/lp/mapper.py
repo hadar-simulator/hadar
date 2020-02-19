@@ -6,12 +6,28 @@ from hadar.solver.output import OutputNode, Result
 
 
 class InputMapper:
+    """
+    Input mapper from global domain to linear programming specific domain
+    """
 
     def __init__(self, solver: Solver, study: Study):
+        """
+        Instantiate mapper.
+
+        :param solver: ortools solver to used to create variables
+        :param study: study data
+        """
         self.solver = solver
         self.study = study
 
     def get_var(self, name: str, t: int) -> LPNode:
+        """
+        Map InputNode to LPNode.
+
+        :param name: node name
+        :param t: timestamp
+        :return: LPNode according to node name at t in study
+        """
         consumptions = [LPConsumption(type=c.type, cost=float(c.cost), quantity=c.quantity[t],
                                       variable=self.solver.NumVar(0, float(c.quantity[t]), name='lol {} on {}'.format(c.type, name)))
                         for c in self.study.nodes[name].consumptions]
@@ -26,12 +42,29 @@ class InputMapper:
 
         return LPNode(consumptions=consumptions, productions=productions, borders=borders)
 
-class OutputMapper:
 
+class OutputMapper:
+    """
+    Output mapper from specific linear programming domain to global domain.
+    """
     def __init__(self, solver: Solver, study: Study):
+        """
+        Instantiate mapper.
+
+        :param solver: ortools solver to use to fetch variable value
+        :param study: input study to reproduce structure
+        """
         self.nodes = {name: OutputNode.build_like_input(input) for name, input in study.nodes.items()}
 
     def set_var(self, name: str, t: int, vars: LPNode):
+        """
+        Map linear programming node to global node (set inside intern attribute).
+
+        :param name: node name
+        :param t: timestamp index
+        :param vars: linear programming node with ortools variables inside
+        :return: None (use get_result)
+        """
         for i in range(len(vars.consumptions)):
             self.nodes[name].consumptions[i].quantity[t] = vars.consumptions[i].quantity
 
@@ -42,4 +75,9 @@ class OutputMapper:
             self.nodes[name].borders[i].quantity[t] = vars.borders[i].variable.solution_value()
 
     def get_result(self) -> Result:
+        """
+        Get result.
+
+        :return: final result after map all nodes
+        """
         return Result(nodes=self.nodes)

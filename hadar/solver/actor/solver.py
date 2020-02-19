@@ -11,14 +11,20 @@ from hadar.solver.actor.domain.message import Start, Next
 logger = logging.getLogger(__name__)
 
 
-def create_dispatcher(name: str, node: InputNode, waiter: Waiter) -> Dispatcher:
+def _create_dispatcher(name: str, node: InputNode, waiter: Waiter) -> Dispatcher:
     return Dispatcher.start(name=name, waiter=waiter, input=node)
 
 
 def solve(study: Study) -> Result:
+    """
+    Solve adequacy by behaviour simulation with actor pattern.
+
+    :param study: study to resolve
+    :return: result
+    """
     waiter = Waiter(wait_ms=100)
 
-    dispatchers = [create_dispatcher(name, node, waiter) for name, node in study.nodes.items()]
+    dispatchers = [_create_dispatcher(name, node, waiter) for name, node in study.nodes.items()]
     for d in dispatchers:
         d.tell(Start())
 
