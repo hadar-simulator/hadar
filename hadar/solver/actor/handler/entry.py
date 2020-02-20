@@ -8,7 +8,7 @@ from hadar.solver.actor.handler.handler import *
 class StartHandler(Handler):
     """
     When Start message receive:
-     |__ propose free production
+    --> propose free production
     """
 
     def __init__(self, params: HandlerParameter):
@@ -34,8 +34,8 @@ class StartHandler(Handler):
 class CanceledCustomerExchangeHandler(Handler):
     """
     When CancelCustomerExchangeHandler
-     |_ cancel exportation
-        |_ if it's node producer : propose free production
+    --> cancel exportation
+    -----> if it's node producer : propose free production
     """
     def __init__(self, params: HandlerParameter):
         """
@@ -64,11 +64,11 @@ class CanceledCustomerExchangeHandler(Handler):
 class ProposalOfferHandler(Handler):
     """
     When receive proposal offer:
-     |_ check border capacity
-       |_ if node is transfer, wait response
-         |_ save final exchanges
-       |_ if node is producer, check production capacity
-         |_ save final exchanges
+    --> check border capacity
+    ----> if node is transfer, wait response
+    ------> save final exchanges
+    ----> if node is producer, check production capacity
+    ------> save final exchanges
     """
     def __init__(self, params: HandlerParameter):
         """
@@ -98,15 +98,15 @@ class ProposalOfferHandler(Handler):
 class ProposalHandler(Handler):
     """
     When receive proposal:
-    |_ compare proposal with current state
-      |_ if useless
-        |_ forward proposal
-      |_ if useful
-        |_ make an offer, wait response
-          |_ save exchanges accepted by producer
-            |_ compute new adequacy
-              |_ propose free production
-              |_ cancel useless importation
+    -> compare proposal with current state
+    ---> if useless
+    -----> forward proposal
+    ---> if useful
+    -----> make an offer, wait response
+    -------> save exchanges accepted by producer
+    ---------> compute new adequacy
+    -----------> propose free production
+    -------------> cancel useless importation
     """
     def __init__(self, params: HandlerParameter):
         """
