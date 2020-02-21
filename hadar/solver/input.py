@@ -143,7 +143,7 @@ class Study(DTO):
         quantity = np.array(quantity)
         if cost < 0:
             raise ValueError('border cost must be positive')
-        if quantity < 0:
+        if np.all(quantity < 0):
             raise ValueError('border quantity must be positive')
         if dest not in self._nodes.keys():
             raise ValueError('border destination must be a valid node')
@@ -157,7 +157,8 @@ class Study(DTO):
     def _add_production(self, node: str, prod: Production):
         if prod.cost < 0:
             raise ValueError('production cost must be positive')
-        if prod.quantity < 0:
+        prod.quantity = np.array(prod.quantity)
+        if np.all(prod.quantity < 0):
             raise ValueError('production quantity must be positive')
         if prod.type in [p.type for p in self._nodes[node].productions]:
             raise ValueError('production type must be unique on a node')
@@ -167,7 +168,8 @@ class Study(DTO):
     def _add_consumption(self, node: str, cons: Consumption):
         if cons.cost < 0:
             raise ValueError('consumption cost must be positive')
-        if cons.quantity < 0:
+        cons.quantity = np.array(cons.quantity)
+        if np.all(cons.quantity < 0):
             raise ValueError('consumption quantity must be positive')
         if cons.type in [c.type for c in self._nodes[node].consumptions]:
             raise ValueError('consumption type must be unique on a node')
