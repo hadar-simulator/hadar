@@ -101,7 +101,7 @@ class TestSolver(unittest.TestCase):
 
         Adequacy
         |           A           | ---->  |           B           | ---->  |           C           |
-        | nuclear: 20           | 20     |  load: 10             | 10     | load: 20              |
+        | nuclear: 20           | 20     |  load: 10             | 10     | load: 10              |
 
         :return:
         """
@@ -121,7 +121,7 @@ class TestSolver(unittest.TestCase):
                                          borders=[OutputBorder(dest='c', quantity=[10], cost=2)],
                                          productions=[])
 
-        nodes_expected['c'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[20], type='load')],
+        nodes_expected['c'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
                                          productions=[],
                                          borders=[])
 

@@ -42,6 +42,9 @@ class MockSolver:
     def __init__(self):
         pass
 
+    def NumVar(self, min: float, max: float, name: str = ''):
+        return MockNumVar(min, max, name)
+
     def Objective(self) -> MockObjective:
         return MockObjective()
 
