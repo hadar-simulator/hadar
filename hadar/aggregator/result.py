@@ -24,6 +24,9 @@ class Index(Generic[T]):
             return df[self.column].notnull()
         return df[self.column].isin(self.index)
 
+    def is_alone(self):
+        return not self.all and len(self.index) <= 1
+
 
 class NodeIndex(Index[str]):
     def __init__(self, index: Union[List[str], str] = None):
@@ -134,9 +137,22 @@ class ResultAggregator:
         return border
 
     @staticmethod
+    def _remove_useless_index_level(df: pd.DataFrame, indexes: List[Index]) -> pd.DataFrame:
+        if indexes[0].is_alone() and indexes[0].index[0] in df.index:
+            df = df.loc[indexes[0].index[0]].copy()
+            return ResultAggregator._remove_useless_index_level(df, indexes[1:])
+        else:
+            return df
+
+    @staticmethod
     def _pivot(i0: Index, i1: Index, i2: Index, df: pd.DataFrame) -> pd.DataFrame:
-        return pd.pivot_table(data=df[i0.filter(df) & i1.filter(df) & i2.filter(df)],
-                              index=[i0.column, i1.column, i2.column], aggfunc=lambda x: x[0])
+        f0 = i0.filter(df)
+        f1 = i1.filter(df)
+        f2 = i2.filter(df)
+        pt = pd.pivot_table(data=df[i0.filter(df) & i1.filter(df) & i2.filter(df)],
+                            index=[i0.column, i1.column, i2.column], aggfunc=lambda x: x.iloc[0])
+
+        return ResultAggregator._remove_useless_index_level(df=pt, indexes=[i0, i1, i2])
 
     @staticmethod
     def _check_index(i0: Index, i1: Index, i2: Index, type: Type):

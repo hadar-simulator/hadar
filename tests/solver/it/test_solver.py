@@ -107,7 +107,7 @@ class TestSolver(unittest.TestCase):
         """
         study = Study(node_names=['a', 'b', 'c']) \
             .add_on_node('a', data=Production(cost=10, quantity=[30], type='nuclear')) \
-            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[10])) \
+            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
             .add_on_node('c', data=Consumption(cost=10 ** 6, quantity=[20], type='load')) \
             .add_border(src='a', dest='b', quantity=[20], cost=2) \
             .add_border(src='b', dest='c', quantity=[15], cost=2)
@@ -117,7 +117,7 @@ class TestSolver(unittest.TestCase):
                                          borders=[OutputBorder(dest='b', quantity=[20], cost=2)],
                                          consumptions=[])
 
-        nodes_expected['b'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10])],
+        nodes_expected['b'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
                                          borders=[OutputBorder(dest='c', quantity=[10], cost=2)],
                                          productions=[])
 
