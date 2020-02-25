@@ -3,7 +3,7 @@ from typing import Union, TypeVar, List, Generic, Tuple, Type
 import pandas as pd
 import numpy as np
 
-from solver.output import Result, Study
+from hadar.solver.output import Result, Study
 
 T = TypeVar('T')
 

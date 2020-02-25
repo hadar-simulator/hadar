@@ -65,12 +65,12 @@ class TestAggregator(unittest.TestCase):
                                           OutputConsumption(cost=10 ** 6, quantity=[130, 13], type='car')],
                             productions=[OutputProduction(cost=10, quantity=[130, 13], type='prod')],
                             borders=[OutputBorder(dest='b', quantity=[110, 11], cost=2),
-                                     OutputBorder(dest='c', quantity=[120, 12], cost=2)],
-                            rac=[0, 0], cost=[0, 0]),
+                                     OutputBorder(dest='c', quantity=[120, 12], cost=2)]),
+
             'b': OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[120, 12], type='load')],
                             productions=[OutputProduction(cost=20, quantity=[110, 11], type='prod'),
                                          OutputProduction(cost=20, quantity=[120, 12], type='nuclear')],
-                            borders=[], rac=[0, 0], cost=[0, 0])
+                            borders=[])
         }
 
         self.result = Result(nodes=out)

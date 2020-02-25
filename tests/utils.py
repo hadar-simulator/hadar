@@ -8,9 +8,6 @@ def assert_study(self, expected: Result, result: Result):
             self.fail('Node {} expected but not'.format(name))
         res = result.nodes[name]
 
-        np.testing.assert_array_equal(node.cost, res.cost, "Wrong cost")
-        np.testing.assert_array_equal(node.rac, res.rac, "Wrong RAC")
-
         # Consumptions
         for cons_expected, cons_res in zip(node.consumptions, res.consumptions):
             self.assertEqual(cons_expected.type, cons_res.type,

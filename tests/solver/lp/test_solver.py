@@ -72,7 +72,7 @@ class TestSolve(unittest.TestCase):
 
         # Expected
         out_a = OutputNode(consumptions=[OutputConsumption(type='load', cost=10, quantity=[10])],
-                       productions=[], borders=[], rac=0, cost=0)
+                       productions=[], borders=[])
         exp_result = Result(nodes={'a': out_a})
 
         # Mock

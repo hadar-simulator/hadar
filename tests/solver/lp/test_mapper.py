@@ -53,8 +53,7 @@ class TestOutputMapper(unittest.TestCase):
         # Expected
         node = OutputNode(consumptions=[OutputConsumption(type='load', quantity=[10], cost=10)],
                           productions=[OutputProduction(type='nuclear', quantity=[0], cost=10)],
-                          borders=[OutputBorder(dest='be', quantity=[0], cost=2)],
-                          rac=[0], cost=[0])
-        expected = Result(nodes={'a': node, 'be': OutputNode(consumptions=[], productions=[], borders=[], rac=[0], cost=[0])})
+                          borders=[OutputBorder(dest='be', quantity=[0], cost=2)])
+        expected = Result(nodes={'a': node, 'be': OutputNode(consumptions=[], productions=[], borders=[])})
 
         assert_study(self, expected=expected, result=mapper.get_result())

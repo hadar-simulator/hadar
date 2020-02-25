@@ -52,14 +52,14 @@ class TestDispatcher(unittest.TestCase):
         state.exchanges.add(Exchange(id=0, production_type='nuclear', quantity=3, path_node=['be']),
                                        type='export')
 
-        out_node = OutputNode(consumptions=[], borders=[], productions=[], cost=[0], rac=[0])
+        out_node = OutputNode(consumptions=[], borders=[], productions=[])
         out_node.consumptions = [OutputConsumption(type='load', quantity=np.array([0, 0]), cost=2)]
         out_node.productions = [OutputProduction(type='solar', cost=3, quantity=np.array([0, 0])),
                                 OutputProduction(type='nuclear', cost=3, quantity=np.array([0, 0]))]
         out_node.borders = [OutputBorder(dest='be', cost=2, quantity=np.array([0, 0]))]
 
         # Expected
-        expected = OutputNode(consumptions=[], borders=[], productions=[], cost=[0], rac=[0])
+        expected = OutputNode(consumptions=[], borders=[], productions=[])
         expected.consumptions = [OutputConsumption(type='load', quantity=np.array([7, 0]), cost=2)]
         expected.productions = [OutputProduction(type='solar', cost=3, quantity=np.array([5, 0])),
                                 OutputProduction(type='nuclear', cost=3, quantity=np.array([5, 0]))]

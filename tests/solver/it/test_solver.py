@@ -38,8 +38,7 @@ class TestSolver(unittest.TestCase):
                                              OutputProduction(type='nuclear', cost=20, quantity=[15]),
                                              OutputProduction(type='solar', cost=10, quantity=[10]),
                                              OutputProduction(type='oil', cost=30, quantity=[5])],
-                                         borders=[],
-                                         rac=[0], cost=[0])
+                                         borders=[])
 
         res = solve(study, kind='lp')
         assert_study(self, Result(nodes_expected), res)
@@ -79,18 +78,15 @@ class TestSolver(unittest.TestCase):
         nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
                                          productions=[OutputProduction(cost=10, quantity=[30], type='nuclear')],
                                          borders=[OutputBorder(dest='b', quantity=[10], cost=2),
-                                                  OutputBorder(dest='c', quantity=[10], cost=2)],
-                                         rac=[0], cost=[0])
+                                                  OutputBorder(dest='c', quantity=[10], cost=2)])
 
         nodes_expected['b'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
                                          productions=[OutputProduction(cost=20, quantity=[0], type='nuclear')],
-                                         borders=[],
-                                         cost=[0], rac=[0])
+                                         borders=[])
 
         nodes_expected['c'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
                                          productions=[OutputProduction(cost=20, quantity=[0], type='nuclear')],
-                                         borders=[],
-                                         cost=[0], rac=[0])
+                                         borders=[])
 
         res = solve(study, kind='lp')
 
@@ -119,18 +115,15 @@ class TestSolver(unittest.TestCase):
         nodes_expected = {}
         nodes_expected['a'] = OutputNode(productions=[OutputProduction(cost=10, quantity=[20], type='nuclear')],
                                          borders=[OutputBorder(dest='b', quantity=[20], cost=2)],
-                                         consumptions=[],
-                                         rac=[0], cost=[0])
+                                         consumptions=[])
 
         nodes_expected['b'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10])],
                                          borders=[OutputBorder(dest='c', quantity=[10], cost=2)],
-                                         productions=[],
-                                         rac=[0], cost=[0])
+                                         productions=[])
 
         nodes_expected['c'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[20], type='load')],
                                          productions=[],
-                                         borders=[],
-                                         rac=[0], cost=[0])
+                                         borders=[])
 
         res = solve(study, kind='lp')
 
@@ -165,17 +158,15 @@ class TestSolver(unittest.TestCase):
         nodes_expected = {}
         nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[10], type='load')],
                                          productions=[OutputProduction(cost=10, quantity=[20], type='nuclear')],
-                                         borders=[OutputBorder(dest='b', quantity=[10], cost=2)],
-                                         rac=[0], cost=[0])
+                                         borders=[OutputBorder(dest='b', quantity=[10], cost=2)])
 
         nodes_expected['b'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[5], type='load')],
                                          productions=[OutputProduction(cost=20, quantity=[5], type='nuclear')],
-                                         borders=[OutputBorder(dest='c', quantity=[10], cost=2)],
-                                         rac=[0], cost=[0])
+                                         borders=[OutputBorder(dest='c', quantity=[10], cost=2)])
 
         nodes_expected['c'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[20], type='load')],
                                          productions=[OutputProduction(cost=10, quantity=[10], type='nuclear')],
-                                         borders=[], rac=[0], cost=[0])
+                                         borders=[])
 
         res = solve(study, kind='lp')
 

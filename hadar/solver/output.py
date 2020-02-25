@@ -90,23 +90,17 @@ class OutputNode(DTO):
     def __init__(self,
                  consumptions: List[OutputConsumption],
                  productions: List[OutputProduction],
-                 borders: List[OutputBorder],
-                 rac: Union[np.ndarray, List[int]],
-                 cost: Union[np.ndarray, List[int]]):
+                 borders: List[OutputBorder]):
         """
         Create Node.
 
         :param consumptions: consumptions list
         :param productions: productions list
         :param borders:  border list
-        :param rac: remain capacity inside node
-        :param cost: cost of adequacy
         """
         self.consumptions = consumptions
         self.productions = productions
         self.borders = borders
-        self.rac = np.array(rac)
-        self.cost = np.array(cost)
 
     @staticmethod
     def build_like_input(input: InputNode):
@@ -116,7 +110,7 @@ class OutputNode(DTO):
         :param input: InputNode to copy
         :return: OutputNode like InputNode with all quantity at zero
         """
-        output = OutputNode(consumptions=[], productions=[], borders=[], rac=[0], cost=[0])
+        output = OutputNode(consumptions=[], productions=[], borders=[])
 
         output.consumptions = [OutputConsumption(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
                                for i in input.consumptions]
@@ -124,10 +118,6 @@ class OutputNode(DTO):
                               for i in input.productions]
         output.borders = [OutputBorder(dest=i.dest, cost=i.cost, quantity=np.zeros_like(i.quantity))
                           for i in input.borders]
-
-        size = input.consumptions[0].quantity.size if len(input.consumptions) > 0 else 0
-        output.rac = np.zeros_like(size).reshape(1,)
-        output.cost = np.zeros_like(size).reshape(1,)
         return output
 
 
