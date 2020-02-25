@@ -30,6 +30,16 @@ class NodeIndex(Index[str]):
         Index.__init__(self, column='node', index=index)
 
 
+class SrcIndex(Index[str]):
+    def __init__(self, index: Union[List[str], str] = None):
+        Index.__init__(self, column='src', index=index)
+
+
+class DestIndex(Index[str]):
+    def __init__(self, index: Union[List[str], str] = None):
+        Index.__init__(self, column='dest', index=index)
+
+
 class TypeIndex(Index[str]):
     def __init__(self, index: Union[List[str], str] = None):
         Index.__init__(self, column='type', index=index)
@@ -149,7 +159,7 @@ class ResultAggregator:
 
     def agg_border(self, i0: Index, i1: Index, i2: Index) -> pd.DataFrame:
         ResultAggregator._check_index(i0, i1, i2, TimeIndex)
-        # TODO ResultAggregator._check_index(i0, i1, i2, SrcIndex)
-        # TODO ResultAggregator._check_index(i0, i1, i2, DestIndex)
+        ResultAggregator._check_index(i0, i1, i2, SrcIndex)
+        ResultAggregator._check_index(i0, i1, i2, DestIndex)
 
-        return ResultAggregator._pivot(i0, i1, i2, self.production)
+        return ResultAggregator._pivot(i0, i1, i2, self.border)

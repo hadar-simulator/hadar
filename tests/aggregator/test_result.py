@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 
-from hadar.aggregator.result import Index, TimeIndex, ResultAggregator, NodeIndex, TypeIndex
+from hadar.aggregator.result import Index, TimeIndex, ResultAggregator, NodeIndex, TypeIndex, SrcIndex, DestIndex
 from hadar.solver.input import *
 from hadar.solver.output import *
 
@@ -139,5 +139,18 @@ class TestAggregator(unittest.TestCase):
 
         agg = ResultAggregator(study=self.study, result=self.result)
         cons = agg.agg_prod(i0=NodeIndex(index=['a', 'b']), i1=TypeIndex(index='prod'), i2=TimeIndex())
+
+        pd.testing.assert_frame_equal(exp_cons, cons)
+
+    def test_aggregate_border(self):
+        # Expected
+        index = pd.MultiIndex.from_tuples((('a', 'b', 0.0), ('a', 'b', 1.0), ('a', 'c', 0.0), ('a', 'c', 1.0)),
+                                          names=['src', 'dest', 't'], )
+        exp_cons = pd.DataFrame(data={'avail': [10, 1, 20, 2],
+                                      'cost': [2, 2, 2, 2],
+                                      'used': [110, 11, 120, 12]}, dtype=float, index=index)
+
+        agg = ResultAggregator(study=self.study, result=self.result)
+        cons = agg.agg_border(i0=SrcIndex(index=['a']), i1=DestIndex(index=['b', 'c']), i2=TimeIndex())
 
         pd.testing.assert_frame_equal(exp_cons, cons)
