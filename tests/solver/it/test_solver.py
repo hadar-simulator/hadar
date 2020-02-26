@@ -43,6 +43,29 @@ class TestSolver(unittest.TestCase):
         res = solve(study, kind='lp')
         assert_study(self, Result(nodes_expected), res)
 
+    def test_exchange_two_nodes(self):
+        # Input
+        study = Study(['a', 'b']) \
+            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[20, 200], type='load')) \
+            .add_on_node('a', data=Production(cost=10, quantity=[30, 300], type='prod')) \
+            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[20, 200], type='load')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[10, 100], type='prod')) \
+            .add_border(src='a', dest='b', quantity=[10, 100], cost=2)
+
+        nodes_expected = {}
+        nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[20, 200], type='load')],
+                                         productions=[OutputProduction(cost=10, quantity=[30, 300], type='prod')],
+                                         borders=[OutputBorder(dest='b', quantity=[10, 100], cost=2)])
+
+        nodes_expected['b'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[20, 200], type='load')],
+                                         productions=[OutputProduction(cost=20, quantity=[10, 100], type='prod')],
+                                         borders=[])
+
+
+        res = solve(study)
+        assert_study(self, Result(nodes_expected), res)
+
+
     def test_exchange_two_concurrent_nodes(self):
         """
         Capacity

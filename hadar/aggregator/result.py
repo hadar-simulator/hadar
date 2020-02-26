@@ -179,3 +179,16 @@ class ResultAggregator:
         ResultAggregator._check_index(i0, i1, i2, DestIndex)
 
         return ResultAggregator._pivot(i0, i1, i2, self.border)
+
+    def get_balance(self, node: str):
+        balance = np.zeros(self.study.horizon)
+
+        im = pd.pivot_table(self.border[self.border['dest'] == node][['used', 't']], index='t', aggfunc=np.sum)
+        if im.size > 0:
+            balance[im.index.values.astype(int)] = -im['used'].values
+
+        exp = pd.pivot_table(self.border[self.border['src'] == node][['used', 't']], index='t', aggfunc=np.sum)
+        if exp.size > 0:
+            balance[exp.index.values.astype(int)] = exp['used'].values
+
+        return balance

@@ -154,3 +154,10 @@ class TestAggregator(unittest.TestCase):
         cons = agg.agg_border(i0=SrcIndex(index=['a']), i1=DestIndex(index=['b', 'c']), i2=TimeIndex())
 
         pd.testing.assert_frame_equal(exp_cons, cons)
+
+
+    def test_balance(self):
+        agg = ResultAggregator(study=self.study, result=self.result)
+        np.testing.assert_array_equal([230, 23], agg.get_balance(node='a'))
+        np.testing.assert_array_equal([-110, -11], agg.get_balance(node='b'))
+
