@@ -170,7 +170,7 @@ def _solve(study: Study,
     :param adequacy: adequacy builder to use
     :return: Result object with optimal solution
     """
-    variables = [{}] * study.horizon
+    variables = [dict() for _ in range(study.horizon)]
 
     for t in range(0, study.horizon):
         for name, node in study.nodes.items():

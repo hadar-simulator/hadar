@@ -27,17 +27,17 @@ class TestSolver(unittest.TestCase):
         :return:
         """
         study = Study(['a']) \
-            .add_on_node(node='a', data=Consumption(type='load', cost=10 ** 6, quantity=[30])) \
-            .add_on_node(node='a', data=Production(type='nuclear', cost=20, quantity=[15])) \
-            .add_on_node(node='a', data=Production(type='solar', cost=10, quantity=[10])) \
-            .add_on_node(node='a', data=Production(type='oil', cost=30, quantity=[10]))
+            .add_on_node(node='a', data=Consumption(type='load', cost=10 ** 6, quantity=[30, 6])) \
+            .add_on_node(node='a', data=Production(type='nuclear', cost=20, quantity=[15, 3])) \
+            .add_on_node(node='a', data=Production(type='solar', cost=10, quantity=[10, 2])) \
+            .add_on_node(node='a', data=Production(type='oil', cost=30, quantity=[10, 2]))
 
         nodes_expected = dict()
-        nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[30], type='load')],
+        nodes_expected['a'] = OutputNode(consumptions=[OutputConsumption(cost=10 ** 6, quantity=[30, 6], type='load')],
                                          productions=[
-                                             OutputProduction(type='nuclear', cost=20, quantity=[15]),
-                                             OutputProduction(type='solar', cost=10, quantity=[10]),
-                                             OutputProduction(type='oil', cost=30, quantity=[5])],
+                                             OutputProduction(type='nuclear', cost=20, quantity=[15, 3]),
+                                             OutputProduction(type='solar', cost=10, quantity=[10, 2]),
+                                             OutputProduction(type='oil', cost=30, quantity=[5, 1])],
                                          borders=[])
 
         res = solve(study, kind='lp')
