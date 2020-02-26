@@ -119,7 +119,7 @@ class TestAggregator(unittest.TestCase):
 
     def test_aggregate_cons(self):
         # Expected
-        index = pd.MultiIndex.from_tuples((('a', 'load', 0.0), ('a', 'load', 1.0)), names=['node', 'type', 't'], )
+        index = pd.Index(data=[0, 1], dtype=float, name='t')
         exp_cons = pd.DataFrame(data={'asked': [20, 2],
                                       'cost': [10 ** 6] * 2,
                                       'given': [120, 12]}, dtype=float, index=index)
@@ -144,8 +144,8 @@ class TestAggregator(unittest.TestCase):
 
     def test_aggregate_border(self):
         # Expected
-        index = pd.MultiIndex.from_tuples((('a', 'b', 0.0), ('a', 'b', 1.0), ('a', 'c', 0.0), ('a', 'c', 1.0)),
-                                          names=['src', 'dest', 't'], )
+        index = pd.MultiIndex.from_tuples((('b', 0.0), ('b', 1.0), ('c', 0.0), ('c', 1.0)),
+                                          names=['dest', 't'], )
         exp_cons = pd.DataFrame(data={'avail': [10, 1, 20, 2],
                                       'cost': [2, 2, 2, 2],
                                       'used': [110, 11, 120, 12]}, dtype=float, index=index)
