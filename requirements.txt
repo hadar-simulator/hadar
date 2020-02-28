@@ -5,3 +5,4 @@ numpy
 ortools
 plotly
 jupyter
+matplotlib

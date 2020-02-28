@@ -10,10 +10,10 @@ from hadar.solver.input import *
 from hadar.solver.output import *
 from hadar.solver.study import solve
 from hadar.aggregator.result import *
-from hadar.viewer.jupyter import Plotting
+from hadar.viewer.html import HTMLPlotting
 
 
-class TestJupyter(unittest.TestCase):
+class TestHTMLPlotting(unittest.TestCase):
     def setUp(self) -> None:
         self.study = Study(['a', 'b']) \
             .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[20, 2], type='load')) \
@@ -27,17 +27,22 @@ class TestJupyter(unittest.TestCase):
         self.result = solve(study=self.study)
 
         self.agg = ResultAggregator(self.study, self.result)
-        self.plot = Plotting(agg=self.agg, unit_quantity='MW', time_start='2020-02-01', time_end='2020-02-02')
+        self.plot = HTMLPlotting(agg=self.agg, unit_quantity='MW', time_start='2020-02-01', time_end='2020-02-02',
+                                 node_coord={'a': [2.33, 48.86], 'b': [4.38, 50.83]})
 
         self.hash = hashlib.sha3_256()
 
-    def test_time_stack(self):
-        fig = self.plot.time_stack_fig('a')
+    def test_stack(self):
+        fig = self.plot.stack('a')
         self.assert_fig('be9217b194e459e3bea13fe8a1f664312f9a93f0', fig)
+
+    def test_map_exchanges(self):
+        fig = self.plot.exchanges_map(0)
+        self.assert_fig('da96b789012d53f8459432ddb2325805714ac682', fig)
 
     def assert_fig(self, expected: str, fig: go.Figure):
         h = hashlib.sha1()
-        h.update(TestJupyter.get_html(fig).encode('ascii'))
+        h.update(TestHTMLPlotting.get_html(fig).encode('ascii'))
         self.assertEqual(expected, h.hexdigest())
 
     @staticmethod
