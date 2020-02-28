@@ -8,6 +8,7 @@ Subpackages
 
    hadar.solver
    hadar.viewer
+   hadar.aggregator
 
 Module contents
 ---------------

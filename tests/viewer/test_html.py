@@ -27,14 +27,14 @@ class TestHTMLPlotting(unittest.TestCase):
         self.result = solve(study=self.study)
 
         self.agg = ResultAggregator(self.study, self.result)
-        self.plot = HTMLPlotting(agg=self.agg, unit_quantity='MW', time_start='2020-02-01', time_end='2020-02-02',
+        self.plot = HTMLPlotting(agg=self.agg, unit_symbol='MW', time_start='2020-02-01', time_end='2020-02-02',
                                  node_coord={'a': [2.33, 48.86], 'b': [4.38, 50.83]})
 
         self.hash = hashlib.sha3_256()
 
     def test_stack(self):
         fig = self.plot.stack('a')
-        self.assert_fig('be9217b194e459e3bea13fe8a1f664312f9a93f0', fig)
+        self.assert_fig('ca1cbf772993ea2899b7ea4253f608e3e17472b5', fig)
 
     def test_map_exchanges(self):
         fig = self.plot.exchanges_map(0)

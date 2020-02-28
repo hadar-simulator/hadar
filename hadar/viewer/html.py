@@ -8,14 +8,28 @@ from hadar.viewer.abc import ABCPlotting
 
 
 class HTMLPlotting(ABCPlotting):
-    def __init__(self, agg, unit_quantity: str = '',
+    """
+    Plotting implementation interactive html graphics. (Use plotly)
+    """
+    def __init__(self, agg, unit_symbol: str = '',
                  time_start=None, time_end=None,
                  cmap=matplotlib.cm.coolwarm,
                  node_coord: Dict[str, List[float]] = None,
                  map_element_size: int = 1):
+        """
+        Create instance.
+
+        :param agg: ResultAggragator instence to use
+        :param unit_symbol: symbol on quantity unit used. ex. MW, litter, Go, ...
+        :param time_start: time to use as the start of study horizon
+        :param time_end: time to use as the end of study horizon
+        :param cmap: matplotlib color map to use (coolwarm as default)
+        :param node_coord: nodes coordinates to use for map plotting
+        :param map_element_size: size on element draw on map. default as 1.
+        """
 
         self.agg = agg
-        self.unit = '(%s)' % unit_quantity if unit_quantity != '' else ''
+        self.unit = '(%s)' % unit_symbol if unit_symbol != '' else ''
         self.coord = node_coord
         self.size = map_element_size
 
@@ -24,9 +38,9 @@ class HTMLPlotting(ABCPlotting):
         if time == [True, False] or time == [False, True]:
             raise ValueError('You have to give both time_start and time_end')
         elif time == [False, False]:
-            self.time_index = pd.date_range(start=time_start, end=time_end, periods=self.agg.study.horizon)
+            self.time_index = pd.date_range(start=time_start, end=time_end, periods=self.agg.horizon)
         else:
-            self.time_index = np.arange(self.agg.study.horizon)
+            self.time_index = np.arange(self.agg.horizon)
 
         # Create colors scale
         self.cmap = cmap
@@ -34,6 +48,13 @@ class HTMLPlotting(ABCPlotting):
 
     @classmethod
     def matplotlib_to_plotly(cls, cmap, res: int):
+        """
+        Convert matplotlib color scale to plotly color scale.
+
+        :param cmap: matplotlib color scale function
+        :param res: resolution to use
+        :return: list of string use by plotly
+        """
         h = 1.0 / (res - 1)
         pl_colorscale = []
         for k in range(res):
@@ -42,8 +63,14 @@ class HTMLPlotting(ABCPlotting):
         return pl_colorscale
 
     def stack(self, node: str):
+        """
+        Plot with production stacked with area and consumptions stacked by dashed lines.
+
+        :param node: select node to plot. If None, use a dropdown menu to select inside notebook
+        :return: plotly figure or jupyter widget to plot
+        """
         fig = go.Figure()
-        stack = np.zeros(self.agg.study.horizon)
+        stack = np.zeros(self.agg.horizon)
 
         # stack production with area
         prod = self.agg.agg_prod(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=True)
@@ -73,11 +100,21 @@ class HTMLPlotting(ABCPlotting):
             stack += exp
             fig.add_trace(go.Scatter(x=self.time_index, y=stack, name='export', line=dict(width=4, dash='dash')))
 
-        fig.update_layout(title_text='Stack error for node %s' % node,
+        fig.update_layout(title_text='Stack for node %s' % node,
                           yaxis_title="Quantity %s" % self.unit, xaxis_title="time")
         return fig
 
-    def plot_links(self, fig, start, end, color: str, qt: float) -> go.Figure:
+    def _plot_links(self, fig: go.Figure, start: str, end: str, color: str, qt: float):
+        """
+        Plot line with arrow to a figure.
+
+        :param fig: figure to use
+        :param start: start node
+        :param end: end node
+        :param color: color to use
+        :param qt: quantity to set inside label
+        :return:
+        """
         S = np.array([self.coord[start][0], self.coord[start][1]])
         E = np.array([self.coord[end][0], self.coord[end][1]])
 
@@ -100,12 +137,17 @@ class HTMLPlotting(ABCPlotting):
                                     lon=[B[0], A[0], C[0]], text=str(qt), mode='lines',
                                     line=dict(width=4 * self.size, color=color)))
 
-    def exchanges_map(self, t: int, limit: int = None) -> go.Figure:
+    def exchanges_map(self, t: int, limit: int = None):
+        """
+        Plot a map with node (color are balance) and arrow between nodes (color for quantity).
+
+        :param t: timestep to plot
+        :return: plotly figure or jupyter widget to plot
+        """
         if self.coord is None:
             raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
 
-        nodes = self.agg.result.nodes.keys()
-        balances = [self.agg.get_balance(node=node)[t] for node in nodes]
+        balances = [self.agg.get_balance(node=node)[t] for node in self.agg.nodes]
         if limit is None:
             limit = max(max(balances), -min(balances))
 
@@ -120,14 +162,14 @@ class HTMLPlotting(ABCPlotting):
 
                 color = 'rgb' + str(self.cmap(abs(exchange) / 2 / limit + 0.5)[:-1])
                 if exchange > 0:
-                    self.plot_links(fig=fig, start=src, end=dest, color=color, qt=exchange)
+                    self._plot_links(fig=fig, start=src, end=dest, color=color, qt=exchange)
                 else:
-                    self.plot_links(fig=fig, start=dest, end=src, color=color, qt=-exchange)
+                    self._plot_links(fig=fig, start=dest, end=src, color=color, qt=-exchange)
 
         # print nodes
-        text = ['%s: %i' % (n, b) for n, b in zip(nodes, balances)]
-        lon = [self.coord[node][0] for node in nodes]
-        lat = [self.coord[node][1] for node in nodes]
+        text = ['%s: %i' % (n, b) for n, b in zip(self.agg.nodes, balances)]
+        lon = [self.coord[node][0] for node in self.agg.nodes]
+        lat = [self.coord[node][1] for node in self.agg.nodes]
 
         fig.add_trace(go.Scattergeo(lon=lon, lat=lat, hoverinfo='text', text=text, mode='markers',
                                     marker=dict(size=15 * self.size,
