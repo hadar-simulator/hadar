@@ -91,7 +91,7 @@ class HTMLPlotting(ABCPlotting):
         # Get orthogonal vector
         w = np.array([v[1], -v[0]])
         # Compute triangle points
-        A = E - v * 0.4
+        A = E - v * 0.5
         B = A - v / n * self.size * 0.5 - w / n * self.size * 0.25
         C = A - v / n * self.size * 0.5 + w / n * self.size * 0.25
 
@@ -132,10 +132,11 @@ class HTMLPlotting(ABCPlotting):
         fig.add_trace(go.Scattergeo(lon=lon, lat=lat, hoverinfo='text', text=text, mode='markers',
                                     marker=dict(size=15 * self.size,
                                                 colorscale=self.cmap_plotly, cmin=-limit, color=balances,
-                                                cmax=limit, colorbar_title="Net Position")))
+                                                cmax=limit, colorbar_title="Net Position %s" % self.unit)))
         # Config plot
-        fig.update_layout(title_text='mercator', showlegend=False, height=600,
-                          geo=dict(projection_type='equirectangular', showland=True,
-                                   landcolor='rgb(150, 150, 150)', countrycolor='rgb(0, 0, 0)'))
+        fig.update_layout(title_text='Exchanges Map', showlegend=False, height=600,
+                          geo=dict(projection_type='equirectangular', showland=True, showcountries=True,
+                                   resolution=110, landcolor='rgb(200, 200, 200)', countrycolor='rgb(0, 0, 0)',
+                                   fitbounds='locations'))
 
         return fig

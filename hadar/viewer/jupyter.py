@@ -42,3 +42,29 @@ class JupyterPlotting(HTMLPlotting):
         else:
             nodes = list(self.agg.result.nodes.keys())
             self.dropmenu(HTMLPlotting.stack, nodes)
+
+    def intslider(self, plot, size):
+        slider = widgets.IntSlider(value=0, min=0, max=size, step=1, description='Timestep:', disabled=False,
+                                   continuous_update=False, orientation='horizontal', readout=True, readout_format='d')
+        output = widgets.Output()
+
+        def _plot(select):
+            with output:
+                clear_output()
+                fig = plot(self, select)
+                fig.show()
+
+        def _on_event(event):
+            if event['name'] == 'value' and event['type'] == 'change':
+                _plot(event['new'])
+
+        slider.observe(_on_event)
+        display(slider, output)
+        _plot(0)
+
+    def exchanges_map(self, t: int = None):
+        if t is not None:
+            HTMLPlotting.exchanges_map(self, t)
+        else:
+            h = self.agg.study.horizon -1
+            self.intslider(HTMLPlotting.exchanges_map, h)
