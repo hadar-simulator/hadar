@@ -105,7 +105,7 @@ class JupyterPlotting(HTMLPlotting):
         :return: plotly figure or jupyter widget to plot
         """
         if t is not None:
-            HTMLPlotting.exchanges_map(self, t)
+            return HTMLPlotting.exchanges_map(self, t).show()
         else:
             h = self.agg.horizon -1
             self._intslider(HTMLPlotting.exchanges_map, h)

@@ -73,32 +73,38 @@ class HTMLPlotting(ABCPlotting):
         stack = np.zeros(self.agg.horizon)
 
         # stack production with area
-        prod = self.agg.agg_prod(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=True)
-        for i, type in enumerate(prod.index.get_level_values('type').unique()):
-            stack += prod.loc[type]['used'].values
-            fig.add_trace(go.Scatter(x=self.time_index, y=stack, name=type, mode='markers',
-                                     fill='tozeroy' if i == 0 else 'tonexty'))
+        if self.agg.production.size > 0:
+            prod = self.agg.agg_prod(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=True)
+            for i, type in enumerate(prod.index.get_level_values('type').unique()):
+                stack += prod.loc[type]['used'].sort_index().values
+                fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=type, mode='none',
+                                         fill='tozeroy' if i == 0 else 'tonexty'))
 
         # add import in production stack
         balance = self.agg.get_balance(node=node)
         im = -np.clip(balance, None, 0)
         if not (im == 0).all():
             stack += im
-            fig.add_trace(go.Scatter(x=self.time_index, y=stack, name='import', mode='markers', fill='tonexty'))
+            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name='import', mode='none', fill='tonexty'))
 
         # Reset stack
         stack = np.zeros_like(stack)
         # Stack consumptions with line
-        cons = self.agg.agg_cons(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=False)
-        for i, type in enumerate(cons.index.get_level_values('type').unique()):
-            stack += cons.loc[type]['given'].values
-            fig.add_trace(go.Scatter(x=self.time_index, y=stack, name=type, line=dict(width=4, dash='dash')))
+        if self.agg.consumption.size > 0:
+            cons = self.agg.agg_cons(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=False)
+            cons_lines = []
+            for i, type in enumerate(cons.index.get_level_values('type').unique()):
+                stack += cons.loc[type]['given'].sort_index().values
+                cons_lines.append([type, stack.copy()])
+            # Plot line in the reverse sens to avoid misunderstood during graphics analyze
+            for type, stack in cons_lines[::-1]:
+                fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=type, line=dict(width=4, dash='dash')))
 
         # Add export in consumption stack
         exp = np.clip(balance, 0, None)
         if not (exp == 0).all():
             stack += exp
-            fig.add_trace(go.Scatter(x=self.time_index, y=stack, name='export', line=dict(width=4, dash='dash')))
+            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name='export', line=dict(width=4, dash='dash')))
 
         fig.update_layout(title_text='Stack for node %s' % node,
                           yaxis_title="Quantity %s" % self.unit, xaxis_title="time")
@@ -178,7 +184,7 @@ class HTMLPlotting(ABCPlotting):
         # Config plot
         fig.update_layout(title_text='Exchanges Map', showlegend=False, height=600,
                           geo=dict(projection_type='equirectangular', showland=True, showcountries=True,
-                                   resolution=110, landcolor='rgb(200, 200, 200)', countrycolor='rgb(0, 0, 0)',
+                                   resolution=50, landcolor='rgb(200, 200, 200)', countrycolor='rgb(0, 0, 0)',
                                    fitbounds='locations'))
 
         return fig

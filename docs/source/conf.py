@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 import hadar
 
 # -- Project information -----------------------------------------------------
-
+master_doc = 'index'
 project = 'hadar-simulator'
 copyright = '2020, RTE'
 author = 'RTE'
