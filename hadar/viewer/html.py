@@ -159,7 +159,7 @@ class HTMLPlotting(ABCPlotting):
 
         fig = go.Figure()
 
-        # print links
+        # plot links
         borders = self.agg.agg_border(SrcIndex(), DestIndex(), TimeIndex())
         for src in borders.index.get_level_values('src').unique():
             for dest in borders.loc[src].index.get_level_values('dest').unique():
@@ -172,7 +172,7 @@ class HTMLPlotting(ABCPlotting):
                 else:
                     self._plot_links(fig=fig, start=dest, end=src, color=color, qt=-exchange)
 
-        # print nodes
+        # plot nodes
         text = ['%s: %i' % (n, b) for n, b in zip(self.agg.nodes, balances)]
         lon = [self.coord[node][0] for node in self.agg.nodes]
         lat = [self.coord[node][1] for node in self.agg.nodes]

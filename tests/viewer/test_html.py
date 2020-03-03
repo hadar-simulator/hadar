@@ -38,7 +38,7 @@ class TestHTMLPlotting(unittest.TestCase):
 
     def test_map_exchanges(self):
         fig = self.plot.exchanges_map(0)
-        self.assert_fig('5b2a042d6268484662281d5444cbfcc6bc9bf93b', fig)
+        self.assert_fig('9aa34f28665ea9e6766b271ffbc677d3cda6810b', fig)
 
     def assert_fig(self, expected: str, fig: go.Figure):
         h = hashlib.sha1()
