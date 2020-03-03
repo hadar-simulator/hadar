@@ -34,7 +34,7 @@ class TestHTMLPlotting(unittest.TestCase):
 
     def test_stack(self):
         fig = self.plot.stack('a')
-        self.assert_fig('2f60de1fb4ec5eb4c61a1f0185d52a2b6ab1da8c', fig)
+        self.assert_fig('204a31c26e12f4e59a5f43e547aed22bced9d809', fig)
 
     def test_map_exchanges(self):
         fig = self.plot.exchanges_map(0)

@@ -46,6 +46,9 @@ class HTMLPlotting(ABCPlotting):
         self.cmap = cmap
         self.cmap_plotly = HTMLPlotting.matplotlib_to_plotly(cmap, 255)
 
+        self.cmap_cons = ['brown', 'blue', 'darkgoldenrod', 'darkmagenta', 'darkorange', 'cadetblue', 'forestgreen',
+                          'indigo', 'olive', 'darkred']
+
     @classmethod
     def matplotlib_to_plotly(cls, cmap, res: int):
         """
@@ -89,22 +92,24 @@ class HTMLPlotting(ABCPlotting):
 
         # Reset stack
         stack = np.zeros_like(stack)
+        cons_lines = []
         # Stack consumptions with line
         if self.agg.consumption.size > 0:
             cons = self.agg.agg_cons(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=False)
-            cons_lines = []
             for i, type in enumerate(cons.index.get_level_values('type').unique()):
                 stack += cons.loc[type]['given'].sort_index().values
                 cons_lines.append([type, stack.copy()])
-            # Plot line in the reverse sens to avoid misunderstood during graphics analyze
-            for type, stack in cons_lines[::-1]:
-                fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=type, line=dict(width=4, dash='dash')))
 
         # Add export in consumption stack
         exp = np.clip(balance, 0, None)
         if not (exp == 0).all():
             stack += exp
-            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name='export', line=dict(width=4, dash='dash')))
+            cons_lines.append(['export', stack.copy()])
+
+        # Plot line in the reverse sens to avoid misunderstood during graphics analyze
+        for i, (type, stack) in enumerate(cons_lines[::-1]):
+            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), line_color=self.cmap_cons[i % 10],
+                                     name= type, line=dict(width=2)))
 
         fig.update_layout(title_text='Stack for node %s' % node,
                           yaxis_title="Quantity %s" % self.unit, xaxis_title="time")
