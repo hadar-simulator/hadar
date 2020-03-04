@@ -26,7 +26,9 @@ Applying adequacy on network, is tring to find the best available exchanges to a
    :maxdepth: 1
    :caption: Tutorials:
 
-   tutorials/introduction.rst
+   tutorials/get-started.rst
+   tutorials/cost.rst
+   tutorials/fr-de.rst
 
 .. toctree::
    :maxdepth: 2
