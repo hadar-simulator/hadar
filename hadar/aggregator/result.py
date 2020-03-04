@@ -216,8 +216,9 @@ class ResultAggregator:
         :param df: dataframe to pivot
         :return: pivot table
         """
+        indexes = [i0.column, i1.column, i2.column]
         pt = pd.pivot_table(data=df[i0.filter(df) & i1.filter(df) & i2.filter(df)],
-                            index=[i0.column, i1.column, i2.column], aggfunc=lambda x: x.iloc[0])
+                            index=indexes, aggfunc=lambda x: x.iloc[0])
 
         return ResultAggregator._remove_useless_index_level(df=pt, indexes=[i0, i1, i2])
 
@@ -280,6 +281,17 @@ class ResultAggregator:
 
         return ResultAggregator._pivot(i0, i1, i2, self.border)
 
+    def get_elements_inside(self, node: str):
+        """
+        Get numbers of elements by node.
+
+        :param node: node name
+        :return: (nb of consumptions, nb of productions, nb of border (export))
+        """
+        return len(self.result.nodes[node].consumptions),\
+               len(self.result.nodes[node].productions),\
+               len(self.result.nodes[node].borders)
+
     def get_balance(self, node: str) -> np.ndarray:
         """
         Compute balance over time on asked node.
@@ -297,6 +309,23 @@ class ResultAggregator:
         if exp.size > 0:
             balance += exp['used'].values
         return balance
+
+    def get_cost(self, node: str) -> np.ndarray:
+        cost = np.zeros(self.horizon)
+        c, p, b = self.get_elements_inside(node)
+        if c:
+            cons = self.agg_cons(NodeIndex(node), TimeIndex(), TypeIndex())
+            cost += ((cons['asked'] - cons['given'])*cons['cost']).groupby(axis=0, level=0).sum().sort_index().values
+
+        if p:
+            prod = self.agg_prod(NodeIndex(node), TimeIndex(), TypeIndex())
+            cost += (prod['used']*prod['cost']).groupby(axis=0, level=0).sum().sort_index().values
+
+        if b:
+            border = self.agg_border(SrcIndex(node), TimeIndex(), DestIndex())
+            cost += (border['used']*border['cost']).groupby(axis=0, level=0).sum().sort_index().values
+
+        return cost
 
     @property
     def horizon(self) -> int:
