@@ -73,10 +73,11 @@ class HTMLPlotting(ABCPlotting):
         :return: plotly figure or jupyter widget to plot
         """
         fig = go.Figure()
+        c, p, b = self.agg.get_elements_inside(node=node)
         stack = np.zeros(self.agg.horizon)
 
         # stack production with area
-        if self.agg.production.size > 0:
+        if p > 0:
             prod = self.agg.agg_prod(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=True)
             for i, type in enumerate(prod.index.get_level_values('type').unique()):
                 stack += prod.loc[type]['used'].sort_index().values
@@ -94,10 +95,10 @@ class HTMLPlotting(ABCPlotting):
         stack = np.zeros_like(stack)
         cons_lines = []
         # Stack consumptions with line
-        if self.agg.consumption.size > 0:
+        if c > 0:
             cons = self.agg.agg_cons(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=False)
             for i, type in enumerate(cons.index.get_level_values('type').unique()):
-                stack += cons.loc[type]['given'].sort_index().values
+                stack += cons.loc[type]['asked'].sort_index().values
                 cons_lines.append([type, stack.copy()])
 
         # Add export in consumption stack
