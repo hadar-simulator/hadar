@@ -1,11 +1,12 @@
 import setuptools
+import hadar
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="hadar",
-    version="0.1.0",
+    version=hadar.__version__,
     author="RTE France",
     author_email="francois.jolain@rte-international.com",
     description="python adequacy library",
