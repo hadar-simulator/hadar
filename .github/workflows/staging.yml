@@ -32,6 +32,7 @@ jobs:
 
     - name: Test notebooks
       run: |
+        git lfs pull
         export PYTHONPATH=$(pwd)
         cd examples
         python3 check.py
