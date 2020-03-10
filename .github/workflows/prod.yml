@@ -1,8 +1,8 @@
-name: staging
+name: prod
 on:
   push:
     branches:
-      - 'releases/**'
+      - 'master'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,18 +30,27 @@ jobs:
         coverage run --source=./hadar -m unittest discover tests
         coverage xml -i
 
+    - name: SonarCloud Scan
+      uses: sonarsource/sonarcloud-github-action@master
+      with:
+        name: coverage-report
+        path: coverage.xml
+      env:
+        GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
     - name: Test notebooks
       run: |
         git lfs pull
-        export PYTHONPATH=$(pwd)
+        pip install -i https://test.pypi.org/simple/ hadar
         cd examples
         python3 check.py
 
-    - name: Release test.pypi.org
+    - name: Release pypi.org
       run: |
         export PYTHONPATH=$(pwd)
         pip install setuptools wheel twine
         python3 setup.py sdist bdist_wheel
-        python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/* -u __token__ -p $PYPI_TEST_TOKEN
+        python3 -m twine upload --repository-url https://pypi.org/legacy/ dist/* -u __token__ -p $PYPI_PROD_TOKEN
       env:
-        PYPI_TEST_TOKEN: ${{ secrets.PYPI_TEST_TOKEN }}
+        PYPI_TEST_TOKEN: ${{ secrets.PYPI_PROD_TOKEN }}
