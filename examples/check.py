@@ -1,3 +1,4 @@
+import sys
 from typing import List
 
 import nbformat
@@ -41,5 +42,6 @@ if __name__ == '__main__':
         print(name, ':', end='')
         nb = read(name)
         nb = execute(nb, name)
-        export(nb, name)
+        if len(sys.argv) > 1 and sys.argv[1] == 'export':
+            export(nb, name)
         print('')

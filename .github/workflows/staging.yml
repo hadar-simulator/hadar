@@ -30,6 +30,12 @@ jobs:
         coverage run --source=./hadar -m unittest discover tests
         coverage xml -i
 
+    - name: Test notebooks
+      run: |
+        export PYTHONPATH=$(pwd)
+        cd examples
+        python3 check.py
+
     - name: Release test.pypi.org
       run: |
         export PYTHONPATH=$(pwd)
