@@ -65,11 +65,13 @@ class HTMLPlotting(ABCPlotting):
             pl_colorscale.append([k * h, 'rgb' + str((C[0], C[1], C[2]))])
         return pl_colorscale
 
-    def stack(self, node: str):
+    def stack(self, node: str, prod_kind: str = 'used', cons_kind: str = 'asked'):
         """
         Plot with production stacked with area and consumptions stacked by dashed lines.
 
         :param node: select node to plot. If None, use a dropdown menu to select inside notebook
+        :param prod_kind: select which prod to stack : available ('avail') or 'used'
+        :param cons_kind: select which cons to stacl : 'asked' or 'given'
         :return: plotly figure or jupyter widget to plot
         """
         fig = go.Figure()
@@ -80,7 +82,7 @@ class HTMLPlotting(ABCPlotting):
         if p > 0:
             prod = self.agg.agg_prod(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=True)
             for i, type in enumerate(prod.index.get_level_values('type').unique()):
-                stack += prod.loc[type]['used'].sort_index().values
+                stack += prod.loc[type][prod_kind].sort_index().values
                 fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=type, mode='none',
                                          fill='tozeroy' if i == 0 else 'tonexty'))
 
@@ -98,7 +100,7 @@ class HTMLPlotting(ABCPlotting):
         if c > 0:
             cons = self.agg.agg_cons(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=False)
             for i, type in enumerate(cons.index.get_level_values('type').unique()):
-                stack += cons.loc[type]['asked'].sort_index().values
+                stack += cons.loc[type][cons_kind].sort_index().values
                 cons_lines.append([type, stack.copy()])
 
         # Add export in consumption stack
