@@ -32,7 +32,7 @@ class JupyterPlotting(HTMLPlotting):
 
         HTMLPlotting.__init__(self, agg, unit_symbol, time_start, time_end, cmap, node_coord, map_element_size)
 
-    def _dropmenu(self, plot, items):
+    def _dropmenu(self, plot, items, **kargs):
         """
         Wrap html graphics with dropdown menu.
 
@@ -47,7 +47,7 @@ class JupyterPlotting(HTMLPlotting):
         def _plot(select):
             with output:
                 clear_output()
-                fig = plot(self, select)
+                fig = plot(self, select, **kargs)
                 fig.show()
 
         def _on_event(event):
@@ -58,18 +58,20 @@ class JupyterPlotting(HTMLPlotting):
         display(menu, output)
         _plot(items[0])
 
-    def stack(self, node: str = None):
+    def stack(self, node: str = None, prod_kind: str = 'used', cons_kind: str = 'asked'):
         """
         Plot with production stacked with area and consumptions stacked by dashed lines.
 
         :param node: select node to plot. If None, use a dropdown menu to select inside notebook
+        :param prod_kind: select which prod to stack : available ('avail') or 'used'
+        :param cons_kind: select which cons to stacl : 'asked' or 'given'
         :return: plotly figure or jupyter widget to plot
         """
         if node is not None:
-            return HTMLPlotting.stack(self, node).show()
+            return HTMLPlotting.stack(self, node, prod_kind, cons_kind).show()
         else:
             nodes = list(self.agg.nodes)
-            self._dropmenu(HTMLPlotting.stack, nodes)
+            self._dropmenu(HTMLPlotting.stack, nodes, prod_kind=prod_kind, cons_kind=cons_kind)
 
     def _intslider(self, plot, size):
         """

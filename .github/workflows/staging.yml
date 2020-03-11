@@ -1,4 +1,4 @@
-name: main
+name: staging
 on:
   push:
     branches:
@@ -29,6 +29,13 @@ jobs:
         pip install coverage
         coverage run --source=./hadar -m unittest discover tests
         coverage xml -i
+
+    - name: Test notebooks
+      run: |
+        git lfs pull
+        export PYTHONPATH=$(pwd)
+        cd examples
+        python3 check.py
 
     - name: Release test.pypi.org
       run: |

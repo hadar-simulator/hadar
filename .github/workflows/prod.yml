@@ -1,8 +1,7 @@
-name: main
+name: prod
 on:
   push:
-    branches-ignore:
-      - 'releases/**'
+    branches:
       - 'master'
 jobs:
   build:
@@ -39,3 +38,19 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    - name: Test notebooks
+      run: |
+        git lfs pull
+        pip install -i https://test.pypi.org/simple/ hadar
+        cd examples
+        python3 check.py
+
+    - name: Release pypi.org
+      run: |
+        export PYTHONPATH=$(pwd)
+        pip install setuptools wheel twine
+        python3 setup.py sdist bdist_wheel
+        python3 -m twine upload dist/* -u __token__ -p $PYPI_PROD_TOKEN
+      env:
+        PYPI_PROD_TOKEN: ${{ secrets.PYPI_PROD_TOKEN }}

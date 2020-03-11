@@ -1,3 +1,4 @@
+import sys
 from typing import List
 
 import nbformat
@@ -26,7 +27,7 @@ def execute(nb: nbformat, name: str) -> nbformat:
 def export(nb: nbformat, name: str):
     print('Exporting...', end=' ')
     html, _ = exporter.from_notebook_node(nb)
-    with open('../docs/source/_static/examples/%s.html' % name, 'w') as f:
+    with open('../public/%s/index.html' % name, 'w') as f:
         f.write(html)
     print('OK', end=' ')
 
@@ -41,5 +42,6 @@ if __name__ == '__main__':
         print(name, ':', end='')
         nb = read(name)
         nb = execute(nb, name)
-        export(nb, name)
+        if len(sys.argv) > 1 and sys.argv[1] == 'export':
+            export(nb, name)
         print('')
