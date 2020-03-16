@@ -6,3 +6,4 @@ ortools
 plotly
 jupyter
 matplotlib
+requests
