@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 from hadar.solver.input import Study, Production, Consumption, Border
 from hadar.solver.output import Result, OutputConsumption, OutputNode
-from solver.remote.solver import _solve_remote_wrap
+from hadar.solver.remote.solver import _solve_remote_wrap
 
 
 class MockRequest:

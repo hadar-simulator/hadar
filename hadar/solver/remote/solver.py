@@ -3,8 +3,8 @@ import pickle
 
 import requests
 
-from solver.input import Study
-from solver.output import Result
+from hadar.solver.input import Study
+from hadar.solver.output import Result
 
 
 logger = logging.getLogger(__name__)
