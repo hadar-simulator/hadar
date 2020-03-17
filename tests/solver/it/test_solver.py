@@ -1,7 +1,7 @@
 import unittest
 
-from hadar.solver.input import *
-from hadar.solver.output import *
+from hadar.solver.input import Production, Consumption, Study
+from hadar.solver.output import OutputConsumption, OutputBorder, OutputNode, OutputProduction, Result
 from hadar.solver.study import solve
 from tests.utils import assert_study
 

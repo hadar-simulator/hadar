@@ -1,11 +1,13 @@
 import unittest
 from unittest.mock import MagicMock
 
-from hadar.solver.lp.solver import *
-from hadar.solver.input import *
-from hadar.solver.output import *
+from hadar.solver.input import Study, Consumption
+from hadar.solver.lp.domain import LPConsumption, LPProduction, LPBorder, LPNode
+from hadar.solver.lp.mapper import InputMapper, OutputMapper
+from hadar.solver.lp.solver import ObjectiveBuilder, AdequacyBuilder
 from hadar.solver.lp.solver import _solve
-from tests.solver.lp.ortools_mock import *
+from hadar.solver.output import OutputConsumption, OutputNode, Result
+from tests.solver.lp.ortools_mock import MockConstraint, MockNumVar, MockObjective, MockSolver
 
 
 class TestObjectiveBuilder(unittest.TestCase):

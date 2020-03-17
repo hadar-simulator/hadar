@@ -1,5 +1,5 @@
 import unittest
-from hadar.solver.input import *
+from hadar.solver.input import Study, Consumption, Production, Border
 
 class TestNetwork(unittest.TestCase):
     def test_create_study(self):

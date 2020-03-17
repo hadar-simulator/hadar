@@ -1,9 +1,10 @@
-from typing import Union, TypeVar, List, Generic, Tuple, Type
+from typing import Union, TypeVar, List, Generic, Type
 
 import pandas as pd
 import numpy as np
 
-from hadar.solver.output import Result, Study
+from hadar.solver.output import Result
+from hadar.solver.input import Study
 
 T = TypeVar('T')
 

@@ -2,7 +2,7 @@ import pickle
 import unittest
 from unittest.mock import MagicMock
 
-from hadar.solver.input import Study, Production, Consumption, Border
+from hadar.solver.input import Study, Consumption
 from hadar.solver.output import Result, OutputConsumption, OutputNode
 from hadar.solver.remote.solver import _solve_remote_wrap
 

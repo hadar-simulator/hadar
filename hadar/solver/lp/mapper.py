@@ -1,7 +1,7 @@
 from ortools.linear_solver.pywraplp import Solver
 
-from hadar.solver.input import InputNode, Study
-from hadar.solver.lp.domain import *
+from hadar.solver.input import Study
+from hadar.solver.lp.domain import LPBorder, LPConsumption, LPNode, LPProduction
 from hadar.solver.output import OutputNode, Result
 
 

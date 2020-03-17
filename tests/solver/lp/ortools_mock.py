@@ -1,5 +1,3 @@
-from ortools.linear_solver.pywraplp import Solver
-
 from hadar.solver.input import DTO
 
 

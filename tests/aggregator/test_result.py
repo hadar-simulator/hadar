@@ -1,9 +1,11 @@
 import unittest
+
 import pandas as pd
+import numpy as np
 
 from hadar.aggregator.result import Index, TimeIndex, ResultAggregator, NodeIndex, TypeIndex, SrcIndex, DestIndex
-from hadar.solver.input import *
-from hadar.solver.output import *
+from hadar.solver.input import Production, Consumption, Study
+from hadar.solver.output import OutputConsumption, OutputBorder, OutputNode, OutputProduction, Result
 
 
 class TestIndex(unittest.TestCase):

@@ -1,5 +1,4 @@
-import numpy as np
-from typing import Union, List
+from typing import List
 
 from ortools.linear_solver.pywraplp import Variable
 

@@ -1,10 +1,9 @@
 import unittest
 
-from ortools.linear_solver import pywraplp
-from hadar.solver.lp.domain import *
+from hadar.solver.input import Production, Consumption, Study
+from hadar.solver.lp.domain import LPBorder, LPConsumption, LPProduction, LPNode
 from hadar.solver.lp.mapper import InputMapper, OutputMapper
-from hadar.solver.input import *
-from hadar.solver.output import *
+from hadar.solver.output import OutputConsumption, OutputBorder, OutputNode, OutputProduction, Result
 from tests.solver.lp.ortools_mock import MockSolver, MockNumVar
 from tests.utils import assert_study
 
