@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from hadar.preprocessing.pipeline import Pipeline
+from hadar.preprocessing.pipeline import Pipeline, FreePlug, RestrictedPlug
 
 
 class Double(Pipeline):
@@ -33,6 +33,73 @@ class Inverse(Pipeline):
         timelines['-d'] = -timelines['d']
         return timelines
 
+
+class TestFreePlug(unittest.TestCase):
+    def test_linkable_to(self):
+        self.assertTrue(FreePlug()._linkable_to(FreePlug()))
+
+    def test_join_to_fre(self):
+        # Input
+        a = FreePlug()
+        b = FreePlug()
+
+        # Test
+        c = a._join(b)
+        self.assertEqual(a, c)
+
+    def test_join_to_restricted(self):
+        # Input
+        a = FreePlug()
+        b = RestrictedPlug(inputs=['a', 'b'], outputs=['c', 'd'])
+
+        # Test
+        c = a._join(b)
+        self.assertEqual(b, c)
+
+
+class TestRestrictedPlug(unittest.TestCase):
+    def test_linkable_to_free(self):
+        # Input
+        a = RestrictedPlug(inputs=['a'], outputs=['b'])
+
+        # Test
+        self.assertTrue(a._linkable_to(FreePlug()))
+
+    def test_linkable_to_restricted_ok(self):
+        # Input
+        a = RestrictedPlug(inputs=['a'], outputs=['b', 'c', 'd'])
+        b = RestrictedPlug(inputs=['b', 'c'], outputs=['e'])
+
+        # Test
+        self.assertTrue(a._linkable_to(b))
+
+    def test_linkable_to_restricted_wrong(self):
+        # Input
+        a = RestrictedPlug(inputs=['a'], outputs=['b', 'c', 'd'])
+        b = RestrictedPlug(inputs=['b', 'c', 'f'], outputs=['e'])
+
+        # Test
+        self.assertFalse(a._linkable_to(b))
+
+    def test_join_to_free(self):
+        # Input
+        a = RestrictedPlug(inputs=['a'], outputs=['b'])
+
+        # Test
+        b = a._join(FreePlug())
+        self.assertEqual(a, b)
+
+    def test_join_to_restricted(self):
+        # Input
+        a = RestrictedPlug(inputs=['a'], outputs=['b', 'c', 'd'])
+        b = RestrictedPlug(inputs=['b', 'c'], outputs=['e'])
+
+        # Expected
+        exp = RestrictedPlug(inputs=['a'], outputs=['d', 'e'])
+
+        # Test
+        c = a._join(b)
+        self.assertEqual(exp, c)
 
 class TestPipeline(unittest.TestCase):
 

@@ -1,9 +1,79 @@
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from typing import List, Tuple
 
 import pandas as pd
 import numpy as np
 from pandas import MultiIndex
+
+from hadar.solver.input import DTO
+
+
+class Plug(ABC, DTO):
+    def __init__(self, inputs: List[str], outputs: List[str]):
+        self.inputs = inputs
+        self.outputs = outputs
+
+    @abstractmethod
+    def _linkable_to(self, other) -> bool:
+        pass
+    @abstractmethod
+    def _join(self, other):
+        pass
+
+
+class FreePlug(Plug):
+    def __init__(self):
+        Plug.__init__(self, inputs=[], outputs=[])
+
+    def _linkable_to(self, other: Plug) -> bool:
+        return True
+
+    def _join(self, other: Plug) -> Plug:
+        # take input of next pipelines if current is restriction free
+        if not isinstance(other, FreePlug):
+            return deepcopy(other)
+        return deepcopy(self)
+
+
+class RestrictedPlug(Plug):
+    def __init__(self, inputs, outputs):
+        Plug.__init__(self, inputs=inputs, outputs=outputs)
+
+    def _linkable_to(self, next) -> bool:
+        if isinstance(next, FreePlug):
+            return True
+        return all(e in self.outputs for e in next.inputs)
+
+    def _join(self, next: Plug) -> Plug:
+        if isinstance(next, FreePlug):
+            return self
+
+        # keep output not used by next pipeline and add next outputs
+        outputs = [e for e in self.outputs if e not in next.inputs] + next.outputs
+        return RestrictedPlug(inputs=self.inputs, outputs=outputs)
+
+
+class Compute(ABC, DTO):
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def process(self, timeline: pd.DataFrame) -> pd.DataFrame:
+        pass
+
+
+class LocalCompute(ABC, DTO, Compute):
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def local_process(self, timeline: pd.DataFrame, scn: int) -> pd.DataFrame:
+        pass
+
+    def process(self, timelines: pd.DataFrame) -> pd.DataFrame:
+        for scn in timelines.columns.get_level_values(0).unique():
+            timelines[scn] = self._local_process(timelines[scn])
 
 
 class Pipeline(ABC):
