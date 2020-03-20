@@ -2,41 +2,47 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from hadar.preprocessing.pipeline import Pipeline, FreePlug, RestrictedPlug
+from hadar.preprocessing.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage
 
 
-class Double(Pipeline):
-    def _process(self, timelines: pd.DataFrame) -> pd.DataFrame:
+class Double(Stage):
+    def __init__(self):
+        Stage.__init__(self, FreePlug())
+
+    def _process_timeline(self, timelines: pd.DataFrame) -> pd.DataFrame:
         return timelines * 2
 
 
-class Max9(Pipeline):
-    def _process(self, timelines: pd.DataFrame) -> pd.DataFrame:
+class Max9(Stage):
+    def __init__(self):
+        Stage.__init__(self, FreePlug())
+
+    def _process_timeline(self, timelines: pd.DataFrame) -> pd.DataFrame:
         return timelines.clip(None, 9)
 
 
-class Divide(Pipeline):
+class Divide(FocusStage):
     def __init__(self):
-        Pipeline.__init__(self, mandatory_fields=['a', 'b'], created_fields=['d', 'r'])
+        Stage.__init__(self, RestrictedPlug(inputs=['a', 'b'], outputs=['d', 'r']))
 
-    def _process(self, timelines: pd.DataFrame) -> pd.DataFrame:
-        timelines['d'] = (timelines['a'] / timelines['b']).apply(np.floor)
-        timelines['r'] = timelines['a'] - timelines['b'] * timelines['d']
-        return timelines.drop(['a', 'b'], axis=1)
+    def _process_scenarios(self, n_scn: int, scenario: pd.DataFrame) -> pd.DataFrame:
+        scenario['d'] = (scenario['a'] / scenario['b']).apply(np.floor)
+        scenario['r'] = scenario['a'] - scenario['b'] * scenario['d']
+        return scenario.drop(['a', 'b'], axis=1)
 
 
-class Inverse(Pipeline):
+class Inverse(FocusStage):
     def __init__(self):
-        Pipeline.__init__(self, mandatory_fields=['d'], created_fields=['d', '-d'])
+        Stage.__init__(self, RestrictedPlug(inputs=['d'], outputs=['d', '-d']))
 
-    def _process(self, timelines: pd.DataFrame) -> pd.DataFrame:
-        timelines['-d'] = -timelines['d']
-        return timelines
+    def _process_scenarios(self, n_scn: int, scenario: pd.DataFrame) -> pd.DataFrame:
+        scenario['-d'] = -scenario['d']
+        return scenario.copy()
 
 
 class TestFreePlug(unittest.TestCase):
     def test_linkable_to(self):
-        self.assertTrue(FreePlug()._linkable_to(FreePlug()))
+        self.assertTrue(FreePlug().linkable_to(FreePlug()))
 
     def test_join_to_fre(self):
         # Input
@@ -44,7 +50,7 @@ class TestFreePlug(unittest.TestCase):
         b = FreePlug()
 
         # Test
-        c = a._join(b)
+        c = a + b
         self.assertEqual(a, c)
 
     def test_join_to_restricted(self):
@@ -53,7 +59,7 @@ class TestFreePlug(unittest.TestCase):
         b = RestrictedPlug(inputs=['a', 'b'], outputs=['c', 'd'])
 
         # Test
-        c = a._join(b)
+        c = a + b
         self.assertEqual(b, c)
 
 
@@ -63,7 +69,7 @@ class TestRestrictedPlug(unittest.TestCase):
         a = RestrictedPlug(inputs=['a'], outputs=['b'])
 
         # Test
-        self.assertTrue(a._linkable_to(FreePlug()))
+        self.assertTrue(a.linkable_to(FreePlug()))
 
     def test_linkable_to_restricted_ok(self):
         # Input
@@ -71,7 +77,7 @@ class TestRestrictedPlug(unittest.TestCase):
         b = RestrictedPlug(inputs=['b', 'c'], outputs=['e'])
 
         # Test
-        self.assertTrue(a._linkable_to(b))
+        self.assertTrue(a.linkable_to(b))
 
     def test_linkable_to_restricted_wrong(self):
         # Input
@@ -79,14 +85,14 @@ class TestRestrictedPlug(unittest.TestCase):
         b = RestrictedPlug(inputs=['b', 'c', 'f'], outputs=['e'])
 
         # Test
-        self.assertFalse(a._linkable_to(b))
+        self.assertFalse(a.linkable_to(b))
 
     def test_join_to_free(self):
         # Input
         a = RestrictedPlug(inputs=['a'], outputs=['b'])
 
         # Test
-        b = a._join(FreePlug())
+        b = a + FreePlug()
         self.assertEqual(a, b)
 
     def test_join_to_restricted(self):
@@ -98,24 +104,12 @@ class TestRestrictedPlug(unittest.TestCase):
         exp = RestrictedPlug(inputs=['a'], outputs=['d', 'e'])
 
         # Test
-        c = a._join(b)
+        c = a + b
         self.assertEqual(exp, c)
 
+
 class TestPipeline(unittest.TestCase):
-
-    def test_compute_without_scenario(self):
-        # Input
-        i = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
-        pipe = Double()
-
-        # Expected
-        exp = pd.DataFrame({'a': [2, 4, 6], 'b': [8, 10, 12]})
-
-        # Test & Verify
-        o = pipe.compute(i)
-        pd.testing.assert_frame_equal(exp, o)
-
-    def test_compute_with_scenario(self):
+    def test_compute(self):
         # Input
         i = pd.DataFrame({(0, 'a'): [1, 2, 3], (0, 'b'): [4, 5, 6],
                           (1, 'a'): [10, 20, 30], (1, 'b'): [40, 50, 60]})
@@ -140,8 +134,8 @@ class TestPipeline(unittest.TestCase):
         # Test & Verify
         o = pipe.compute(i)
         pd.testing.assert_frame_equal(exp, o)
-        self.assertEqual([], pipe.input_fields)
-        self.assertEqual([], pipe.output_fields)
+        self.assertEqual([], pipe.plug.inputs)
+        self.assertEqual([], pipe.plug.outputs)
 
     def test_link_pipeline_free_to_restricted(self):
         # Input
@@ -154,8 +148,8 @@ class TestPipeline(unittest.TestCase):
         # Test & Verify
         o = pipe.compute(i)
         pd.testing.assert_frame_equal(exp, o)
-        self.assertEqual(['a', 'b'], pipe.input_fields)
-        self.assertEqual(['d', 'r'], pipe.output_fields)
+        self.assertEqual(['a', 'b'], pipe.plug.inputs)
+        self.assertEqual(['d', 'r'], pipe.plug.outputs)
 
     def test_link_pipeline_restricted_to_free(self):
         # Input
@@ -168,8 +162,8 @@ class TestPipeline(unittest.TestCase):
         # Test & Verify
         o = pipe.compute(i)
         pd.testing.assert_frame_equal(exp, o)
-        self.assertEqual(['a', 'b'], pipe.input_fields)
-        self.assertEqual(['d', 'r'], pipe.output_fields)
+        self.assertEqual(['a', 'b'], pipe.plug.inputs)
+        self.assertEqual(['d', 'r'], pipe.plug.outputs)
 
     def test_link_pipeline_restricted_to_restricted(self):
         # Input
@@ -182,25 +176,21 @@ class TestPipeline(unittest.TestCase):
         # Test & Verify
         o = pipe.compute(i)
         pd.testing.assert_frame_equal(exp, o)
-        self.assertEqual({'a', 'b'}, set(pipe.input_fields))
-        self.assertEqual({'d', '-d', 'r'}, set(pipe.output_fields))
+        self.assertEqual({'a', 'b'}, set(pipe.plug.inputs))
+        self.assertEqual({'d', '-d', 'r'}, set(pipe.plug.outputs))
 
-    def test_linkable(self):
-        self.assertTrue(Divide()._linkable_io(Inverse()))
-        self.assertTrue(Divide()._linkable_io(Double()))
-        self.assertTrue(Double()._linkable_io(Divide()))
 
-        self.assertFalse(Inverse()._linkable_io(Divide()))
-
-    def test_merge_io_restricted(self):
+class TestFocusPipeline(unittest.TestCase):
+    def test_compute(self):
         # Input
-        pipeA = Divide()
-        pipeB = Inverse()
+        i = pd.DataFrame({(0, 'b'): [1, 2, 3], (0, 'a'): [4, 5, 6],
+                          (1, 'b'): [10, 20, 30], (1, 'a'): [40, 50, 60]})
+        pipe = Divide()
 
         # Expected
-        exp = ['r', 'd', '-d']
+        exp = pd.DataFrame({(0, 'd'): [4, 2, 2], (0, 'r'): [0, 1, 0],
+                            (1, 'd'): [4, 2, 2], (1, 'r'): [0, 10, 0]}, dtype='float')
 
-        # Test
-        pipeA._merge_io(pipeB)
-        self.assertEqual(exp, pipeA.output_fields)
-
+        # Test & Verify
+        o = pipe.compute(i)
+        pd.testing.assert_frame_equal(exp, o)
