@@ -285,3 +285,11 @@ class FocusStage(Stage, ABC):
         return output
 
 
+class Clip(Stage):
+    def __init__(self, lower: float = None, upper: float = None):
+        Stage.__init__(self, plug=FreePlug())
+        self.lower = lower
+        self.upper = upper
+
+    def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
+        return timeline.clip(lower=self.lower, upper=self.upper)

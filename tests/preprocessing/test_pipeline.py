@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from hadar.preprocessing.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage
+from hadar.preprocessing.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage, Clip
 
 
 class Double(Stage):
@@ -190,6 +190,21 @@ class TestFocusPipeline(unittest.TestCase):
         # Expected
         exp = pd.DataFrame({(0, 'd'): [4, 2, 2], (0, 'r'): [0, 1, 0],
                             (1, 'd'): [4, 2, 2], (1, 'r'): [0, 10, 0]}, dtype='float')
+
+        # Test & Verify
+        o = pipe.compute(i)
+        pd.testing.assert_frame_equal(exp, o)
+
+
+class TestClip(unittest.TestCase):
+    def test_compute(self):
+        # Input
+        i = pd.DataFrame({'a': [12, 54, 87, 12], 'b': [98, 23, 65, 4]})
+
+        pipe = Clip(lower=10, upper=50)
+
+        # Expected
+        exp = pd.DataFrame({(0, 'a'): [12, 50, 50, 12], (0, 'b'): [50, 23, 50, 10]})
 
         # Test & Verify
         o = pipe.compute(i)
