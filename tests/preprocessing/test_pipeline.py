@@ -101,7 +101,7 @@ class TestRestrictedPlug(unittest.TestCase):
         b = RestrictedPlug(inputs=['b', 'c'], outputs=['e'])
 
         # Expected
-        exp = RestrictedPlug(inputs=['a'], outputs=['d', 'e'])
+        exp = RestrictedPlug(inputs=['a'], outputs=['e', 'd'])
 
         # Test
         c = a + b
@@ -129,7 +129,7 @@ class TestPipeline(unittest.TestCase):
         pipe = Double() + Max9()
 
         # Expected
-        exp = pd.DataFrame({'a': [2, 4, 6], 'b': [8, 9, 9]})
+        exp = pd.DataFrame({(0, 'a'): [2, 4, 6], (0, 'b'): [8, 9, 9]})
 
         # Test & Verify
         o = pipe.compute(i)
@@ -143,7 +143,7 @@ class TestPipeline(unittest.TestCase):
         pipe = Double() + Divide()
 
         # Expected
-        exp = pd.DataFrame({'d': [2, 4, 5], 'r': [4, 0, 4]}, dtype='float')
+        exp = pd.DataFrame({(0, 'd'): [2, 4, 5], (0, 'r'): [4, 0, 4]}, dtype='float')
 
         # Test & Verify
         o = pipe.compute(i)
@@ -157,7 +157,7 @@ class TestPipeline(unittest.TestCase):
         pipe = Divide() + Double()
 
         # Expected
-        exp = pd.DataFrame({'d': [4, 8, 10], 'r': [4, 0, 4]}, dtype='float')
+        exp = pd.DataFrame({(0, 'd'): [4, 8, 10], (0, 'r'): [4, 0, 4]}, dtype='float')
 
         # Test & Verify
         o = pipe.compute(i)
@@ -171,7 +171,7 @@ class TestPipeline(unittest.TestCase):
         pipe = Divide() + Double() + Inverse()
 
         # Expected
-        exp = pd.DataFrame({'d': [4, 8, 10], 'r': [4, 0, 4], '-d': [-4, -8, -10]}, dtype='float')
+        exp = pd.DataFrame({(0, 'd'): [4, 8, 10], (0, '-d'): [-4, -8, -10], (0, 'r'): [4, 0, 4]}, dtype='float')
 
         # Test & Verify
         o = pipe.compute(i)

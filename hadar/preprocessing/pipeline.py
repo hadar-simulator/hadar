@@ -16,6 +16,7 @@ class Plug(ABC, DTO):
     def __init__(self, inputs: List[str], outputs: List[str]):
         self.inputs = inputs
         self.outputs = outputs
+        self.inputs_no_used = []
 
     @abstractmethod
     def linkable_to(self, other) -> bool:
@@ -111,8 +112,8 @@ class RestrictedPlug(Plug):
             return self
 
         # keep output not used by next pipeline and add next outputs
-        outputs = [e for e in self.outputs if e not in next.inputs] + next.outputs
-        return RestrictedPlug(inputs=self.inputs, outputs=outputs)
+        next.outputs += [e for e in self.outputs if e not in next.inputs]
+        return RestrictedPlug(inputs=self.inputs, outputs=next.outputs)
 
 
 class Stage(ABC):
@@ -138,14 +139,14 @@ class Stage(ABC):
         :return: same stage with new compute queue to process and new plug configuration.
         """
         if not isinstance(other, Stage):
-            raise ValueError('Only addition with other pipeline is accepted not with %s' % type(other))
+            raise ValueError('Only addition with other Stage is accepted not with %s' % type(other))
 
         if not self.plug.linkable_to(other.plug):
             raise ValueError("Pipeline can't be added %s has output %s and %s has input %s" %
                              (self.__class__.__name__, self.plug.outputs, other.__class__.__name__, other.plug.inputs))
 
         self.plug += other.plug
-        self.next_computes.append(other.compute)
+        self.next_computes.append(other._process_timeline)
         return self
 
     @abstractmethod
@@ -153,17 +154,6 @@ class Stage(ABC):
         """
         Method to implement when creating your own state. It take current DataFrame with scenario as first columns index,
         followed by columns type. Time is on index.
-
-        Timeline without scenarios
-        +--------+--------+-------+-------+
-        |   t    |   a    |   b   |  ...  |
-        +--------+--------+-------+-------+
-        |   0    |        |       |       |
-        +--------+--------+-------+-------+
-        |   1    |        |       |       |
-        +--------+--------+-------+-------+
-        |  ...   |        |       |       |
-        +--------+--------+-------+-------+
 
         Timeline with scenarios
         +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
@@ -185,7 +175,7 @@ class Stage(ABC):
 
     def compute(self, timeline: pd.DataFrame) -> pd.DataFrame:
         """
-        Launch Stage computation and all other stage if stage are linked.
+        Launch Stage computation and all other stage if stage is linked.
 
         Timeline without scenarios
         +--------+--------+-------+-------+
@@ -214,6 +204,11 @@ class Stage(ABC):
         :param timeline: DataFrame explained above
         :return: new Timeline
         """
+        # Add 0th scenarios column if not present.
+        if not isinstance(timeline.columns, MultiIndex):
+            columns = timeline.columns.values
+            timeline.columns = MultiIndex.from_arrays([np.zeros_like(columns), columns])
+
         timeline = self._process_timeline(timeline.copy())
         for compute in self.next_computes:
             timeline = compute(timeline.copy())
@@ -259,22 +254,17 @@ class FocusStage(Stage, ABC):
     def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
         """
         Implementation to manage stage behaviour independently scenario of not.
-        
+
         :param timeline:
         :return:
         """
-        if not isinstance(timeline.columns, MultiIndex):
-            return self._process_scenarios(0, timeline)
-
-        if isinstance(timeline.columns, MultiIndex):
-            scenarios = timeline.columns.get_level_values(0).unique()
-        else:
-            scenarios = [0]
+        scenarios = timeline.columns.get_level_values(0).unique()
 
         n_scn = len(scenarios)
         n_time = timeline.shape[0]
         n_type = len(self.plug.outputs)
-        zeros = np.zeros((n_time, n_type * n_scn))
+
+
 
         # Create an index for time like
         # [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, ..., n_time-1]
@@ -289,7 +279,9 @@ class FocusStage(Stage, ABC):
         # [[0, a], [0, b], [0, c], ..., [1, a], [1, b], [1, c], ... ]
         index = MultiIndex.from_arrays([index_time, index_type])
 
-        output = pd.DataFrame(zeros, columns=index)
+        output = pd.DataFrame(data=np.zeros((n_time, n_type * n_scn)), columns=index)
         for scn in timeline.columns.get_level_values(0).unique():
             output[scn] = self._process_scenarios(scn, timeline[scn])
         return output
+
+
