@@ -293,7 +293,16 @@ class FocusStage(Stage, ABC):
 
 
 class Clip(Stage):
+    """
+    Cut data according to upper and lower boundaries. Same as np.clip function.
+    """
     def __init__(self, lower: float = None, upper: float = None):
+        """
+        Initiate stage.
+
+        :param lower: lower boundary to cut
+        :param upper: upper boundary to cut
+        """
         Stage.__init__(self, plug=FreePlug())
         self.lower = lower
         self.upper = upper
@@ -303,7 +312,15 @@ class Clip(Stage):
 
 
 class Rename(Stage):
+    """
+    Rename column names.
+    """
     def __init__(self, rename: Dict[str, str]):
+        """
+        Initiate Stage.
+
+        :param rename: dictionary of strings like { old_name: new_name }
+        """
         Stage.__init__(self, plug=RestrictedPlug(inputs=list(rename.keys()), outputs=list(rename.values())))
         self.rename = rename
 
@@ -313,11 +330,25 @@ class Rename(Stage):
         return timeline
 
     def _rename(self, name):
+        """
+        Apply rename.
+
+        :param name: name to rename
+        :return: new name if present in dictionary, same name else
+        """
         return self.rename[name] if name in self.rename else name
 
 
 class Drop(Stage):
+    """
+    Drop columns by name.
+    """
     def __init__(self, names: Union[List[str], str]):
+        """
+        Initiate Stage.
+
+        :param names: list of string names to remove for all scenarios
+        """
         if not isinstance(names, list):
             names = [names]
         Stage.__init__(self, plug=RestrictedPlug(inputs=names))
@@ -328,7 +359,19 @@ class Drop(Stage):
 
 
 class Fault(FocusStage):
+    """
+    Generate a random fault for each scenarios.
+    """
     def __init__(self, loss: float, occur_freq: float, downtime_min: int, downtime_max, seed: int = None):
+        """
+        Initiate Stage.
+
+        :param loss: loss of quantities when fault happen
+        :param occur_freq: probability [0, 1] of fault occur for each timestamp
+        :param downtime_min: minimal downtime (downtime will be toss for each occurred fault)
+        :param downtime_max: maximal downtime (downtime will be toss for each occurred fault)
+        :param seed: random seed. Set only if you want reproduce exactly result.
+        """
         FocusStage.__init__(self, plug=RestrictedPlug(inputs=['quantity'], outputs=['quantity']))
         self.loss = loss
         self.occur_freq = occur_freq
@@ -353,7 +396,15 @@ class Fault(FocusStage):
 
 
 class RepeatScenario(Stage):
+    """
+    Repeat n-time current scenarios.
+    """
     def __init__(self, n):
+        """
+        Initiate Stage.
+
+        :param n: n-time to repeat current scenarios
+        """
         Stage.__init__(self, plug=FreePlug())
         self.n = n
 
