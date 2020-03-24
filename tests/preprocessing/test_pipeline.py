@@ -1,8 +1,10 @@
 import unittest
 import pandas as pd
 import numpy as np
+from pandas import MultiIndex
 
-from hadar.preprocessing.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage, Clip, Rename, Drop, Fault
+from hadar.preprocessing.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage, Clip, Rename, Drop, Fault, \
+    RepeatScenario
 
 
 class Double(Stage):
@@ -179,6 +181,18 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual({'a', 'b'}, set(pipe.plug.inputs))
         self.assertEqual({'d', '-d', 'r'}, set(pipe.plug.outputs))
 
+    def test_build_multi_index(self):
+        # Input
+        scenarios = [1, 2, 3]
+        names = ['a', 'b']
+
+        # Expected
+        exp = MultiIndex.from_tuples([(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b'), (3, 'a'), (3, 'b')])
+
+        # Test & Verify
+        index = Stage.build_multi_index(scenarios=scenarios, names=names)
+        pd.testing.assert_index_equal(exp, index)
+
 
 class TestFocusPipeline(unittest.TestCase):
     def test_compute(self):
@@ -261,3 +275,26 @@ class TestFault(unittest.TestCase):
 
         total_loss = o.size * power - o.values.sum()
         self.assertAlmostEqual(exp_total_loss, total_loss, delta=exp_total_loss*0.1)
+
+
+class TestRepeat(unittest.TestCase):
+    def test_compute(self):
+        # Input
+        i = pd.DataFrame({'a': [12, 54, 87, 12], 'b': [98, 23, 65, 4]})
+        pipe = RepeatScenario(n=2)
+
+        # Expected
+        exp1 = pd.DataFrame({(0, 'a'): [12, 54, 87, 12], (0, 'b'): [98, 23, 65, 4],
+                             (1, 'a'): [12, 54, 87, 12], (1, 'b'): [98, 23, 65, 4]})
+
+        exp2 = pd.DataFrame({(0, 'a'): [12, 54, 87, 12], (0, 'b'): [98, 23, 65, 4],
+                             (1, 'a'): [12, 54, 87, 12], (1, 'b'): [98, 23, 65, 4],
+                             (2, 'a'): [12, 54, 87, 12], (2, 'b'): [98, 23, 65, 4],
+                             (3, 'a'): [12, 54, 87, 12], (3, 'b'): [98, 23, 65, 4]})
+
+        # Test & Verify
+        o = pipe.compute(i)
+        pd.testing.assert_frame_equal(exp1, o)
+
+        o = pipe.compute(o)
+        pd.testing.assert_frame_equal(exp2, o)

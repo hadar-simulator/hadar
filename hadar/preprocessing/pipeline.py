@@ -217,6 +217,24 @@ class Stage(ABC):
 
         return timeline
 
+    @staticmethod
+    def build_multi_index(scenarios: Union[List[int], np.ndarray], names: List[str]):
+        n_scn = len(scenarios)
+        n_names = len(names)
+
+        # Create an index for time like
+        # [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, ..., n_time-1]
+        #  <--- n_type --->  <--- n_type --->  ...
+        index_time = np.tile(scenarios, (n_names, 1)).T.flatten()
+
+        # Create an index for type like
+        # [a, b, c, d, e, f, a, b, c, d, e, f, ..... x n_scn]
+        index_type = np.tile(names, n_scn)
+
+        # Merge index for MultiIndex
+        # [[0, a], [0, b], [0, c], ..., [1, a], [1, b], [1, c], ... ]
+        return MultiIndex.from_arrays([index_time, index_type])
+
 
 class FocusStage(Stage, ABC):
     """
@@ -266,20 +284,7 @@ class FocusStage(Stage, ABC):
         n_time = timeline.shape[0]
         n_type = len(self.plug.outputs)
 
-
-
-        # Create an index for time like
-        # [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, ..., n_time-1]
-        #  <--- n_type --->  <--- n_type --->  ...
-        index_time = np.tile(np.arange(n_scn), (n_type, 1)).T.flatten()
-
-        # Create an index for type like
-        # [a, b, c, d, e, f, a, b, c, d, e, f, ..... x n_scn]
-        index_type = np.tile(self.plug.outputs, n_scn)
-
-        # Merge index for MultiIndex
-        # [[0, a], [0, b], [0, c], ..., [1, a], [1, b], [1, c], ... ]
-        index = MultiIndex.from_arrays([index_time, index_type])
+        index = FocusStage.build_multi_index(scenarios, names=self.plug.outputs)
 
         output = pd.DataFrame(data=np.zeros((n_time, n_type * n_scn)), columns=index)
         for scn in timeline.columns.get_level_values(0).unique():
@@ -345,4 +350,20 @@ class Fault(FocusStage):
 
         scenario['quantity'] -= loss_qt
         return scenario
+
+
+class RepeatScenario(Stage):
+    def __init__(self, n):
+        Stage.__init__(self, plug=FreePlug())
+        self.n = n
+
+    def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
+        data = np.tile(timeline.values, self.n)
+
+        n_scn = timeline.columns.get_level_values(0).unique().size
+        names = timeline.columns.get_level_values(1).unique()
+        index = Stage.build_multi_index(scenarios=np.arange(0, n_scn * self.n), names=names)
+
+        return pd.DataFrame(data=data, columns=index)
+
 
