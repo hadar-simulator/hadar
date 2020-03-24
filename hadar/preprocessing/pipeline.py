@@ -224,16 +224,16 @@ class Stage(ABC):
 
         # Create an index for time like
         # [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, ..., n_time-1]
-        #  <--- n_type --->  <--- n_type --->  ...
+        #  <--- n_name --->  <--- n_name --->  ...
         index_time = np.tile(scenarios, (n_names, 1)).T.flatten()
 
         # Create an index for type like
         # [a, b, c, d, e, f, a, b, c, d, e, f, ..... x n_scn]
-        index_type = np.tile(names, n_scn)
+        index_name = np.tile(names, n_scn)
 
         # Merge index for MultiIndex
         # [[0, a], [0, b], [0, c], ..., [1, a], [1, b], [1, c], ... ]
-        return MultiIndex.from_arrays([index_time, index_type])
+        return MultiIndex.from_arrays([index_time, index_name])
 
 
 class FocusStage(Stage, ABC):
@@ -325,8 +325,7 @@ class Rename(Stage):
         self.rename = rename
 
     def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
-        columns = [(scn, self._rename(name)) for scn, name in timeline.columns]
-        timeline.columns = MultiIndex.from_tuples(columns)
+        timeline.columns = timeline.columns.map(lambda i: (i[0], self._rename(i[1])))
         return timeline
 
     def _rename(self, name):
@@ -391,6 +390,7 @@ class Fault(FocusStage):
         for begin, duration in zip(faults_begin, faults_duration):
             loss_qt[begin:(begin+duration)] += self.loss
 
+        scenario._is_copy = False  # Avoid SettingCopyWarning
         scenario['quantity'] -= loss_qt
         return scenario
 
