@@ -2,7 +2,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from hadar.preprocessing.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage, Clip
+from hadar.preprocessing.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage, Clip, Rename, Drop, Fault
 
 
 class Double(Stage):
@@ -209,3 +209,55 @@ class TestClip(unittest.TestCase):
         # Test & Verify
         o = pipe.compute(i)
         pd.testing.assert_frame_equal(exp, o)
+
+
+class TestRename(unittest.TestCase):
+    def test_compute(self):
+        # Input
+        i = pd.DataFrame({'a': [12, 54, 87, 12], 'b': [98, 23, 65, 4]})
+
+        pipe = Rename({'a': 'alpha'})
+
+        # Expected
+        exp = pd.DataFrame({(0, 'alpha'): [12, 54, 87, 12], (0, 'b'): [98, 23, 65, 4]})
+
+        # Test & Verify
+        o = pipe.compute(i)
+        pd.testing.assert_frame_equal(exp, o)
+
+
+class TestDrop(unittest.TestCase):
+    def test_compute(self):
+        # Input
+        i = pd.DataFrame({'a': [12, 54, 87, 12], 'b': [98, 23, 65, 4]})
+
+        pipe = Drop('b')
+
+        # Expected
+        exp = pd.DataFrame({(0, 'a'): [12, 54, 87, 12]})
+
+        # Test & Verify
+        o = pipe.compute(i)
+        pd.testing.assert_frame_equal(exp, o)
+
+
+class TestFault(unittest.TestCase):
+    def test_compute(self):
+        # Input
+        power = 100
+        i = pd.DataFrame({'quantity': np.ones(10000) * power})
+
+        pipe = Fault(loss=20, occur_freq=0.001, downtime_min=50, downtime_max=60, seed=543)
+
+        # Expected
+        exp_time_down = i.size * pipe.occur_freq * (pipe.downtime_max + pipe.downtime_min) / 2
+        exp_total_loss = exp_time_down * pipe.loss
+
+        # Test & Verify
+        o = pipe.compute(i)
+
+        time_down = o.where(o < power).dropna().size
+        self.assertAlmostEqual(exp_time_down, time_down, delta=exp_time_down*0.1)
+
+        total_loss = o.size * power - o.values.sum()
+        self.assertAlmostEqual(exp_total_loss, total_loss, delta=exp_total_loss*0.1)
