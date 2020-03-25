@@ -18,6 +18,15 @@ class Plug(ABC, DTO):
         self.outputs = outputs
         self.inputs_no_used = []
 
+    def computable(self, names: List[str]):
+        """
+        Defined if stage is compatible to compute these names.
+
+        :param names: names used inside data to compute
+        :return: True if computable False else
+        """
+        return all(i in names for i in self.inputs)
+
     @abstractmethod
     def linkable_to(self, other) -> bool:
         """
@@ -144,8 +153,8 @@ class Stage(ABC):
             raise ValueError('Only addition with other Stage is accepted not with %s' % type(other))
 
         if not self.plug.linkable_to(other.plug):
-            raise ValueError("Pipeline can't be added %s has output %s and %s has input %s" %
-                             (self.__class__.__name__, self.plug.outputs, other.__class__.__name__, other.plug.inputs))
+            raise ValueError("Pipeline can't be added current outputs are %s and %s has input %s" %
+                             (self.plug.outputs, other.__class__.__name__, other.plug.inputs))
 
         self.plug += other.plug
         self.next_computes.append(other._process_timeline)
@@ -211,6 +220,10 @@ class Stage(ABC):
             columns = timeline.columns.values
             timeline.columns = MultiIndex.from_arrays([np.zeros_like(columns), columns])
 
+        names = Stage.get_names(timeline)
+        if not self.plug.computable(names):
+            raise ValueError("Pipeline accept %s in input, but receive %s" % (self.plug.inputs, names))
+
         timeline = self._process_timeline(timeline.copy())
         for compute in self.next_computes:
             timeline = compute(timeline.copy())
@@ -234,6 +247,14 @@ class Stage(ABC):
         # Merge index for MultiIndex
         # [[0, a], [0, b], [0, c], ..., [1, a], [1, b], [1, c], ... ]
         return MultiIndex.from_arrays([index_time, index_name])
+
+    @staticmethod
+    def get_scenarios(timeline: pd.DataFrame) -> np.ndarray:
+        return timeline.columns.get_level_values(0).unique().values
+
+    @staticmethod
+    def get_names(timeline: pd.DataFrame) -> List[str]:
+        return timeline.columns.get_level_values(1).unique().values
 
 
 class FocusStage(Stage, ABC):
@@ -411,8 +432,8 @@ class RepeatScenario(Stage):
     def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
         data = np.tile(timeline.values, self.n)
 
-        n_scn = timeline.columns.get_level_values(0).unique().size
-        names = timeline.columns.get_level_values(1).unique()
+        n_scn = Stage.get_scenarios(timeline).size
+        names = Stage.get_names(timeline)
         index = Stage.build_multi_index(scenarios=np.arange(0, n_scn * self.n), names=names)
 
         return pd.DataFrame(data=data, columns=index)

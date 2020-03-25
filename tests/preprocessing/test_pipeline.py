@@ -35,11 +35,19 @@ class Divide(FocusStage):
 
 class Inverse(FocusStage):
     def __init__(self):
-        Stage.__init__(self, RestrictedPlug(inputs=['d'], outputs=['d', '-d']))
+        FocusStage.__init__(self, RestrictedPlug(inputs=['d'], outputs=['d', '-d']))
 
     def _process_scenarios(self, n_scn: int, scenario: pd.DataFrame) -> pd.DataFrame:
         scenario['-d'] = -scenario['d']
         return scenario.copy()
+
+
+class Wrong(Stage):
+    def __init__(self):
+        Stage.__init__(self, plug=RestrictedPlug(inputs=['e'], outputs=['e']))
+
+    def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
+        return timeline
 
 
 class TestFreePlug(unittest.TestCase):
@@ -110,7 +118,7 @@ class TestRestrictedPlug(unittest.TestCase):
         self.assertEqual(exp, c)
 
 
-class TestPipeline(unittest.TestCase):
+class TestStage(unittest.TestCase):
     def test_compute(self):
         # Input
         i = pd.DataFrame({(0, 'a'): [1, 2, 3], (0, 'b'): [4, 5, 6],
@@ -124,6 +132,12 @@ class TestPipeline(unittest.TestCase):
         # Test & Verify
         o = pipe.compute(i)
         pd.testing.assert_frame_equal(exp, o)
+
+    def test_wrong_compute(self):
+        i = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        pipe = Inverse()
+
+        self.assertRaises(ValueError, lambda: pipe.compute(i))
 
     def test_link_pipeline_free_to_free(self):
         # Input
@@ -180,6 +194,11 @@ class TestPipeline(unittest.TestCase):
         pd.testing.assert_frame_equal(exp, o)
         self.assertEqual({'a', 'b'}, set(pipe.plug.inputs))
         self.assertEqual({'d', '-d', 'r'}, set(pipe.plug.outputs))
+
+    def test_wrong_link(self):
+        # Test & Verify
+        self.assertRaises(ValueError, lambda: Divide() + Wrong())
+
 
     def test_build_multi_index(self):
         # Input
