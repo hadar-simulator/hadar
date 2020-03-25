@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from pandas import MultiIndex
 
-from preprocessing.pipeline import Rename, RepeatScenario, Fault, Clip
+from hadar.preprocessing.pipeline import Rename, RepeatScenario, Fault, Clip
 
 
 class TestPipeline(unittest.TestCase):
