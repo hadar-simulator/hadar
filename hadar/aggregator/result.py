@@ -13,21 +13,28 @@ class Index(Generic[T]):
     """
     Generic Index to use to select and rank data.
     """
-    def __init__(self, column, index: Union[List[T], T] = None):
+    def __init__(self, column):
         """
         Initiate instance.
 
         :param column: column name link to this index
         :param index: list of index or element to filter from data. None by default to say keep all data.
         """
-        self.all = False
+        self.all = True
         self.column = column
-        if index is None:
+
+    def __getitem__(self, index):
+        if isinstance(index, list):
+            index = tuple(index)
+        if not isinstance(index, tuple):
+            index = tuple([index])
+
+        if len(index) == 0:
             self.all = True
-        elif not isinstance(index, list):
-            self.index = [index]
         else:
             self.index = index
+            self.all = False
+        return self
 
     def filter(self, df: pd.DataFrame) -> pd.Series:
         """
@@ -51,31 +58,31 @@ class Index(Generic[T]):
 
 class NodeIndex(Index[str]):
     """Index implementation to filter nodes"""
-    def __init__(self, index: Union[List[str], str] = None):
-        Index.__init__(self, column='node', index=index)
+    def __init__(self):
+        Index.__init__(self, column='node')
 
 
 class SrcIndex(Index[str]):
     """Index implementation to filter src node"""
-    def __init__(self, index: Union[List[str], str] = None):
-        Index.__init__(self, column='src', index=index)
+    def __init__(self):
+        Index.__init__(self, column='src')
 
 
 class DestIndex(Index[str]):
     """Index implementation to filter destination node"""
-    def __init__(self, index: Union[List[str], str] = None):
-        Index.__init__(self, column='dest', index=index)
+    def __init__(self):
+        Index.__init__(self, column='dest')
 
 
 class TypeIndex(Index[str]):
     """Index implementation to filter type of elements"""
-    def __init__(self, index: Union[List[str], str] = None):
-        Index.__init__(self, column='type', index=index)
+    def __init__(self):
+        Index.__init__(self, column='type')
 
 
 class TimeIndex(Index[int]):
     """Index implementation to filter by time step"""
-    def __init__(self, index: Union[List[int], int] = None, start: int = None, end: int = None):
+    def __init__(self):
         """
         Create instance.
 
@@ -83,15 +90,12 @@ class TimeIndex(Index[int]):
         :param start: start datetime to filter (to use instead of index)
         :param end: end datetime to filter (to use instead of index)
         """
-        if index is None and start is None and end is None:
-            Index.__init__(self, column='t')
-        elif index is None:
-            if start is None:
-                raise ValueError('Please give an start index')
-            if end is None:
-                raise ValueError('Please give an end index')
-            index = list(range(start, end))
-        Index.__init__(self, column='t', index=index)
+        Index.__init__(self, column='t')
+
+    def __getitem__(self, index):
+        if isinstance(index, slice):
+            index = tuple(range(index.start, index.stop, index.step if index.step else 1))
+        return Index.__getitem__(self, index)
 
 
 class ResultAggregator:
@@ -315,15 +319,15 @@ class ResultAggregator:
         cost = np.zeros(self.horizon)
         c, p, b = self.get_elements_inside(node)
         if c:
-            cons = self.agg_cons(NodeIndex(node), TimeIndex(), TypeIndex())
+            cons = self.agg_cons(self.inode[node], self.itime, self.itype)
             cost += ((cons['asked'] - cons['given'])*cons['cost']).groupby(axis=0, level=0).sum().sort_index().values
 
         if p:
-            prod = self.agg_prod(NodeIndex(node), TimeIndex(), TypeIndex())
+            prod = self.agg_prod(self.inode[node], self.itime, self.itype)
             cost += (prod['used']*prod['cost']).groupby(axis=0, level=0).sum().sort_index().values
 
         if b:
-            border = self.agg_border(SrcIndex(node), TimeIndex(), DestIndex())
+            border = self.agg_border(self.isrc[node], self.itime, self.idest)
             cost += (border['used']*border['cost']).groupby(axis=0, level=0).sum().sort_index().values
 
         return cost
@@ -345,3 +349,23 @@ class ResultAggregator:
         :return: nodes name
         """
         return self.result.nodes.keys()
+
+    @property
+    def inode(self) -> NodeIndex:
+        return NodeIndex()
+
+    @property
+    def itype(self) -> TypeIndex:
+        return TypeIndex()
+
+    @property
+    def isrc(self) -> SrcIndex:
+        return SrcIndex()
+
+    @property
+    def idest(self) -> DestIndex:
+        return DestIndex()
+
+    @property
+    def itime(self) -> TimeIndex:
+        return TimeIndex()

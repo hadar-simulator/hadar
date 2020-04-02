@@ -14,17 +14,23 @@ class TestIndex(unittest.TestCase):
         self.assertEqual(True, Index(column='i').all)
 
     def test_on_element(self):
-        i = Index(column='i', index='fr')
+        i = Index(column='i')['fr']
         self.assertEqual(False, i.all)
-        self.assertEqual(['fr'], i.index)
+        self.assertEqual(('fr',), i.index)
 
-    def test_list(self):
-        i = Index(column='i', index=['fr', 'be'])
+    def test_list_1(self):
+        i = Index(column='i')['fr', 'be']
         self.assertEqual(False, i.all)
-        self.assertEqual(['fr', 'be'], i.index)
+        self.assertEqual(('fr', 'be'), i.index)
+
+    def test_list_2(self):
+        l = ['fr', 'be']
+        i = Index(column='i')[l]
+        self.assertEqual(False, i.all)
+        self.assertEqual(('fr', 'be'), i.index)
 
     def test_filter(self):
-        i = Index(column='i', index=['fr', 'be'])
+        i = Index(column='i')['fr', 'be']
         df = pd.DataFrame(data={'i': ['it', 'fr', 'fr', 'be', 'de', 'it', 'be'],
                                 'a': [0, 1, 2, 3, 4, 5, 6]})
 
@@ -35,19 +41,16 @@ class TestIndex(unittest.TestCase):
 
 class TestTimeIndex(unittest.TestCase):
 
-    def test_wrong_range(self):
-        self.assertRaises(ValueError, lambda: TimeIndex(start=56))
-        self.assertRaises(ValueError, lambda: TimeIndex(end=23))
 
     def test_range(self):
-        i = TimeIndex(start=2, end=6)
+        i = TimeIndex()[2:6]
         self.assertEqual(False, i.all)
-        self.assertEqual([2, 3, 4, 5], i.index)
+        self.assertEqual((2, 3, 4, 5), i.index)
 
     def test_list(self):
-        i = TimeIndex(index=[2, 6])
+        i = TimeIndex()[2, 6]
         self.assertEqual(False, i.all)
-        self.assertEqual([2, 6], i.index)
+        self.assertEqual((2, 6), i.index)
 
 
 class TestAggregator(unittest.TestCase):
@@ -127,7 +130,7 @@ class TestAggregator(unittest.TestCase):
                                       'given': [20, 2]}, dtype=float, index=index)
 
         agg = ResultAggregator(study=self.study, result=self.result)
-        cons = agg.agg_cons(i0=NodeIndex(index='a'), i1=TypeIndex(index='load'), i2=TimeIndex())
+        cons = agg.agg_cons(agg.inode['a'], agg.itype['load'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
@@ -140,7 +143,7 @@ class TestAggregator(unittest.TestCase):
                                       'used': [30, 3, 10, 1]}, dtype=float, index=index)
 
         agg = ResultAggregator(study=self.study, result=self.result)
-        cons = agg.agg_prod(i0=NodeIndex(index=['a', 'b']), i1=TypeIndex(index='prod'), i2=TimeIndex())
+        cons = agg.agg_prod(agg.inode['a', 'b'], agg.itype['prod'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
@@ -153,7 +156,7 @@ class TestAggregator(unittest.TestCase):
                                       'used': [10, 1, 20, 2]}, dtype=float, index=index)
 
         agg = ResultAggregator(study=self.study, result=self.result)
-        cons = agg.agg_border(i0=SrcIndex(index=['a']), i1=DestIndex(index=['b', 'c']), i2=TimeIndex())
+        cons = agg.agg_border(agg.isrc['a'], agg.idest['b', 'c'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
@@ -171,5 +174,3 @@ class TestAggregator(unittest.TestCase):
         agg = ResultAggregator(study=self.study, result=self.result)
         np.testing.assert_array_equal([200360, 20036], agg.get_cost(node='a'))
         np.testing.assert_array_equal([100600, 10060], agg.get_cost(node='b'))
-
-

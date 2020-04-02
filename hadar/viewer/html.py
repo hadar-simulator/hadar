@@ -82,7 +82,7 @@ class HTMLPlotting(ABCPlotting):
 
         # stack production with area
         if p > 0:
-            prod = self.agg.agg_prod(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=True)
+            prod = self.agg.agg_prod(self.agg.inode[node], self.agg.itype, self.agg.itime).sort_values('cost', ascending=True)
             for i, type in enumerate(prod.index.get_level_values('type').unique()):
                 stack += prod.loc[type][prod_kind].sort_index().values
                 fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=type, mode='none',
@@ -100,7 +100,7 @@ class HTMLPlotting(ABCPlotting):
         cons_lines = []
         # Stack consumptions with line
         if c > 0:
-            cons = self.agg.agg_cons(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=False)
+            cons = self.agg.agg_cons(self.agg.inode[node], self.agg.itype, self.agg.itime).sort_values('cost', ascending=False)
             for i, type in enumerate(cons.index.get_level_values('type').unique()):
                 stack += cons.loc[type][cons_kind].sort_index().values
                 cons_lines.append([type, stack.copy()])
