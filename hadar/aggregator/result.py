@@ -352,20 +352,45 @@ class ResultAggregator:
 
     @property
     def inode(self) -> NodeIndex:
+        """
+        Get a node index to specify node slice to aggregate consumption or production.
+
+        :return: new instance of NodeIndex()
+        """
         return NodeIndex()
 
     @property
     def itype(self) -> TypeIndex:
+        """
+        Get a type index to specify type slice to aggregate consumption or production.
+
+        :return: new instance of TypeIndex()
+        """
         return TypeIndex()
 
     @property
     def isrc(self) -> SrcIndex:
+        """
+        Get a source index to specify source slice to aggregate border.
+
+        :return: new instance of SrcIndex()
+        """
         return SrcIndex()
 
     @property
     def idest(self) -> DestIndex:
+        """
+        Get a destination index to specify destination slice to aggregate border.
+
+        :return: new instance of DestIndex()
+        """
         return DestIndex()
 
     @property
     def itime(self) -> TimeIndex:
+        """
+        Get a time index to specify time slice to aggregate consumption, production or border.
+
+        :return: new instance of TimeIndex()
+        """
         return TimeIndex()
