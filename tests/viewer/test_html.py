@@ -6,7 +6,7 @@ from plotly.offline.offline import plot
 
 from hadar.aggregator.result import ResultAggregator
 from hadar.solver.input import Study, Production, Consumption
-from hadar.solver.study import solve
+from hadar.solver.study import LPSolver
 from hadar.viewer.html import HTMLPlotting
 
 
@@ -21,7 +21,8 @@ class TestHTMLPlotting(unittest.TestCase):
             .add_on_node('b', data=Production(cost=20, quantity=[20, 2], type='nuclear')) \
             .add_border(src='a', dest='b', quantity=[10, 1], cost=2)
 
-        self.result = solve(study=self.study)
+        solver = LPSolver()
+        self.result = solver.solve(study=self.study)
 
         self.agg = ResultAggregator(self.study, self.result)
         self.plot = HTMLPlotting(agg=self.agg, unit_symbol='MW', time_start='2020-02-01', time_end='2020-02-02',
@@ -39,13 +40,13 @@ class TestHTMLPlotting(unittest.TestCase):
 
     def assert_fig(self, expected: str, fig: go.Figure):
         h = hashlib.sha1()
-        h.update(TestHTMLPlotting.get_html(fig).encode('ascii'))
+        h.update(TestHTMLPlotting.get_html(fig))
         self.assertEqual(expected, h.hexdigest())
 
     @staticmethod
-    def get_html(fig: go.Figure):
+    def get_html(fig: go.Figure) -> str:
         html = plot(fig, include_plotlyjs=False, include_mathjax=False, output_type='div')
         # plotly use a random id. We need to extract it and replace it by constant
         # uuid can be find at ... <div id="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" class="plotly-graph-div" ...
         uuid = html.split('" class="plotly-graph-div"')[0][-36:]
-        return html.replace(uuid, '#####')
+        return html.replace(uuid, '#####').encode('ascii')

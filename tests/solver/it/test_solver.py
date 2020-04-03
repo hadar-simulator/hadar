@@ -2,11 +2,14 @@ import unittest
 
 from hadar.solver.input import Production, Consumption, Study
 from hadar.solver.output import OutputConsumption, OutputBorder, OutputNode, OutputProduction, Result
-from hadar.solver.study import solve
+from hadar.solver.study import LPSolver
 from tests.utils import assert_study
 
 
 class TestSolver(unittest.TestCase):
+
+    def setUp(self) -> None:
+        self.solver = LPSolver()
 
     def test_merit_order(self):
         """
@@ -40,7 +43,7 @@ class TestSolver(unittest.TestCase):
                                              OutputProduction(type='oil', cost=30, quantity=[5, 1])],
                                          borders=[])
 
-        res = solve(study, kind='lp')
+        res = self.solver.solve(study)
         assert_study(self, Result(nodes_expected), res)
 
     def test_exchange_two_nodes(self):
@@ -62,7 +65,7 @@ class TestSolver(unittest.TestCase):
                                          borders=[])
 
 
-        res = solve(study)
+        res = self.solver.solve(study)
         assert_study(self, Result(nodes_expected), res)
 
 
@@ -111,7 +114,7 @@ class TestSolver(unittest.TestCase):
                                          productions=[OutputProduction(cost=20, quantity=[0], type='nuclear')],
                                          borders=[])
 
-        res = solve(study, kind='lp')
+        res = self.solver.solve(study)
 
         assert_study(self, Result(nodes_expected), res)
 
@@ -148,7 +151,7 @@ class TestSolver(unittest.TestCase):
                                          productions=[],
                                          borders=[])
 
-        res = solve(study, kind='lp')
+        res = self.solver.solve(study)
 
         assert_study(self, Result(nodes_expected), res)
 
@@ -191,6 +194,6 @@ class TestSolver(unittest.TestCase):
                                          productions=[OutputProduction(cost=10, quantity=[10], type='nuclear')],
                                          borders=[])
 
-        res = solve(study, kind='lp')
+        res = self.solver.solve(study)
 
         assert_study(self, Result(nodes_expected), res)
