@@ -26,7 +26,7 @@ class TestSolver(unittest.TestCase):
         | gas: 5               |
         :return:
         """
-        study = Study(['a']) \
+        study = Study(['a'], horizon=2) \
             .add_on_node(node='a', data=Consumption(type='load', cost=10 ** 6, quantity=[30, 6])) \
             .add_on_node(node='a', data=Production(type='nuclear', cost=20, quantity=[15, 3])) \
             .add_on_node(node='a', data=Production(type='solar', cost=10, quantity=[10, 2])) \
@@ -45,7 +45,7 @@ class TestSolver(unittest.TestCase):
 
     def test_exchange_two_nodes(self):
         # Input
-        study = Study(['a', 'b']) \
+        study = Study(['a', 'b'], horizon=2) \
             .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[20, 200], type='load')) \
             .add_on_node('a', data=Production(cost=10, quantity=[30, 300], type='prod')) \
             .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[20, 200], type='load')) \
@@ -87,7 +87,7 @@ class TestSolver(unittest.TestCase):
                                            | nuclear: 0           |
         :return:
         """
-        study = Study(node_names=['a', 'b', 'c']) \
+        study = Study(node_names=['a', 'b', 'c'], horizon=1) \
             .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
             .add_on_node('a', data=Production(cost=10, quantity=[30], type='nuclear')) \
             .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
@@ -128,7 +128,7 @@ class TestSolver(unittest.TestCase):
 
         :return:
         """
-        study = Study(node_names=['a', 'b', 'c']) \
+        study = Study(node_names=['a', 'b', 'c'], horizon=1) \
             .add_on_node('a', data=Production(cost=10, quantity=[30], type='nuclear')) \
             .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
             .add_on_node('c', data=Consumption(cost=10 ** 6, quantity=[20], type='load')) \
@@ -168,7 +168,7 @@ class TestSolver(unittest.TestCase):
 
         :return:
         """
-        study = Study(node_names=['a', 'b', 'c']) \
+        study = Study(node_names=['a', 'b', 'c'], horizon=1) \
             .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[10], type='load')) \
             .add_on_node('a', data=Production(cost=10, quantity=[20], type='nuclear')) \
             .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[5], type='load')) \

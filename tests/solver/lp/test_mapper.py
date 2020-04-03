@@ -11,7 +11,7 @@ from tests.utils import assert_study
 class TestInputMapper(unittest.TestCase):
     def test_map_input(self):
         # Input
-        study = Study(['a', 'be']) \
+        study = Study(['a', 'be'], horizon=2) \
             .add_on_node('a', Consumption(type='load', quantity=[10, 1], cost=10)) \
             .add_on_node('a', Production(type='nuclear', quantity=[12, 2], cost=10)) \
             .add_border(src='a', dest='be', quantity=[10, 3], cost=2)
@@ -41,7 +41,7 @@ class TestInputMapper(unittest.TestCase):
 class TestOutputMapper(unittest.TestCase):
     def test_map_output(self):
         # Input
-        study = Study(['a', 'be']) \
+        study = Study(['a', 'be'], horizon=2) \
             .add_on_node('a', Consumption(type='load', quantity=[10, 20], cost=10)) \
             .add_on_node('a', Production(type='nuclear', quantity=[12, 2], cost=10)) \
             .add_border(src='a', dest='be', quantity=[10, 3], cost=2)

@@ -55,7 +55,7 @@ class TestTimeIndex(unittest.TestCase):
 
 class TestAggregator(unittest.TestCase):
     def setUp(self) -> None:
-        self.study = Study(['a', 'b', 'c']) \
+        self.study = Study(['a', 'b', 'c'], horizon=2) \
             .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[120, 12], type='load')) \
             .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[130, 13], type='car')) \
             .add_on_node('a', data=Production(cost=10, quantity=[130, 13], type='prod')) \

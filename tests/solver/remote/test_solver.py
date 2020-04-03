@@ -19,7 +19,7 @@ class MockResponse:
 class RemoteSolverTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.study = Study(node_names=['a']) \
+        self.study = Study(node_names=['a'], horizon=1) \
             .add_on_node('a', data=Consumption(cost=0, quantity=[0], type='load'))
 
         self.result = Result(nodes={

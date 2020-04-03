@@ -69,7 +69,7 @@ class TestAdequacyBuilder(unittest.TestCase):
 class TestSolve(unittest.TestCase):
     def test_solve(self):
         # Input
-        study = Study(node_names=['a']) \
+        study = Study(node_names=['a'], horizon=1) \
             .add_on_node(node='a', data=Consumption(type='load', cost=10, quantity=[10]))
 
         # Expected

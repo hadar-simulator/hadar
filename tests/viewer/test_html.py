@@ -12,7 +12,7 @@ from hadar.viewer.html import HTMLPlotting
 
 class TestHTMLPlotting(unittest.TestCase):
     def setUp(self) -> None:
-        self.study = Study(['a', 'b']) \
+        self.study = Study(['a', 'b'], horizon=2) \
             .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[20, 2], type='load')) \
             .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[30, 3], type='car')) \
             .add_on_node('a', data=Production(cost=10, quantity=[60, 3], type='prod')) \

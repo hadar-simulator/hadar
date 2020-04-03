@@ -25,7 +25,7 @@ class Consumption(DTO):
     Consumption element.
     """
 
-    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, type: str = ''):
+    def __init__(self, quantity: Union[List[float], np.ndarray, float], cost: int = 0, type: str = ''):
         """
         Create consumption.
 
@@ -42,7 +42,7 @@ class Production(DTO):
     """
     Production element
     """
-    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, type: str = 'in'):
+    def __init__(self, quantity: Union[List[float], np.ndarray, float], cost: int = 0, type: str = 'in'):
         """
         Create production
 
@@ -59,7 +59,7 @@ class Border(DTO):
     """
     Border element
     """
-    def __init__(self, dest: str, quantity: Union[np.ndarray, list], cost: int = 0):
+    def __init__(self, dest: str, quantity: Union[List[float], np.ndarray, float], cost: int = 0):
         """
         Create border.
 
@@ -94,17 +94,18 @@ class Study(DTO):
     Main object to facilitate to build a study
     """
 
-    def __init__(self, node_names=List[str]):
+    def __init__(self, node_names: List[str], horizon: int):
         """
         Instance study.
 
         :param node_names: list of node names inside network.
+        :param horizon: simulation time horizon (i.e. number of time step in simulation)
         """
         if len(node_names) > len(set(node_names)):
             raise ValueError('some nodes are not unique')
 
         self._nodes = {name: InputNode(consumptions=[], productions=[], borders=[]) for name in node_names}
-        self.horizon = 0
+        self.horizon = horizon
 
 
     @property
@@ -130,7 +131,7 @@ class Study(DTO):
 
         return self
 
-    def add_border(self, src: str, dest: str, cost: int, quantity: Union[np.ndarray, List[int]]):
+    def add_border(self, src: str, dest: str, cost: int, quantity: Union[List[float], np.ndarray, float]):
         """
         Add a border inside network.
 
@@ -140,41 +141,61 @@ class Study(DTO):
         :param quantity: transfer capacity
         :return:
         """
-        quantity = np.array(quantity)
         if cost < 0:
             raise ValueError('border cost must be positive')
-        if np.all(quantity < 0):
-            raise ValueError('border quantity must be positive')
         if dest not in self._nodes.keys():
             raise ValueError('border destination must be a valid node')
         if dest in [b.dest for b in self._nodes[src].borders]:
             raise ValueError('border destination must be unique on a node')
+
+        quantity = self._validate_quantity(quantity)
         self._nodes[src].borders.append(Border(dest=dest, quantity=quantity, cost=cost))
-        self._update_horizon(quantity)
 
         return self
 
     def _add_production(self, node: str, prod: Production):
         if prod.cost < 0:
             raise ValueError('production cost must be positive')
-        prod.quantity = np.array(prod.quantity)
-        if np.all(prod.quantity < 0):
-            raise ValueError('production quantity must be positive')
         if prod.type in [p.type for p in self._nodes[node].productions]:
             raise ValueError('production type must be unique on a node')
+
+        prod.quantity = self._validate_quantity(prod.quantity)
         self._nodes[node].productions.append(prod)
-        self._update_horizon(prod.quantity)
 
     def _add_consumption(self, node: str, cons: Consumption):
         if cons.cost < 0:
             raise ValueError('consumption cost must be positive')
-        cons.quantity = np.array(cons.quantity)
-        if np.all(cons.quantity < 0):
-            raise ValueError('consumption quantity must be positive')
         if cons.type in [c.type for c in self._nodes[node].consumptions]:
             raise ValueError('consumption type must be unique on a node')
-        self._nodes[node].consumptions.append(cons)
-        self._update_horizon(cons.quantity)
 
-    def _update_horizon(self, quantity):
-        self.horizon = max(self.horizon, quantity.size)
+        cons.quantity = self._validate_quantity(cons.quantity)
+        self._nodes[node].consumptions.append(cons)
+
+    def _validate_quantity(self, quantity: Union[List[float], np.ndarray, float]) -> np.ndarray:
+        quantity = np.array(quantity)
+
+        # If quantity are negative raise error:
+        if np.any(quantity < 0):
+            raise ValueError('Quantity must be positive')
+
+        # If scenario and horizon are not provided, expend on both side
+        if quantity.size == 1:
+            return np.ones(self.horizon) * quantity
+
+        # # If scenario are not provided copy timeseries for each scenario
+        # if quantity.shape == (self.horizon,):
+        #     return np.tile(quantity, (self.nb_scn, 1))
+        #
+        # # If horizon are not provide extend each scenario to full horizon
+        # if quantity.shape == (self.nb_scn, 1):
+        #     return np.tile(quantity, self.horizon)
+        #
+        if quantity.shape == (self.horizon, ):
+            return quantity
+
+        # If any size pattern matches, raise error on quantity size given
+        horizon_given = quantity.shape[0] if len(quantity.shape) == 1 else quantity.shape[1]
+        sc_given = 1 if len(quantity.shape) == 1 else quantity.shape[0]
+        raise ValueError('Quantity must be: a number, an array like (horizon, ) or (nb_scn, 1) or (nb_scn, horizon). '
+                         'In your case horizon specified is %d and actual is %d' %
+                         (self.horizon, horizon_given))
