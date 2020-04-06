@@ -9,6 +9,9 @@ from pandas import MultiIndex
 from hadar.solver.input import DTO
 
 
+__all__ = ['RestrictedPlug', 'FreePlug', 'Stage', 'FocusStage', 'Drop', 'Rename', 'Fault', 'RepeatScenario']
+
+
 class Plug(ABC, DTO):
     """
     Abstract class to represent connection between pipeline stage

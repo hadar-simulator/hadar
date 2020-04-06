@@ -6,6 +6,9 @@ from hadar.solver.lp.solver import solve_lp
 from hadar.solver.remote.solver import solve_remote
 
 
+__all__ = ['LPSolver', 'RemoteSolver']
+
+
 class Solver(ABC):
     """Solver interface to implement"""
     @abstractmethod

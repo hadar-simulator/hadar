@@ -9,6 +9,8 @@ from hadar.aggregator.result import ResultAggregator, NodeIndex, SrcIndex, TimeI
 from hadar.viewer.abc import ABCPlotting
 
 
+__all__ = ['HTMLPlotting']
+
 class HTMLPlotting(ABCPlotting):
     """
     Plotting implementation interactive html graphics. (Use plotly)

@@ -2,7 +2,15 @@ import logging
 import os
 import sys
 
-__version__ = '0.1.2'
+from hadar.preprocessing.pipeline import *
+from hadar.solver.input import *
+from hadar.solver.output import *
+from hadar.solver.solver import *
+from hadar.viewer.html import *
+from hadar.viewer.jupyter import *
+from hadar.aggregator.result import *
+
+__version__ = '0.2.1'
 
 level = os.getenv('HADAR_LOG', 'WARNING')
 

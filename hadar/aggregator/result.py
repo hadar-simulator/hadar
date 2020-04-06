@@ -6,6 +6,9 @@ import numpy as np
 from hadar.solver.output import Result
 from hadar.solver.input import Study
 
+__all__ = ['ResultAggregator']
+
+
 T = TypeVar('T')
 
 

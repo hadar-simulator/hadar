@@ -1,4 +1,5 @@
-from hadar.solver.input import *
+import numpy as np
+
 from hadar.solver.output import Result
 
 

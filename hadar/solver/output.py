@@ -5,6 +5,9 @@ from typing import Union, List, Dict
 from hadar.solver.input import InputNode
 
 
+__all__ = ['OutputProduction', 'OutputNode', 'OutputBorder', 'OutputConsumption', 'Result']
+
+
 class DTO:
     """
     Implement basic method for DTO objects

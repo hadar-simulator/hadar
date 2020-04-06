@@ -8,6 +8,9 @@ from hadar.aggregator.result import ResultAggregator
 from hadar.viewer.html import HTMLPlotting
 
 
+__all__ = ['JupyterPlotting']
+
+
 class JupyterPlotting(HTMLPlotting):
     """
     Plotting implementation to use with Jupyter.

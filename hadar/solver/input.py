@@ -3,6 +3,9 @@ from typing import List, Union
 import numpy as np
 
 
+__all__ = ['Consumption', 'Border', 'Production', 'InputNode', 'Study']
+
+
 class DTO:
     """
     Implement basic method for DTO objects

@@ -6,7 +6,7 @@ from plotly.offline.offline import plot
 
 from hadar.aggregator.result import ResultAggregator
 from hadar.solver.input import Study, Production, Consumption
-from hadar.solver.study import LPSolver
+from hadar.solver.solver import LPSolver
 from hadar.viewer.html import HTMLPlotting
 
 
