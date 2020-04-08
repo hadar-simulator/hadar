@@ -1,3 +1,10 @@
+pandas
+numpy
+ortools
+plotly
+jupyter
+matplotlib
+requests
 sphinx
 sphinx-rtd-theme
 sphinx-autobuild
