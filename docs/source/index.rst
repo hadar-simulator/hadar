@@ -70,3 +70,9 @@ Or ::
    reference/hadar.solver.rst
    reference/hadar.aggregator.rst
    reference/hadar.viewer.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Legal Terms
+
+   terms/terms.rst
