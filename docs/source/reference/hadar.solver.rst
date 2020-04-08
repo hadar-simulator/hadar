@@ -5,9 +5,10 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
-   hadar.solver.actor
    hadar.solver.lp
+   hadar.solver.remote
 
 Submodules
 ----------
@@ -28,10 +29,10 @@ hadar.solver.output module
    :undoc-members:
    :show-inheritance:
 
-hadar.solver.study module
--------------------------
+hadar.solver.solver module
+--------------------------
 
-.. automodule:: hadar.solver.study
+.. automodule:: hadar.solver.solver
    :members:
    :undoc-members:
    :show-inheritance:
