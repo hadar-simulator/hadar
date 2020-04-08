@@ -9,13 +9,13 @@ import logging
 import os
 import sys
 
-from hadar.preprocessing.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario
-from hadar.solver.input import Consumption, Border, Production, InputNode, Study
-from hadar.solver.output import OutputProduction, OutputNode, OutputBorder, OutputConsumption, Result
-from hadar.solver.solver import LPSolver, RemoteSolver
-from hadar.viewer.html import HTMLPlotting
-from hadar.viewer.jupyter import JupyterPlotting
-from hadar.aggregator.result import ResultAggregator
+from .preprocessing.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario
+from .solver.input import Consumption, Border, Production, InputNode, Study
+from .solver.output import OutputProduction, OutputNode, OutputBorder, OutputConsumption, Result
+from .solver.solver import LPSolver, RemoteSolver
+from .viewer.html import HTMLPlotting
+from .viewer.jupyter import JupyterPlotting
+from .aggregator.result import ResultAggregator
 
 __version__ = '0.2.1'
 
