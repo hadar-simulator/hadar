@@ -58,3 +58,6 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 nbsphinx_execute = 'never'
+
+with open('../requirements.txt') as f:
+    autodoc_mock_imports = f.read().split('\n')
