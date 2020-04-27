@@ -11,7 +11,7 @@ import numpy as np
 from pandas import MultiIndex
 
 from hadar.preprocessing.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage, Clip, Rename, Drop, Fault, \
-    RepeatScenario
+    RepeatScenario, Pipeline
 
 
 class Double(Stage):
@@ -125,26 +125,33 @@ class TestRestrictedPlug(unittest.TestCase):
         self.assertEqual(exp, c)
 
 
-class TestStage(unittest.TestCase):
+class TestPipeline(unittest.TestCase):
     def test_compute(self):
         # Input
-        i = pd.DataFrame({(0, 'a'): [1, 2, 3], (0, 'b'): [4, 5, 6],
-                          (1, 'a'): [10, 20, 30], (1, 'b'): [40, 50, 60]})
-        pipe = Double()
+        i = pd.DataFrame({'a': [1, 2, 3]})
+        pipe = Pipeline(stages=[Double(), Double()])
 
         # Expected
-        exp = pd.DataFrame({(0, 'a'): [2, 4, 6], (0, 'b'): [8, 10, 12],
-                            (1, 'a'): [20, 40, 60], (1, 'b'): [80, 100, 120]})
+        exp = pd.DataFrame({(0, 'a'): [4, 8, 12]})
 
         # Test & Verify
         o = pipe.compute(i)
         pd.testing.assert_frame_equal(exp, o)
 
-    def test_wrong_compute(self):
-        i = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
-        pipe = Inverse()
+    def test_add(self):
+        # Input
+        i = pd.DataFrame({'a': [1, 2, 3], 'b': [1, 2, 3]})
+        pipe = Pipeline(stages=[Double(), Double()])
+        pipe += Divide()
 
-        self.assertRaises(ValueError, lambda: pipe.compute(i))
+        # Expected
+        exp = pd.DataFrame({(0, 'd'): [1, 1, 1], (0, 'r'): [0, 0, 0]}, dtype=float)
+
+        # Test & Verify
+        o = pipe.compute(i)
+        self.assertEqual(3, len(pipe.stages))
+        self.assertIsInstance(pipe.plug, RestrictedPlug)
+        pd.testing.assert_frame_equal(exp, o)
 
     def test_link_pipeline_free_to_free(self):
         # Input
@@ -191,10 +198,10 @@ class TestStage(unittest.TestCase):
     def test_link_pipeline_restricted_to_restricted(self):
         # Input
         i = pd.DataFrame({'a': [10, 20, 32], 'b': [4, 5, 6]})
-        pipe = Divide() + Double() + Inverse()
+        pipe = Divide() + Inverse()
 
         # Expected
-        exp = pd.DataFrame({(0, 'd'): [4, 8, 10], (0, '-d'): [-4, -8, -10], (0, 'r'): [4, 0, 4]}, dtype='float')
+        exp = pd.DataFrame({(0, 'd'): [2, 4, 5], (0, '-d'): [-2, -4, -5], (0, 'r'): [2, 0, 2]}, dtype='float')
 
         # Test & Verify
         o = pipe.compute(i)
@@ -206,6 +213,36 @@ class TestStage(unittest.TestCase):
         # Test & Verify
         self.assertRaises(ValueError, lambda: Divide() + Wrong())
 
+
+class TestStage(unittest.TestCase):
+    def test_compute(self):
+        # Input
+        i = pd.DataFrame({(0, 'a'): [1, 2, 3], (0, 'b'): [4, 5, 6],
+                          (1, 'a'): [10, 20, 30], (1, 'b'): [40, 50, 60]})
+        stage = Double()
+
+        # Expected
+        exp = pd.DataFrame({(0, 'a'): [2, 4, 6], (0, 'b'): [8, 10, 12],
+                            (1, 'a'): [20, 40, 60], (1, 'b'): [80, 100, 120]})
+
+        # Test & Verify
+        o = stage.compute(i)
+        pd.testing.assert_frame_equal(exp, o)
+
+    def test_wrong_compute(self):
+        i = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
+        pipe = Inverse()
+
+        self.assertRaises(ValueError, lambda: pipe.compute(i))
+
+    def test_standardize_column(self):
+        i = pd.DataFrame({'a': [1, 2, 3]})
+
+        # Expected
+        exp = pd.DataFrame({(0, 'a'): [1, 2, 3]})
+
+        res = Stage.standardize_column(i)
+        pd.testing.assert_frame_equal(exp, res)
 
     def test_build_multi_index(self):
         # Input

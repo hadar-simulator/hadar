@@ -15,7 +15,6 @@ from pandas import MultiIndex
 
 from hadar.solver.input import DTO
 
-
 __all__ = ['RestrictedPlug', 'FreePlug', 'Stage', 'FocusStage', 'Drop', 'Rename', 'Fault', 'RepeatScenario']
 
 
@@ -23,6 +22,7 @@ class Plug(ABC, DTO):
     """
     Abstract class to represent connection between pipeline stage
     """
+
     def __init__(self, inputs: List[str], outputs: List[str]):
         self.inputs = inputs
         self.outputs = outputs
@@ -62,6 +62,7 @@ class FreePlug(Plug):
     """
     Plug implementation when stage can use any kind of DataFrame, whatever columns present inside.
     """
+
     def __init__(self):
         """
         Init Plug.
@@ -94,6 +95,7 @@ class RestrictedPlug(Plug):
     """
     Implementation where stage expect presence of precise columns.
     """
+
     def __init__(self, inputs: List[str] = None, outputs: List[str] = None):
         """
         Init Plug.
@@ -137,66 +139,50 @@ class RestrictedPlug(Plug):
         return RestrictedPlug(inputs=self.inputs, outputs=next.outputs)
 
 
-class Stage(ABC):
+class Pipeline:
     """
-    Abstract method which represent an unit of compute. It can be addition with other to create preprocessing
-    pipeline.
+    Compute many stages sequentially.
     """
-    def __init__(self, plug: Plug):
+    def __init__(self, stages: List):
         """
-        Init Stage.
+        Instance new pipeline.
 
-        :param plug: plug to use to describe input and output interface used.
+        :param stages: list of stage to execute
+        :param plug: current
         """
-        self.next_computes = []
-        self.plug = plug
+        self.stages = stages
+        self.plug = stages[0].plug
+
+        # Verify stage linkable capacity
+        for i in range(0, len(stages) - 1):
+            curr, next = stages[i], stages[i + 1]
+            if not curr.plug.linkable_to(next.plug):
+                raise ValueError("Pipeline can't be added current outputs are %s and %s has input %s" %
+                                 (self.plug.outputs, curr.__class__.__name__, next.plug.inputs))
+
+            self.plug += next.plug
 
     def __add__(self, other):
         """
-        Add stage with other to create pipeline. According to plug specified for each stage,
-        some stages can't be linked which other. In this case an error will be raise during adding.
+        Add an new Stage to Pipeline.
 
-        :param other: other stage to execute after this one.
-        :return: same stage with new compute queue to process and new plug configuration.
+        :param other: new stage to add at the end
+        :return: new pipeline with new stage
         """
         if not isinstance(other, Stage):
-            raise ValueError('Only addition with other Stage is accepted not with %s' % type(other))
+            raise ValueError("You can link Pipeline only with new Stage object")
 
         if not self.plug.linkable_to(other.plug):
             raise ValueError("Pipeline can't be added current outputs are %s and %s has input %s" %
                              (self.plug.outputs, other.__class__.__name__, other.plug.inputs))
 
         self.plug += other.plug
-        self.next_computes.append(other._process_timeline)
+        self.stages.append(other)
         return self
 
-    @abstractmethod
-    def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
+    def compute(self, timeline):
         """
-        Method to implement when creating your own state. It take current DataFrame with scenario as first columns index,
-        followed by columns type. Time is on index.
-
-        Timeline with scenarios
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |        |            0           |            1           |           ...          |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   t    |   a    |   b   |  ...  |   a    |   b   |  ...  |   a    |   b   |  ...  |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   0    |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   1    |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |  ...   |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-
-        :param timeline: DataFrame explained above
-        :return: new Timeline
-        """
-        pass
-
-    def compute(self, timeline: pd.DataFrame) -> pd.DataFrame:
-        """
-        Launch Stage computation and all other stage if stage is linked.
+        Launch all stages computation.
 
         Timeline without scenarios
         +--------+--------+-------+-------+
@@ -225,14 +211,106 @@ class Stage(ABC):
         :param timeline: DataFrame explained above
         :return: new Timeline
         """
-        # Add 0th scenarios column if not present.
-        if not isinstance(timeline.columns, MultiIndex):
-            columns = timeline.columns.values
-            timeline.columns = MultiIndex.from_arrays([np.zeros_like(columns), columns])
+        timeline = Stage.standardize_column(timeline)
 
         names = Stage.get_names(timeline)
         if not self.plug.computable(names):
             raise ValueError("Pipeline accept %s in input, but receive %s" % (self.plug.inputs, names))
+
+        for stage in self.stages:
+            timeline = stage.compute(timeline.copy())
+
+        return timeline
+
+
+class Stage(ABC):
+    """
+    Abstract method which represent an unit of compute. It can be addition with other to create preprocessing
+    pipeline.
+    """
+
+    def __init__(self, plug: Plug):
+        """
+        Init Stage.
+
+        :param plug: plug to use to describe input and output interface used.
+        """
+        self.next_computes = []
+        self.plug = plug
+
+    def __add__(self, other):
+        """
+        Add stage with other to create pipeline. According to plug specified for each stage,
+        some stages can't be linked which other. In this case an error will be raise during adding.
+
+        :param other: other stage to execute after this one.
+        :return: same stage with new compute queue to process and new plug configuration.
+        """
+        if not isinstance(other, Stage):
+            raise ValueError('Only addition with other Stage is accepted not with %s' % type(other))
+
+        return Pipeline(stages=[self, other])
+
+    @abstractmethod
+    def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
+        """
+        Method to implement when creating your own state. It take current DataFrame with scenario as first columns index,
+        followed by columns type. Time is on index.
+
+        Timeline with scenarios
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+        |        |            0           |            1           |           ...          |
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+        |   t    |   a    |   b   |  ...  |   a    |   b   |  ...  |   a    |   b   |  ...  |
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+        |   0    |        |       |       |        |       |       |        |       |       |
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+        |   1    |        |       |       |        |       |       |        |       |       |
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+        |  ...   |        |       |       |        |       |       |        |       |       |
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+
+        :param timeline: DataFrame explained above
+        :return: new Timeline
+        """
+        pass
+
+    def compute(self, timeline: pd.DataFrame) -> pd.DataFrame:
+        """
+        Launch Stage computation.
+
+        Timeline without scenarios
+        +--------+--------+-------+-------+
+        |   t    |   a    |   b   |  ...  |
+        +--------+--------+-------+-------+
+        |   0    |        |       |       |
+        +--------+--------+-------+-------+
+        |   1    |        |       |       |
+        +--------+--------+-------+-------+
+        |  ...   |        |       |       |
+        +--------+--------+-------+-------+
+
+        Timeline with scenarios
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+        |        |            0           |            1           |           ...          |
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+        |   t    |   a    |   b   |  ...  |   a    |   b   |  ...  |   a    |   b   |  ...  |
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+        |   0    |        |       |       |        |       |       |        |       |       |
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+        |   1    |        |       |       |        |       |       |        |       |       |
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+        |  ...   |        |       |       |        |       |       |        |       |       |
+        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
+
+        :param timeline: DataFrame explained above
+        :return: new Timeline
+        """
+        timeline = Stage.standardize_column(timeline)
+
+        names = Stage.get_names(timeline)
+        if not self.plug.computable(names):
+            raise ValueError("Stage accept %s in input, but receive %s" % (self.plug.inputs, names))
 
         timeline = self._process_timeline(timeline.copy())
         for compute in self.next_computes:
@@ -241,14 +319,37 @@ class Stage(ABC):
         return timeline
 
     @staticmethod
+    def standardize_column(timeline: pd.DataFrame) -> pd.DataFrame:
+        """
+        Timeline must have first column for scenario and second for data timeline.
+        Add the Oth scenario index if not present.
+
+        :param timeline: timeline with or without scenario index
+        :return: timeline with scenario index
+        """
+        # Add 0th scenarios column if not present.
+        if not isinstance(timeline.columns, MultiIndex):
+            columns = timeline.columns.values
+            timeline.columns = MultiIndex.from_arrays([np.zeros_like(columns), columns])
+
+        return timeline
+
+    @staticmethod
     def build_multi_index(scenarios: Union[List[int], np.ndarray], names: List[str]):
+        """
+        Create column multi index.
+
+        :param scenarios: list of scenarios serial
+        :param names: names of data type preset inside each scenario
+        :return: multi-index like [(scn, type), ...]
+        """
         n_scn = len(scenarios)
         n_names = len(names)
 
         # Create an index for time like
         # [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, ..., n_time-1]
         #  <--- n_name --->  <--- n_name --->  ...
-        index_time = np.tile(scenarios, (n_names, 1)).T.flatten()
+        index_time = np.repeat(scenarios, n_names)
 
         # Create an index for type like
         # [a, b, c, d, e, f, a, b, c, d, e, f, ..... x n_scn]
@@ -271,6 +372,7 @@ class FocusStage(Stage, ABC):
     """
     Stage focuses on same behaviour for any scenarios.
     """
+
     def __init__(self, plug):
         """
         Init Stage.
@@ -327,6 +429,7 @@ class Clip(Stage):
     """
     Cut data according to upper and lower boundaries. Same as np.clip function.
     """
+
     def __init__(self, lower: float = None, upper: float = None):
         """
         Initiate stage.
@@ -346,6 +449,7 @@ class Rename(Stage):
     """
     Rename column names.
     """
+
     def __init__(self, rename: Dict[str, str]):
         """
         Initiate Stage.
@@ -373,6 +477,7 @@ class Drop(Stage):
     """
     Drop columns by name.
     """
+
     def __init__(self, names: Union[List[str], str]):
         """
         Initiate Stage.
@@ -392,6 +497,7 @@ class Fault(FocusStage):
     """
     Generate a random fault for each scenarios.
     """
+
     def __init__(self, loss: float, occur_freq: float, downtime_min: int, downtime_max, seed: int = None):
         """
         Initiate Stage.
@@ -419,7 +525,7 @@ class Fault(FocusStage):
         faults_begin = np.random.choice(horizon, size=nb_faults)
         faults_duration = np.random.uniform(low=self.downtime_min, high=self.downtime_max, size=nb_faults).astype('int')
         for begin, duration in zip(faults_begin, faults_duration):
-            loss_qt[begin:(begin+duration)] += self.loss
+            loss_qt[begin:(begin + duration)] += self.loss
 
         scenario._is_copy = False  # Avoid SettingCopyWarning
         scenario['quantity'] -= loss_qt
@@ -430,6 +536,7 @@ class RepeatScenario(Stage):
     """
     Repeat n-time current scenarios.
     """
+
     def __init__(self, n):
         """
         Initiate Stage.
@@ -447,5 +554,3 @@ class RepeatScenario(Stage):
         index = Stage.build_multi_index(scenarios=np.arange(0, n_scn * self.n), names=names)
 
         return pd.DataFrame(data=data, columns=index)
-
-
