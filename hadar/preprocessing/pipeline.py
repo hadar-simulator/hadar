@@ -15,8 +15,10 @@ from pandas import MultiIndex
 
 from hadar.solver.input import DTO
 
-__all__ = ['RestrictedPlug', 'FreePlug', 'Stage', 'FocusStage', 'Drop', 'Rename', 'Fault', 'RepeatScenario']
+__all__ = ['RestrictedPlug', 'FreePlug', 'Stage', 'FocusStage', 'Drop', 'Rename', 'Fault', 'RepeatScenario',
+           'ToGenerator', 'Pipeline']
 
+TO_GENERATOR = 'to_generator'
 
 class Plug(ABC, DTO):
     """
@@ -213,14 +215,23 @@ class Pipeline:
         """
         timeline = Stage.standardize_column(timeline)
 
-        names = Stage.get_names(timeline)
-        if not self.plug.computable(names):
-            raise ValueError("Pipeline accept %s in input, but receive %s" % (self.plug.inputs, names))
+        self.assert_computable(timeline)
 
         for stage in self.stages:
             timeline = stage.compute(timeline.copy())
 
         return timeline
+
+    def assert_computable(self, timeline: pd.DataFrame):
+        """
+        Verify timeline is computable by pipeline.
+
+        :param timeline: timeline to check
+        :return: True if computable False else
+        """
+        names = Stage.get_names(timeline)
+        if not self.plug.computable(names):
+            raise ValueError("Pipeline accept %s in input, but receive %s" % (self.plug.inputs, names))
 
 
 class Stage(ABC):
@@ -471,6 +482,18 @@ class Rename(Stage):
         :return: new name if present in dictionary, same name else
         """
         return self.rename[name] if name in self.rename else name
+
+
+class ToGenerator(Rename):
+    """
+    To Connect pipeline to generator
+    """
+    def __init__(self, result_name: str):
+        """
+        Instance Stage
+        :param result_name: result column name to use for generator
+        """
+        Rename.__init__(self, {result_name: TO_GENERATOR})
 
 
 class Drop(Stage):
