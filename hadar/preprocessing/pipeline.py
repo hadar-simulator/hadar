@@ -16,9 +16,9 @@ from pandas import MultiIndex
 from hadar.solver.input import DTO
 
 __all__ = ['RestrictedPlug', 'FreePlug', 'Stage', 'FocusStage', 'Drop', 'Rename', 'Fault', 'RepeatScenario',
-           'ToGenerator', 'Pipeline']
+           'ToShuffler', 'Pipeline']
 
-TO_GENERATOR = 'to_generator'
+TO_SHUFFLER = 'to_shuffler'
 
 class Plug(ABC, DTO):
     """
@@ -484,16 +484,16 @@ class Rename(Stage):
         return self.rename[name] if name in self.rename else name
 
 
-class ToGenerator(Rename):
+class ToShuffler(Rename):
     """
-    To Connect pipeline to generator
+    To Connect pipeline to shuffler
     """
     def __init__(self, result_name: str):
         """
         Instance Stage
-        :param result_name: result column name to use for generator
+        :param result_name: result column name to use for shuffler
         """
-        Rename.__init__(self, {result_name: TO_GENERATOR})
+        Rename.__init__(self, {result_name: TO_SHUFFLER})
 
 
 class Drop(Stage):
