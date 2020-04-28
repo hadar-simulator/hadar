@@ -11,7 +11,7 @@ import numpy as np
 from pandas import MultiIndex
 
 from hadar.preprocessing.pipeline import Rename, RepeatScenario, Fault, Clip, ToShuffler
-from preprocessing.shuffler import Shuffler
+from hadar.preprocessing.shuffler import Shuffler
 
 
 def range_sampler(low, high, size):

@@ -142,7 +142,6 @@ class Shuffler:
         # Compute pipelines
         pool = multiprocessing.Pool()
         res = pool.map(compute, ((tl, nb_scn, name) for name, tl in self.timelines.items()))
-
         return dict(res)
 
 

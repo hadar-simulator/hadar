@@ -10,9 +10,9 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from hadar import ToShuffler
-from preprocessing.pipeline import Pipeline, TO_SHUFFLER
-from preprocessing.shuffler import Timeline, TimelinePipeline, Shuffler
+from hadar.preprocessing.pipeline import ToShuffler
+from hadar.preprocessing.pipeline import Pipeline, TO_SHUFFLER
+from hadar.preprocessing.shuffler import Timeline, TimelinePipeline, Shuffler
 
 
 def range_sampler(low, high, size):
