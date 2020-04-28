@@ -233,6 +233,10 @@ class Pipeline:
         if not self.plug.computable(names):
             raise ValueError("Pipeline accept %s in input, but receive %s" % (self.plug.inputs, names))
 
+    def assert_to_shuffler(self):
+        if TO_SHUFFLER not in self.plug.outputs:
+            raise ValueError("Pipeline output must have a 'to_generate' column, but has %s", self.plug.outputs)
+
 
 class Stage(ABC):
     """

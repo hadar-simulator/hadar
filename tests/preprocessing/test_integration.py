@@ -10,7 +10,14 @@ import pandas as pd
 import numpy as np
 from pandas import MultiIndex
 
-from hadar.preprocessing.pipeline import Rename, RepeatScenario, Fault, Clip
+from hadar.preprocessing.pipeline import Rename, RepeatScenario, Fault, Clip, ToShuffler
+from preprocessing.shuffler import Shuffler
+
+
+def range_sampler(low, high, size):
+    n = np.math.ceil(size / (high - low))
+    sample = np.arange(low, high)
+    return np.tile(sample, n)[:size]
 
 
 class TestPipeline(unittest.TestCase):
@@ -37,3 +44,23 @@ class TestPipeline(unittest.TestCase):
         # Verify columns
         np.testing.assert_array_equal(np.arange(500), o.columns.get_level_values(0).unique().sort_values())
         self.assertEqual(['quantity'], o.columns.get_level_values(1).unique())
+
+
+class TestShuffler(unittest.TestCase):
+    def test_shuffle(self):
+        # Input
+        shuffler = Shuffler(sampler=range_sampler)
+        shuffler.add_data(name='solar', data=np.array([[1, 2, 3], [5, 6, 7]]))
+
+        i = pd.DataFrame({(0, 'a'): [3, 4, 5], (1, 'a'): [7, 8, 9]})
+        pipe = RepeatScenario(2) + ToShuffler('a')
+        shuffler.add_pipeline(name='load', data=i, pipeline=pipe)
+
+        # Expected
+        exp = {'solar': np.array([[1, 2, 3], [5, 6, 7], [1, 2, 3]]),
+               'load': np.array([[3, 4, 5], [7, 8, 9], [3, 4, 5]])}
+
+        # Test & Verify
+        res = shuffler.shuffle(3)
+        for name, array in res.items():
+            np.testing.assert_equal(exp[name], array)
