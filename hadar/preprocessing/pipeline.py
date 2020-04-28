@@ -226,7 +226,6 @@ class Stage(ABC):
 
         :param plug: plug to use to describe input and output interface used.
         """
-        self.next_computes = []
         self.plug = plug
 
     def __add__(self, other) -> Pipeline:
@@ -265,11 +264,7 @@ class Stage(ABC):
         if not self.plug.computable(names):
             raise ValueError("Stage accept %s in input, but receive %s" % (self.plug.inputs, names))
 
-        timeline = self._process_timeline(timeline.copy())
-        for compute in self.next_computes:
-            timeline = compute(timeline.copy())
-
-        return timeline
+        return self._process_timeline(timeline.copy())
 
     @staticmethod
     def standardize_column(timeline: pd.DataFrame) -> pd.DataFrame:
@@ -342,7 +337,7 @@ class FocusStage(Stage, ABC):
         for every scenario.
 
         :param n_scn: scenario serial number inside Timeline
-        :param scenario: slice of one scenario inside Timeline. index=[t, ...], column=[(scenario, data fields), (...)]
+        :param scenario: slice of one scenario inside Timeline. index=[t, ...], column=[data fields, ...]
         :return: new slice with updated data.
         """
         pass
@@ -477,8 +472,8 @@ class Fault(FocusStage):
         nb_faults = np.random.choice([0, 1], size=horizon, p=[1 - self.occur_freq, self.occur_freq]).sum()
 
         loss_qt = np.zeros(horizon)
-        faults_begin = np.random.choice(horizon, size=nb_faults)
-        faults_duration = np.random.uniform(low=self.downtime_min, high=self.downtime_max, size=nb_faults).astype('int')
+        faults_begin = np.random.randint(low=0, high=horizon, size=nb_faults)
+        faults_duration = np.random.randint(low=self.downtime_min, high=self.downtime_max, size=nb_faults)
         for begin, duration in zip(faults_begin, faults_duration):
             loss_qt[begin:(begin + duration)] += self.loss
 
