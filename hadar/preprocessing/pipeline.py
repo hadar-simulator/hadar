@@ -186,31 +186,7 @@ class Pipeline:
         """
         Launch all stages computation.
 
-        Timeline without scenarios
-        +--------+--------+-------+-------+
-        |   t    |   a    |   b   |  ...  |
-        +--------+--------+-------+-------+
-        |   0    |        |       |       |
-        +--------+--------+-------+-------+
-        |   1    |        |       |       |
-        +--------+--------+-------+-------+
-        |  ...   |        |       |       |
-        +--------+--------+-------+-------+
-
-        Timeline with scenarios
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |        |            0           |            1           |           ...          |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   t    |   a    |   b   |  ...  |   a    |   b   |  ...  |   a    |   b   |  ...  |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   0    |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   1    |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |  ...   |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-
-        :param timeline: DataFrame explained above
+        :param timeline: DataFrame with index=[t, ...], column=[data fields, ...] or [(scenario, data fields), (...), ...]
         :return: new Timeline
         """
         timeline = Stage.standardize_column(timeline)
@@ -253,13 +229,13 @@ class Stage(ABC):
         self.next_computes = []
         self.plug = plug
 
-    def __add__(self, other):
+    def __add__(self, other) -> Pipeline:
         """
         Add stage with other to create pipeline. According to plug specified for each stage,
         some stages can't be linked which other. In this case an error will be raise during adding.
 
         :param other: other stage to execute after this one.
-        :return: same stage with new compute queue to process and new plug configuration.
+        :return: Pipeline with two stage and merged plug
         """
         if not isinstance(other, Stage):
             raise ValueError('Only addition with other Stage is accepted not with %s' % type(other))
@@ -269,23 +245,9 @@ class Stage(ABC):
     @abstractmethod
     def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
         """
-        Method to implement when creating your own state. It take current DataFrame with scenario as first columns index,
-        followed by columns type. Time is on index.
+        Method to implement when creating your own state.
 
-        Timeline with scenarios
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |        |            0           |            1           |           ...          |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   t    |   a    |   b   |  ...  |   a    |   b   |  ...  |   a    |   b   |  ...  |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   0    |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   1    |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |  ...   |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-
-        :param timeline: DataFrame explained above
+        :param timeline: DataFrame with index=[t, ...], column=[(scenario, data fields), (...), ...]
         :return: new Timeline
         """
         pass
@@ -294,31 +256,7 @@ class Stage(ABC):
         """
         Launch Stage computation.
 
-        Timeline without scenarios
-        +--------+--------+-------+-------+
-        |   t    |   a    |   b   |  ...  |
-        +--------+--------+-------+-------+
-        |   0    |        |       |       |
-        +--------+--------+-------+-------+
-        |   1    |        |       |       |
-        +--------+--------+-------+-------+
-        |  ...   |        |       |       |
-        +--------+--------+-------+-------+
-
-        Timeline with scenarios
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |        |            0           |            1           |           ...          |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   t    |   a    |   b   |  ...  |   a    |   b   |  ...  |   a    |   b   |  ...  |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   0    |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |   1    |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-        |  ...   |        |       |       |        |       |       |        |       |       |
-        +--------+--------+-------+-------+--------+-------+-------+--------+-------+-------+
-
-        :param timeline: DataFrame explained above
+        :param timeline: DataFrame with index=[t, ...], column=[data fields, ...] or [(scenario, data fields), (...), ...]
         :return: new Timeline
         """
         timeline = Stage.standardize_column(timeline)
@@ -399,22 +337,12 @@ class FocusStage(Stage, ABC):
     @abstractmethod
     def _process_scenarios(self, n_scn: int, scenario: pd.DataFrame) -> pd.DataFrame:
         """
-        Method to implement to create your own stage. For this stage, you will reveive only this kind of data.
-        +--------+--------+-------+-------+
-        |   t    |   a    |   b   |  ...  |
-        +--------+--------+-------+-------+
-        |   0    |        |       |       |
-        +--------+--------+-------+-------+
-        |   1    |        |       |       |
-        +--------+--------+-------+-------+
-        |  ...   |        |       |       |
-        +--------+--------+-------+-------+
-
+        Method you have to implement to create your own stage.
         You don't need to handle if there are scenarios or not. We handle for you. Just implement behaviour to apply
         for every scenario.
 
-        :param n_scn: scenario numero inside Timeline
-        :param scenario: slice of one scenario inside Timeline
+        :param n_scn: scenario serial number inside Timeline
+        :param scenario: slice of one scenario inside Timeline. index=[t, ...], column=[(scenario, data fields), (...)]
         :return: new slice with updated data.
         """
         pass
