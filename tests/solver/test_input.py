@@ -107,14 +107,14 @@ class TestStudy(unittest.TestCase):
 
     def test_validate_quantity_perfect_size(self):
         # Input
-        study = Study(node_names=['a'], horizon=10)
-        i = np.ones(10)
+        study = Study(node_names=['a'], horizon=10, nb_scn=2)
+        i = np.ones((2, 10))
 
         # Test
         r = study._validate_quantity(i)
         np.testing.assert_array_equal(i, r)
 
-    def not_test_validate_quantity_expend_scn(self):
+    def test_validate_quantity_expend_scn(self):
         # Input
         study = Study(node_names=[], horizon=5, nb_scn=2)
         i = [1, 2, 3, 4, 5]
@@ -127,7 +127,7 @@ class TestStudy(unittest.TestCase):
         res = study._validate_quantity(i)
         np.testing.assert_array_equal(exp, res)
 
-    def not_test_validate_quantity_expend_horizon(self):
+    def test_validate_quantity_expend_horizon(self):
         # Input
         study = Study(node_names=[], horizon=2, nb_scn=5)
         i = [[1], [2], [3], [4], [5]]
@@ -145,11 +145,11 @@ class TestStudy(unittest.TestCase):
 
     def test_validate_quantity_expend_both(self):
         # Input
-        study = Study(node_names=[], horizon=2)
+        study = Study(node_names=[], horizon=2, nb_scn=3)
         i = 1
 
         # Expect
-        exp = np.ones(2)
+        exp = np.ones((3, 2))
 
         # Test
         res = study._validate_quantity(i)

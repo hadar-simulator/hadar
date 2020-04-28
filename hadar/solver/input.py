@@ -104,18 +104,20 @@ class Study(DTO):
     Main object to facilitate to build a study
     """
 
-    def __init__(self, node_names: List[str], horizon: int):
+    def __init__(self, node_names: List[str], horizon: int, nb_scn: int = 1):
         """
         Instance study.
 
         :param node_names: list of node names inside network.
         :param horizon: simulation time horizon (i.e. number of time step in simulation)
+        :param nb_scn: number of scenarios in study. Default is 1.
         """
         if len(node_names) > len(set(node_names)):
             raise ValueError('some nodes are not unique')
 
         self._nodes = {name: InputNode(consumptions=[], productions=[], borders=[]) for name in node_names}
         self.horizon = horizon
+        self.nb_scn = nb_scn
 
 
     @property
@@ -190,17 +192,18 @@ class Study(DTO):
 
         # If scenario and horizon are not provided, expend on both side
         if quantity.size == 1:
-            return np.ones(self.horizon) * quantity
+            return np.ones((self.nb_scn, self.horizon)) * quantity
 
-        # # If scenario are not provided copy timeseries for each scenario
-        # if quantity.shape == (self.horizon,):
-        #     return np.tile(quantity, (self.nb_scn, 1))
-        #
-        # # If horizon are not provide extend each scenario to full horizon
-        # if quantity.shape == (self.nb_scn, 1):
-        #     return np.tile(quantity, self.horizon)
-        #
-        if quantity.shape == (self.horizon, ):
+        # If scenario are not provided copy timeseries for each scenario
+        if quantity.shape == (self.horizon,):
+            return np.tile(quantity, (self.nb_scn, 1))
+
+        # If horizon are not provide extend each scenario to full horizon
+        if quantity.shape == (self.nb_scn, 1):
+            return np.tile(quantity, self.horizon)
+
+        # If perfect size
+        if quantity.shape == (self.nb_scn, self.horizon):
             return quantity
 
         # If any size pattern matches, raise error on quantity size given
