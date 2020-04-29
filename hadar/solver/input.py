@@ -35,7 +35,7 @@ class Consumption(DTO):
     Consumption element.
     """
 
-    def __init__(self, quantity: Union[List[float], np.ndarray, float], cost: int = 0, type: str = ''):
+    def __init__(self, quantity: Union[List, np.ndarray, float], cost: int = 0, type: str = ''):
         """
         Create consumption.
 
@@ -52,7 +52,7 @@ class Production(DTO):
     """
     Production element
     """
-    def __init__(self, quantity: Union[List[float], np.ndarray, float], cost: int = 0, type: str = 'in'):
+    def __init__(self, quantity: Union[List, np.ndarray, float], cost: int = 0, type: str = 'in'):
         """
         Create production
 
@@ -69,7 +69,7 @@ class Border(DTO):
     """
     Border element
     """
-    def __init__(self, dest: str, quantity: Union[List[float], np.ndarray, float], cost: int = 0):
+    def __init__(self, dest: str, quantity: Union[List, np.ndarray, float], cost: int = 0):
         """
         Create border.
 
@@ -210,5 +210,6 @@ class Study(DTO):
         horizon_given = quantity.shape[0] if len(quantity.shape) == 1 else quantity.shape[1]
         sc_given = 1 if len(quantity.shape) == 1 else quantity.shape[0]
         raise ValueError('Quantity must be: a number, an array like (horizon, ) or (nb_scn, 1) or (nb_scn, horizon). '
-                         'In your case horizon specified is %d and actual is %d' %
-                         (self.horizon, horizon_given))
+                         'In your case horizon specified is %d and actual is %d. '
+                         'And nb_scn specified %d is whereas actuel is %d' %
+                         (self.horizon, horizon_given, self.nb_scn, sc_given))

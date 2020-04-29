@@ -4,11 +4,12 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
+from ortools.linear_solver.pywraplp import Solver, Variable
 
 from hadar.solver.input import DTO
 
 
-class MockNumVar(DTO):
+class MockNumVar(DTO, Variable):
     def __init__(self, min: float, max: float, name: str):
         self.min = min
         self.max = max
@@ -43,7 +44,7 @@ class MockObjective(DTO):
         return 0
 
 
-class MockSolver:
+class MockSolver(Solver):
     def __init__(self):
         pass
 
