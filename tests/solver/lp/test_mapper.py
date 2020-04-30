@@ -54,19 +54,19 @@ class TestOutputMapper(unittest.TestCase):
             .add_border(src='a', dest='be', quantity=[[10, 3], [20, 30]], cost=2)
 
         s = MockSolver()
-        mapper = OutputMapper(solver=s, study=study)
+        mapper = OutputMapper(study=study)
 
-        out_cons_0 = [LPConsumption(type='load', cost=10, quantity=10, variable=MockNumVar(0, 5.0, ''))]
-        out_prod_0 = [LPProduction(type='nuclear', cost=10, quantity=12, variable=MockNumVar(0, 12.0, ''))]
+        out_cons_0 = [LPConsumption(type='load', cost=10, quantity=10, variable=5)]
+        out_prod_0 = [LPProduction(type='nuclear', cost=10, quantity=12, variable=12)]
 
-        out_bord_0 = [LPBorder(src='a', dest='be', cost=2, quantity=10, variable=MockNumVar(0, 8.0, ''))]
+        out_bord_0 = [LPBorder(src='a', dest='be', cost=2, quantity=10, variable=8)]
         mapper.set_var(name='a', t=0, scn=0,
                        vars=LPNode(consumptions=out_cons_0 , productions=out_prod_0, borders=out_bord_0))
 
-        out_cons_1 = [LPConsumption(type='load', cost=10, quantity=20, variable=MockNumVar(0, 5.0, ''))]
-        out_prod_1 = [LPProduction(type='nuclear', cost=10, quantity=2, variable=MockNumVar(0, 112.0, ''))]
+        out_cons_1 = [LPConsumption(type='load', cost=10, quantity=20, variable=5)]
+        out_prod_1 = [LPProduction(type='nuclear', cost=10, quantity=2, variable=112)]
 
-        out_bord_1 = [LPBorder(src='a', dest='be', cost=2, quantity=10, variable=MockNumVar(0, 18.0, ''))]
+        out_bord_1 = [LPBorder(src='a', dest='be', cost=2, quantity=10, variable=18)]
         mapper.set_var(name='a', t=1, scn=1,
                        vars=LPNode(consumptions=out_cons_1 , productions=out_prod_1, borders=out_bord_1))
 

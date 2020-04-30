@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 from hadar.solver.input import Study, Consumption
 from hadar.solver.lp.domain import LPConsumption, LPProduction, LPBorder, LPNode
 from hadar.solver.lp.mapper import InputMapper, OutputMapper
-from hadar.solver.lp.solver import ObjectiveBuilder, AdequacyBuilder
+from hadar.solver.lp.solver import ObjectiveBuilder, AdequacyBuilder, _solve_batch
 from hadar.solver.lp.solver import _solve
 from hadar.solver.output import OutputConsumption, OutputNode, Result
 from tests.solver.lp.ortools_mock import MockConstraint, MockNumVar, MockObjective, MockSolver
@@ -73,16 +73,17 @@ class TestAdequacyBuilder(unittest.TestCase):
         self.assertEqual(be_constraint, builder.constraints[0]['be'])
 
 
-class TestSolve(unittest.TestCase):
-    def test_solve(self):
-        # Input
-        study = Study(node_names=['a'], horizon=1) \
-            .add_on_node(node='a', data=Consumption(type='load', cost=10, quantity=[10]))
+def mock_builder_module(s):
 
-        # Expected
-        out_a = OutputNode(consumptions=[OutputConsumption(type='load', cost=10, quantity=[10])],
-                       productions=[], borders=[])
-        exp_result = Result(nodes={'a': out_a})
+
+    return solver, objective, adequacy, in_mapper
+
+
+class TestSolve(unittest.TestCase):
+    def test_solve_batch(self):
+        # Input
+        study = Study(node_names=['a'], horizon=1, nb_scn=1) \
+            .add_on_node(node='a', data=Consumption(type='load', cost=10, quantity=[10]))
 
         # Mock
         solver = MockSolver()
@@ -101,18 +102,16 @@ class TestSolve(unittest.TestCase):
         in_mapper = InputMapper(solver=solver, study=study)
         in_mapper.get_var = MagicMock(return_value=var)
 
-        out_mapper = OutputMapper(solver=solver, study=study)
-        out_mapper.set_var = MagicMock()
-        out_mapper.get_result = MagicMock(return_value=exp_result)
-
+        # Expected
+        in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))
+        exp_var = LPNode(consumptions=[in_cons], productions=[], borders=[])
 
         # Test
-        res = _solve(study, solver, objective, adequacy, in_mapper, out_mapper)
+        res = _solve_batch((study, [0], solver, objective, adequacy, in_mapper))
 
-        self.assertEqual(exp_result, res)
-
-        in_mapper.get_var.assert_called_with(name='a', t=0)
-        adequacy.add_node.assert_called_with(name='a', t=0, node=var)
+        self.assertEqual([[{'a': exp_var}]], res)
+        in_mapper.get_var.assert_called_with(name='a', t=0, scn=0)
+        adequacy.add_node.assert_called_with(name='a', t=0, scn=0, node=var)
         objective.add_node.assert_called_with(node=var)
 
         objective.build.assert_called_with()
@@ -120,4 +119,26 @@ class TestSolve(unittest.TestCase):
 
         solver.Solve.assert_called_with()
 
-        out_mapper.set_var.assert_called_with(name='a', t=0, vars=var)
+    def test_solve(self):
+        # Input
+        study = Study(node_names=['a'], horizon=1, nb_scn=1) \
+            .add_on_node(node='a', data=Consumption(type='load', cost=10, quantity=[10]))
+
+        # Expected
+        out_a = OutputNode(consumptions=[OutputConsumption(type='load', cost=10, quantity=[10])],
+                           productions=[], borders=[])
+        exp_result = Result(nodes={'a': out_a})
+
+        in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=0)
+        exp_var = LPNode(consumptions=[in_cons], productions=[], borders=[])
+
+        # Mock
+        out_mapper = OutputMapper(study=study)
+        out_mapper.set_var = MagicMock()
+        out_mapper.get_result = MagicMock(return_value=exp_result)
+
+        # Test
+        res = _solve(study, out_mapper)
+
+        self.assertEqual(exp_result, res)
+        out_mapper.set_var.assert_called_with(name='a', t=0, scn=0, vars=exp_var)

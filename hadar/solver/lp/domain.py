@@ -4,8 +4,8 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-
-from typing import List
+import numpy as np
+from typing import List, Union
 
 from ortools.linear_solver.pywraplp import Variable
 
@@ -17,7 +17,7 @@ class LPConsumption(DTO):
     Consumption element for linear programming.
     """
 
-    def __init__(self, quantity: int, variable: Variable, cost: float = 0, type: str = ''):
+    def __init__(self, quantity: int, variable: Union[Variable, int], cost: float = 0, type: str = ''):
         """
         Instance consumption.
 
@@ -31,13 +31,19 @@ class LPConsumption(DTO):
         self.type = type
         self.variable = variable
 
+    def __reduce__(self):
+        """
+        Help pickle to serialize object, specially variable object
+        :return: (constructor, values...)
+        """
+        return self.__class__, (self.quantity, self.variable.solution_value(), self.cost, self.type)
 
 class LPProduction(DTO):
     """
     Production element for linear programming.
     """
 
-    def __init__(self, quantity: int, variable: Variable, cost: float = 0, type: str = 'in'):
+    def __init__(self, quantity: int, variable: Union[Variable, int], cost: float = 0, type: str = 'in'):
         """
         Instance production.
 
@@ -51,12 +57,19 @@ class LPProduction(DTO):
         self.variable = variable
         self.quantity = quantity
 
+    def __reduce__(self):
+        """
+        Help pickle to serialize object, specially variable object
+        :return: (constructor, values...)
+        """
+        return self.__class__, (self.quantity, self.variable.solution_value(), self.cost, self.type)
+
 
 class LPBorder(DTO):
     """
     Border element for linear programming
     """
-    def __init__(self, src: str, dest: str, quantity: int, variable: Variable, cost: float = 0):
+    def __init__(self, src: str, dest: str, quantity: int, variable: Union[Variable, int], cost: float = 0):
         """
         Instance border.
 
@@ -71,6 +84,13 @@ class LPBorder(DTO):
         self.quantity = quantity
         self.variable = variable
         self.cost = cost
+
+    def __reduce__(self):
+        """
+        Help pickle to serialize object, specially variable object
+        :return: (constructor, values...)
+        """
+        return self.__class__, (self.src, self.dest, self.quantity, self.variable.solution_value(), self.cost)
 
 
 class LPNode(DTO):
