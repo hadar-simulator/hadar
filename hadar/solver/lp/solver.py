@@ -89,7 +89,7 @@ class AdequacyBuilder:
     """
     Build adequacy flow constraint.
     """
-    def __init__(self, solver: Solver, horizon: int, nb_scn: int = 1):
+    def __init__(self, solver: Solver, horizon: int, nb_scn: int):
         """
         Initiate.
 
@@ -178,15 +178,21 @@ class AdequacyBuilder:
 
 
 def _solve_batch(params) -> List[List[Dict[str, LPNode]]]:
-    if len(params) == 2: # Runtime
+    """
+    Solve study scenario batch. Called by multiprocessing.
+    :param params: (study, scenarios) for main runtime OR (study, scenario, mock solver, mock objective
+    , mock adequacy, mock input mapper) only for test purpose.
+    :return: [scn: [t: {name: LPNode, ...},  ...], ...]
+    """
+    if len(params) == 2:  # Runtime
         study, scenarios = params
         solver = Solver('simple_lp_program', Solver.GLOP_LINEAR_PROGRAMMING)
 
         objective = ObjectiveBuilder(solver=solver)
-        adequacy = AdequacyBuilder(solver=solver, horizon=study.horizon)
+        adequacy = AdequacyBuilder(solver=solver, horizon=study.horizon, nb_scn=len(scenarios))
 
         in_mapper = InputMapper(solver=solver, study=study)
-    else: # Test purpose only
+    else:  # Test purpose only
         study, scenarios, solver, objective, adequacy, in_mapper = params
 
     variables = [[dict() for _ in range(study.horizon)] for _ in range(study.nb_scn)]
@@ -213,14 +219,12 @@ def _solve_batch(params) -> List[List[Dict[str, LPNode]]]:
     return variables
 
 
-def _solve(study: Study, out_mapper=None) -> Result:
+def solve_lp(study: Study, out_mapper=None) -> Result:
     """
     Solve adequacy flow problem with a linear optimizer.
 
     :param study: study to compute
-    :param solver: solver to used
-    :param objective: objective builder to use
-    :param adequacy: adequacy builder to use
+    :param out_mapper: use only for test purpose to inject mock. Keep None as default.
     :return: Result object with optimal solution
     """
     out_mapper = OutputMapper(study) if out_mapper is None else out_mapper
@@ -238,13 +242,3 @@ def _solve(study: Study, out_mapper=None) -> Result:
                 out_mapper.set_var(name=name, t=t, scn=scn, vars=variables[scn][t][name])
 
     return out_mapper.get_result()
-
-
-def solve_lp(study: Study) -> Result:
-    """
-    Solve adequacy flow problem with a linear optimizer.
-
-    :param study: study to compute
-    :return: Result object with optimal solution
-    """
-    return _solve(study, OutputMapper(study=study))

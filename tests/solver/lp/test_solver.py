@@ -12,7 +12,7 @@ from hadar.solver.input import Study, Consumption
 from hadar.solver.lp.domain import LPConsumption, LPProduction, LPBorder, LPNode
 from hadar.solver.lp.mapper import InputMapper, OutputMapper
 from hadar.solver.lp.solver import ObjectiveBuilder, AdequacyBuilder, _solve_batch
-from hadar.solver.lp.solver import _solve
+from hadar.solver.lp.solver import solve_lp
 from hadar.solver.output import OutputConsumption, OutputNode, Result
 from tests.solver.lp.ortools_mock import MockConstraint, MockNumVar, MockObjective, MockSolver
 
@@ -64,19 +64,13 @@ class TestAdequacyBuilder(unittest.TestCase):
         be_constraint = MockConstraint(0, 0, coeffs=be_coeffs)
 
         # Test
-        builder = AdequacyBuilder(solver=solver, horizon=1)
-        builder.add_node(name='fr', node=fr_node, t=0)
-        builder.add_node(name='be', node=be_node, t=0)
+        builder = AdequacyBuilder(solver=solver, horizon=1, nb_scn=1)
+        builder.add_node(name='fr', node=fr_node, t=0, scn=0)
+        builder.add_node(name='be', node=be_node, t=0, scn=0)
         builder.build()
 
         self.assertEqual(fr_constraint, builder.constraints[0]['fr'])
         self.assertEqual(be_constraint, builder.constraints[0]['be'])
-
-
-def mock_builder_module(s):
-
-
-    return solver, objective, adequacy, in_mapper
 
 
 class TestSolve(unittest.TestCase):
@@ -93,7 +87,7 @@ class TestSolve(unittest.TestCase):
         objective.add_node = MagicMock()
         objective.build = MagicMock()
 
-        adequacy = AdequacyBuilder(solver=solver, horizon=study.horizon)
+        adequacy = AdequacyBuilder(solver=solver, horizon=study.horizon, nb_scn=1)
         adequacy.add_node = MagicMock()
         adequacy.build = MagicMock()
 
@@ -138,7 +132,7 @@ class TestSolve(unittest.TestCase):
         out_mapper.get_result = MagicMock(return_value=exp_result)
 
         # Test
-        res = _solve(study, out_mapper)
+        res = solve_lp(study, out_mapper)
 
         self.assertEqual(exp_result, res)
         out_mapper.set_var.assert_called_with(name='a', t=0, scn=0, vars=exp_var)
