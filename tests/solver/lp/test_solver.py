@@ -4,12 +4,12 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-
+import pickle
 import unittest
 from unittest.mock import MagicMock
 
 from hadar.solver.input import Study, Consumption
-from hadar.solver.lp.domain import LPConsumption, LPProduction, LPBorder, LPNode
+from hadar.solver.lp.domain import LPConsumption, LPProduction, LPBorder, LPNode, SerializableVariable
 from hadar.solver.lp.mapper import InputMapper, OutputMapper
 from hadar.solver.lp.solver import ObjectiveBuilder, AdequacyBuilder, _solve_batch
 from hadar.solver.lp.solver import solve_lp
@@ -97,15 +97,15 @@ class TestSolve(unittest.TestCase):
         in_mapper.get_var = MagicMock(return_value=var)
 
         # Expected
-        in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))
+        in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, 'load')))
         exp_var = LPNode(consumptions=[in_cons], productions=[], borders=[])
 
         # Test
         res = _solve_batch((study, 0, solver, objective, adequacy, in_mapper))
 
-        self.assertEqual([{'a': exp_var}], res)
+        self.assertEqual([{'a': exp_var}], pickle.loads(res))
         in_mapper.get_var.assert_called_with(name='a', t=0, scn=0)
-        adequacy.add_node.assert_called_with(name='a', node=var)
+        adequacy.add_node.assert_called_with(name='a', t=0, node=var)
         objective.add_node.assert_called_with(node=var)
 
         objective.build.assert_called_with()
@@ -119,11 +119,11 @@ class TestSolve(unittest.TestCase):
             .add_on_node(node='a', data=Consumption(type='load', cost=10, quantity=[10]))
 
         # Expected
-        out_a = OutputNode(consumptions=[OutputConsumption(type='load', cost=10, quantity=[10])],
+        out_a = OutputNode(consumptions=[OutputConsumption(type='load', cost=10, quantity=[0])],
                            productions=[], borders=[])
         exp_result = Result(nodes={'a': out_a})
 
-        in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=0)
+        in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, '')))
         exp_var = LPNode(consumptions=[in_cons], productions=[], borders=[])
 
         # Mock
