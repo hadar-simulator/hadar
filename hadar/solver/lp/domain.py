@@ -12,12 +12,20 @@ from ortools.linear_solver.pywraplp import Variable
 from hadar.solver.input import DTO
 
 
+class SerializableVariable(DTO):
+    def __init__(self, var: Variable):
+        self.val = var.solution_value()
+
+    def solution_value(self):
+        return self.val
+
+
 class LPConsumption(DTO):
     """
     Consumption element for linear programming.
     """
 
-    def __init__(self, quantity: int, variable: Union[Variable, int], cost: float = 0, type: str = ''):
+    def __init__(self, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0, type: str = ''):
         """
         Instance consumption.
 
@@ -36,14 +44,14 @@ class LPConsumption(DTO):
         Help pickle to serialize object, specially variable object
         :return: (constructor, values...)
         """
-        return self.__class__, (self.quantity, self.variable.solution_value(), self.cost, self.type)
+        return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.type)
 
 class LPProduction(DTO):
     """
     Production element for linear programming.
     """
 
-    def __init__(self, quantity: int, variable: Union[Variable, int], cost: float = 0, type: str = 'in'):
+    def __init__(self, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0, type: str = 'in'):
         """
         Instance production.
 
@@ -62,14 +70,14 @@ class LPProduction(DTO):
         Help pickle to serialize object, specially variable object
         :return: (constructor, values...)
         """
-        return self.__class__, (self.quantity, self.variable.solution_value(), self.cost, self.type)
+        return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.type)
 
 
 class LPBorder(DTO):
     """
     Border element for linear programming
     """
-    def __init__(self, src: str, dest: str, quantity: int, variable: Union[Variable, int], cost: float = 0):
+    def __init__(self, src: str, dest: str, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0):
         """
         Instance border.
 
@@ -90,7 +98,7 @@ class LPBorder(DTO):
         Help pickle to serialize object, specially variable object
         :return: (constructor, values...)
         """
-        return self.__class__, (self.src, self.dest, self.quantity, self.variable.solution_value(), self.cost)
+        return self.__class__, (self.src, self.dest, self.quantity, SerializableVariable(self.variable), self.cost)
 
 
 class LPNode(DTO):

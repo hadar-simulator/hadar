@@ -34,19 +34,19 @@ class TestSolver(unittest.TestCase):
         | gas: 5               |
         :return:
         """
-        study = hd.Study(['a'], horizon=2) \
-            .add_on_node(node='a', data=hd.Consumption(type='load', cost=10 ** 6, quantity=[30, 6])) \
-            .add_on_node(node='a', data=hd.Production(type='nuclear', cost=20, quantity=[15, 3])) \
-            .add_on_node(node='a', data=hd.Production(type='solar', cost=10, quantity=[10, 2])) \
-            .add_on_node(node='a', data=hd.Production(type='oil', cost=30, quantity=[10, 2]))
+        study = hd.Study(['a'], horizon=3, nb_scn=2) \
+            .add_on_node(node='a', data=hd.Consumption(type='load', cost=10 ** 6, quantity=[[30, 6, 6], [6, 30, 30]])) \
+            .add_on_node(node='a', data=hd.Production(type='nuclear', cost=20, quantity=[[15, 3, 3], [3, 15, 15]])) \
+            .add_on_node(node='a', data=hd.Production(type='solar', cost=10, quantity=[[10, 2, 2], [2, 10, 10]])) \
+            .add_on_node(node='a', data=hd.Production(type='oil', cost=30, quantity=[[10, 2, 2], [2, 10, 10]]))
 
         nodes_expected = dict()
         nodes_expected['a'] = hd.OutputNode(
-            consumptions=[hd.OutputConsumption(cost=10 ** 6, quantity=[30, 6], type='load')],
+            consumptions=[hd.OutputConsumption(cost=10 ** 6, quantity=[[30, 6, 6], [6, 30, 30]], type='load')],
             productions=[
-                hd.OutputProduction(type='nuclear', cost=20, quantity=[15, 3]),
-                hd.OutputProduction(type='solar', cost=10, quantity=[10, 2]),
-                hd.OutputProduction(type='oil', cost=30, quantity=[5, 1])],
+                hd.OutputProduction(type='nuclear', cost=20, quantity=[[15, 3, 3], [3, 15, 15]]),
+                hd.OutputProduction(type='solar', cost=10, quantity=[[10, 2, 2], [2, 10, 10]]),
+                hd.OutputProduction(type='oil', cost=30, quantity=[[5, 1, 1], [1, 5, 5]])],
             borders=[])
 
         res = self.solver.solve(study)
@@ -63,13 +63,13 @@ class TestSolver(unittest.TestCase):
 
         nodes_expected = {}
         nodes_expected['a'] = hd.OutputNode(
-            consumptions=[hd.OutputConsumption(cost=10 ** 6, quantity=[20, 200], type='load')],
-            productions=[hd.OutputProduction(cost=10, quantity=[30, 300], type='prod')],
-            borders=[hd.OutputBorder(dest='b', quantity=[10, 100], cost=2)])
+            consumptions=[hd.OutputConsumption(cost=10 ** 6, quantity=[[20, 200]], type='load')],
+            productions=[hd.OutputProduction(cost=10, quantity=[[30, 300]], type='prod')],
+            borders=[hd.OutputBorder(dest='b', quantity=[[10, 100]], cost=2)])
 
         nodes_expected['b'] = hd.OutputNode(
-            consumptions=[hd.OutputConsumption(cost=10 ** 6, quantity=[20, 200], type='load')],
-            productions=[hd.OutputProduction(cost=20, quantity=[10, 100], type='prod')],
+            consumptions=[hd.OutputConsumption(cost=10 ** 6, quantity=[[20, 200]], type='load')],
+            productions=[hd.OutputProduction(cost=20, quantity=[[10, 100]], type='prod')],
             borders=[])
 
         res = self.solver.solve(study)

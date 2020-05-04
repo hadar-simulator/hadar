@@ -64,13 +64,13 @@ class TestAdequacyBuilder(unittest.TestCase):
         be_constraint = MockConstraint(0, 0, coeffs=be_coeffs)
 
         # Test
-        builder = AdequacyBuilder(solver=solver, horizon=1, nb_scn=1)
-        builder.add_node(name='fr', node=fr_node, t=0, scn=0)
-        builder.add_node(name='be', node=be_node, t=0, scn=0)
+        builder = AdequacyBuilder(solver=solver)
+        builder.add_node(name='fr', node=fr_node)
+        builder.add_node(name='be', node=be_node)
         builder.build()
 
-        self.assertEqual(fr_constraint, builder.constraints[0]['fr'])
-        self.assertEqual(be_constraint, builder.constraints[0]['be'])
+        self.assertEqual(fr_constraint, builder.constraints['fr'])
+        self.assertEqual(be_constraint, builder.constraints['be'])
 
 
 class TestSolve(unittest.TestCase):
@@ -87,7 +87,7 @@ class TestSolve(unittest.TestCase):
         objective.add_node = MagicMock()
         objective.build = MagicMock()
 
-        adequacy = AdequacyBuilder(solver=solver, horizon=study.horizon, nb_scn=1)
+        adequacy = AdequacyBuilder(solver=solver)
         adequacy.add_node = MagicMock()
         adequacy.build = MagicMock()
 
@@ -101,11 +101,11 @@ class TestSolve(unittest.TestCase):
         exp_var = LPNode(consumptions=[in_cons], productions=[], borders=[])
 
         # Test
-        res = _solve_batch((study, [0], solver, objective, adequacy, in_mapper))
+        res = _solve_batch((study, 0, solver, objective, adequacy, in_mapper))
 
-        self.assertEqual([[{'a': exp_var}]], res)
+        self.assertEqual([{'a': exp_var}], res)
         in_mapper.get_var.assert_called_with(name='a', t=0, scn=0)
-        adequacy.add_node.assert_called_with(name='a', t=0, scn=0, node=var)
+        adequacy.add_node.assert_called_with(name='a', node=var)
         objective.add_node.assert_called_with(node=var)
 
         objective.build.assert_called_with()

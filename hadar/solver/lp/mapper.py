@@ -75,13 +75,13 @@ class OutputMapper:
         :return: None (use get_result)
         """
         for i in range(len(vars.consumptions)):
-            self.nodes[name].consumptions[i].quantity[scn][t] = vars.consumptions[i].quantity - vars.consumptions[i].variable
+            self.nodes[name].consumptions[i].quantity[scn, t] = vars.consumptions[i].quantity - vars.consumptions[i].variable.solution_value()
 
         for i in range(len(vars.productions)):
-            self.nodes[name].productions[i].quantity[scn][t] = vars.productions[i].variable
+            self.nodes[name].productions[i].quantity[scn, t] = vars.productions[i].variable.solution_value()
 
         for i in range(len(vars.borders)):
-            self.nodes[name].borders[i].quantity[scn][t] = vars.borders[i].variable
+            self.nodes[name].borders[i].quantity[scn, t] = vars.borders[i].variable.solution_value()
 
     def get_result(self) -> Result:
         """

@@ -23,7 +23,7 @@ class MockConstraint(DTO):
     def __init__(self, min: float, max: float, coeffs=None):
         self.min = min
         self.max = max
-        self.coeffs = coeffs if coeffs else {}
+        self.coeffs = coeffs if coeffs else dict()
 
     def SetCoefficient(self, var: MockNumVar, cost: int):
         self.coeffs[var] = cost

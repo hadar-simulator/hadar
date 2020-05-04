@@ -6,6 +6,7 @@
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 
 import logging
+import pickle
 from functools import reduce
 
 import numpy as np
@@ -89,80 +90,72 @@ class AdequacyBuilder:
     """
     Build adequacy flow constraint.
     """
-    def __init__(self, solver: Solver, horizon: int, nb_scn: int):
+    def __init__(self, solver: Solver):
         """
         Initiate.
 
         :param solver: ortools solver instance to use
         :param horizon: study horizon
         """
-        self.horizon = horizon
-        self.constraints = [dict() for _ in range(horizon * nb_scn)]
-        self.borders = [list() for _ in range(horizon * nb_scn)]
+        self.constraints = dict()
+        self.importations = dict()
         self.solver = solver
         self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
 
-    def add_node(self, name: str, t: int, node: LPNode, scn: int, ):
+    def add_node(self, name: str, node: LPNode):
         """
         Add flow constraint for a specific node.
 
         :param name: node name. Used to differentiate each equation
-        :param t: timestamp index
         :param node: node to map constraint
-        :param scn: scenario index
         :return:
         """
-        i = t + self.horizon * scn
-
         # Set forced consumption
         load = sum([c.quantity for c in node.consumptions])*1.0
-        self.constraints[i][name] = self.solver.Constraint(load, load)
+        self.constraints[name] = self.solver.Constraint(load, load)
 
-        self._add_consumptions(name, i, node.consumptions)
-        self._add_productions(name, i, node.productions)
-        self._add_borders(name, i, node.borders)
+        self._add_consumptions(name, node.consumptions)
+        self._add_productions(name, node.productions)
+        self._add_borders(name, node.borders)
 
-    def _add_consumptions(self, name: str, i: int, consumptions: List[LPConsumption]):
+    def _add_consumptions(self, name: str, consumptions: List[LPConsumption]):
         """
         Add consumption flow. That mean loss of consumption is set a production to match
         equation in case there are not enough production.
 
         :param name: node's name
-        :param i: index to use to store constraint
         :param consumptions: consumptions with loss as variable
         :return:
         """
         for cons in consumptions:
-            self.constraints[i][name].SetCoefficient(cons.variable, 1)
+            self.constraints[name].SetCoefficient(cons.variable, 1)
             self.logger.debug('Add lol %s for %s into adequacy constraint', cons.type, name)
 
-    def _add_productions(self, name: str, i: int, productions: List[LPProduction]):
+    def _add_productions(self, name: str, productions: List[LPProduction]):
         """
         Add production flow. That mean production use is like a production.
 
         :param name: node's name
-        :param i: index to use to store constraint
         :param productions: productions with production used as variable
         :return:
         """
         for prod in productions:
-            self.constraints[i][name].SetCoefficient(prod.variable, 1)
+            self.constraints[name].SetCoefficient(prod.variable, 1)
             self.logger.debug('Add prod %s for %s into adequacy constraint', prod.type, name)
 
-    def _add_borders(self, name: str, i: int, borders: List[LPBorder]):
+    def _add_borders(self, name: str, borders: List[LPBorder]):
         """
         Add borders. That mean the border export is like a consumption.
         After all node added. The same export, become also an import for destination node.
         Therefore border has to be set like production for destination node.
 
         :param name: node's name
-        :param i: index to use to store constraint
         :param borders: border with export quantity as variable
         :return:
         """
         for bord in borders:
-            self.borders[i].append(bord)
-            self.constraints[i][name].SetCoefficient(bord.variable, -1)
+            self.constraints[bord.src].SetCoefficient(bord.variable, -1)  # Export from src
+            self.importations[bord.dest] = bord.variable  # Import to dest
             self.logger.debug('Add border %s for %s into adequacy constraint', bord.dest, name)
 
     def build(self):
@@ -172,39 +165,38 @@ class AdequacyBuilder:
         :return:
         """
         # Apply import border in adequacy
-        for i in range(len(self.constraints)):
-            for bord in self.borders[i]:
-                self.constraints[i][bord.dest].SetCoefficient(bord.variable, 1)
+        for dest, var in self.importations.items():
+            self.constraints[dest].SetCoefficient(var, 1)
 
 
-def _solve_batch(params) -> List[List[Dict[str, LPNode]]]:
+def _solve_batch(params) -> bytes:
     """
     Solve study scenario batch. Called by multiprocessing.
     :param params: (study, scenarios) for main runtime OR (study, scenario, mock solver, mock objective
     , mock adequacy, mock input mapper) only for test purpose.
-    :return: [scn: [t: {name: LPNode, ...},  ...], ...]
+    :return: [t: {name: LPNode, ...},  ...]
     """
     if len(params) == 2:  # Runtime
-        study, scenarios = params
+        study, i_scn = params
+
         solver = Solver('simple_lp_program', Solver.GLOP_LINEAR_PROGRAMMING)
 
         objective = ObjectiveBuilder(solver=solver)
-        adequacy = AdequacyBuilder(solver=solver, horizon=study.horizon, nb_scn=len(scenarios))
+        adequacy = AdequacyBuilder(solver=solver)
 
         in_mapper = InputMapper(solver=solver, study=study)
     else:  # Test purpose only
-        study, scenarios, solver, objective, adequacy, in_mapper = params
+        study, i_scn, solver, objective, adequacy, in_mapper = params
 
-    variables = [[dict() for _ in range(study.horizon)] for _ in range(study.nb_scn)]
+    variables = [dict() for _ in range(study.horizon)]
 
     # Build equation
-    for scn in scenarios:
-        for t in range(0, study.horizon):
-            for name, node in study.nodes.items():
-                variables[scn][t][name] = in_mapper.get_var(name=name, t=t, scn=scn)
-
-                adequacy.add_node(name=name, t=t, scn=scn, node=variables[scn][t][name])
-                objective.add_node(node=variables[scn][t][name])
+    for t in range(0, study.horizon):
+        for name, node in study.nodes.items():
+            node = in_mapper.get_var(name=name, t=t, scn=i_scn)
+            variables[t][name] = node
+            adequacy.add_node(name=name, node=node)
+            objective.add_node(node=node)
 
     objective.build()
     adequacy .build()
@@ -216,7 +208,10 @@ def _solve_batch(params) -> List[List[Dict[str, LPNode]]]:
     logger.info('Solver finish cost=%d', solver.Objective().Value())
     logger.debug(solver.ExportModelAsLpFormat(False).replace('\\', '').replace(',_', ','))
 
-    return variables
+    # When multiprocessing handle response and serialize it with pickle,
+    # it's occur that ortools variables seem already erased.
+    # To fix this situation, serialization is handle inside 'job scope'
+    return pickle.dumps(variables)
 
 
 def solve_lp(study: Study, out_mapper=None) -> Result:
@@ -229,16 +224,13 @@ def solve_lp(study: Study, out_mapper=None) -> Result:
     """
     out_mapper = OutputMapper(study) if out_mapper is None else out_mapper
 
-    nb_part = multiprocessing.cpu_count()
-    batches = np.array_split(np.arange(study.nb_scn), nb_part)
     pool = multiprocessing.Pool()
-    res = pool.map(_solve_batch, ((study, batch) for batch in batches))
-
-    variables = reduce(lambda a, b: a + b if b == list(list(dict())) else a, res)
+    byte = pool.map(_solve_batch, ((study, i_scn) for i_scn in range(study.nb_scn)))
+    variables = [pickle.loads(b) for b in byte]
 
     for scn in range(0, study.nb_scn):
         for t in range(0, study.horizon):
-            for name, node in study.nodes.items():
+            for name in study.nodes.keys():
                 out_mapper.set_var(name=name, t=t, scn=scn, vars=variables[scn][t][name])
 
     return out_mapper.get_result()
