@@ -102,7 +102,7 @@ class AdequacyBuilder:
         self.solver = solver
         self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
 
-    def add_node(self, name: str, node: LPNode):
+    def add_node(self, name: str, node: LPNode, t: int):
         """
         Add flow constraint for a specific node.
 
@@ -112,50 +112,53 @@ class AdequacyBuilder:
         """
         # Set forced consumption
         load = sum([c.quantity for c in node.consumptions])*1.0
-        self.constraints[name] = self.solver.Constraint(load, load)
+        self.constraints[(t, name)] = self.solver.Constraint(load, load)
 
-        self._add_consumptions(name, node.consumptions)
-        self._add_productions(name, node.productions)
-        self._add_borders(name, node.borders)
+        self._add_consumptions(name, t, node.consumptions)
+        self._add_productions(name, t, node.productions)
+        self._add_borders(name, t, node.borders)
 
-    def _add_consumptions(self, name: str, consumptions: List[LPConsumption]):
+    def _add_consumptions(self, name: str, t: int, consumptions: List[LPConsumption]):
         """
         Add consumption flow. That mean loss of consumption is set a production to match
         equation in case there are not enough production.
 
         :param name: node's name
+        :param t: timestamp
         :param consumptions: consumptions with loss as variable
         :return:
         """
         for cons in consumptions:
-            self.constraints[name].SetCoefficient(cons.variable, 1)
+            self.constraints[(t, name)].SetCoefficient(cons.variable, 1)
             self.logger.debug('Add lol %s for %s into adequacy constraint', cons.type, name)
 
-    def _add_productions(self, name: str, productions: List[LPProduction]):
+    def _add_productions(self, name: str, t: int, productions: List[LPProduction]):
         """
         Add production flow. That mean production use is like a production.
 
         :param name: node's name
+        :param t: timestamp
         :param productions: productions with production used as variable
         :return:
         """
         for prod in productions:
-            self.constraints[name].SetCoefficient(prod.variable, 1)
+            self.constraints[(t, name)].SetCoefficient(prod.variable, 1)
             self.logger.debug('Add prod %s for %s into adequacy constraint', prod.type, name)
 
-    def _add_borders(self, name: str, borders: List[LPBorder]):
+    def _add_borders(self, name: str, t: int, borders: List[LPBorder]):
         """
         Add borders. That mean the border export is like a consumption.
         After all node added. The same export, become also an import for destination node.
         Therefore border has to be set like production for destination node.
 
         :param name: node's name
+        :param t: timestamp
         :param borders: border with export quantity as variable
         :return:
         """
         for bord in borders:
-            self.constraints[bord.src].SetCoefficient(bord.variable, -1)  # Export from src
-            self.importations[bord.dest] = bord.variable  # Import to dest
+            self.constraints[(t, bord.src)].SetCoefficient(bord.variable, -1)  # Export from src
+            self.importations[(t, bord.dest)] = bord.variable  # Import to dest
             self.logger.debug('Add border %s for %s into adequacy constraint', bord.dest, name)
 
     def build(self):
@@ -165,8 +168,8 @@ class AdequacyBuilder:
         :return:
         """
         # Apply import border in adequacy
-        for dest, var in self.importations.items():
-            self.constraints[dest].SetCoefficient(var, 1)
+        for key, var in self.importations.items():
+            self.constraints[key].SetCoefficient(var, 1)
 
 
 def _solve_batch(params) -> bytes:
@@ -195,7 +198,7 @@ def _solve_batch(params) -> bytes:
         for name, node in study.nodes.items():
             node = in_mapper.get_var(name=name, t=t, scn=i_scn)
             variables[t][name] = node
-            adequacy.add_node(name=name, node=node)
+            adequacy.add_node(name=name, node=node, t=t)
             objective.add_node(node=node)
 
     objective.build()

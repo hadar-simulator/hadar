@@ -65,12 +65,12 @@ class TestAdequacyBuilder(unittest.TestCase):
 
         # Test
         builder = AdequacyBuilder(solver=solver)
-        builder.add_node(name='fr', node=fr_node)
-        builder.add_node(name='be', node=be_node)
+        builder.add_node(name='fr', node=fr_node, t=0)
+        builder.add_node(name='be', node=be_node, t=0)
         builder.build()
 
-        self.assertEqual(fr_constraint, builder.constraints['fr'])
-        self.assertEqual(be_constraint, builder.constraints['be'])
+        self.assertEqual(fr_constraint, builder.constraints[(0, 'fr')])
+        self.assertEqual(be_constraint, builder.constraints[(0, 'be')])
 
 
 class TestSolve(unittest.TestCase):
