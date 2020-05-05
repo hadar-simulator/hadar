@@ -10,7 +10,7 @@ from typing import Union, TypeVar, List, Generic, Type
 import pandas as pd
 import numpy as np
 
-from hadar.solver.output import Result
+from hadar.solver.output import Result, OutputNode
 from hadar.solver.input import Study
 
 __all__ = ['ResultAggregator']
@@ -90,9 +90,9 @@ class TypeIndex(Index[str]):
         Index.__init__(self, column='type')
 
 
-class TimeIndex(Index[int]):
-    """Index implementation to filter by time step"""
-    def __init__(self):
+class IntIndex(Index[int]):
+    """Index implementation to handle int index with slice"""
+    def __init__(self, column: str):
         """
         Create instance.
 
@@ -100,12 +100,24 @@ class TimeIndex(Index[int]):
         :param start: start datetime to filter (to use instead of index)
         :param end: end datetime to filter (to use instead of index)
         """
-        Index.__init__(self, column='t')
+        Index.__init__(self, column=column)
 
     def __getitem__(self, index):
         if isinstance(index, slice):
             index = tuple(range(index.start, index.stop, index.step if index.step else 1))
         return Index.__getitem__(self, index)
+
+
+class TimeIndex(IntIndex):
+    """Index implementation to filter by time step"""
+    def __init__(self):
+        IntIndex.__init__(self, column='t')
+
+
+class ScnIndex(IntIndex):
+    """index implementation to filter by scenario"""
+    def __init__(self):
+        IntIndex.__init__(self, column='scn')
 
 
 class ResultAggregator:
@@ -122,83 +134,92 @@ class ResultAggregator:
         self.result = result
         self.study = study
 
-        self.consumption = self._build_consumption()
-        self.production = self._build_production()
-        self.border = self._build_border()
+        self.consumption = ResultAggregator._build_consumption(self.study, self.result)
+        self.production = ResultAggregator._build_production(self.study, self.result)
+        self.border = ResultAggregator._build_border(self.study, self.result)
 
-    def _build_consumption(self):
+    @staticmethod
+    def _build_consumption(study: Study, result: Result):
         """
         Flat all data to build global consumption dataframe
         columns: | cost | type | node | asked | given | t |
         """
-        h = self.study.horizon
-        s = h * sum([len(n.consumptions) for n in self.result.nodes.values()])
+        h = study.horizon
+        scn = study.nb_scn
+        s = scn * h * sum([len(n.consumptions) for n in study.nodes.values()])
         cons = {'cost': np.empty(s), 'asked': np.empty(s), 'given': np.empty(s),
                 'type': np.empty(s), 'node': np.empty(s), 't': np.empty(s)}
         cons = pd.DataFrame(data=cons)
 
         n_cons = 0
-        for n, name in enumerate(self.result.nodes.keys()):
-            for i, c in enumerate(self.result.nodes[name].consumptions):
-                slices = cons.index[n_cons * h: (n_cons + 1) * h]
+        for n, name in enumerate(result.nodes.keys()):
+            for i, c in enumerate(result.nodes[name].consumptions):
+                slices = cons.index[n_cons * h * scn: (n_cons + 1) * h * scn]
                 cons.loc[slices, 'cost'] = c.cost
                 cons.loc[slices, 'type'] = c.type
                 cons.loc[slices, 'node'] = name
-                cons.loc[slices, 'asked'] = self.study.nodes[name].consumptions[i].quantity
-                cons.loc[slices, 'given'] = c.quantity
-                cons.loc[slices, 't'] = np.arange(h)
+                cons.loc[slices, 'asked'] = study.nodes[name].consumptions[i].quantity.flatten()
+                cons.loc[slices, 'given'] = c.quantity.flatten()
+                cons.loc[slices, 't'] = np.tile(np.arange(h), scn)
+                cons.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
 
                 n_cons += 1
 
         return cons
 
-    def _build_production(self):
+    @staticmethod
+    def _build_production(study: Study, result: Result):
         """
         Flat all data to build global production dataframe
         columns: | cost | avail | used | type | node | t |
         """
-        h = self.study.horizon
-        s = h * sum([len(n.productions) for n in self.result.nodes.values()])
+        h = study.horizon
+        scn = study.nb_scn
+        s = scn * h * sum([len(n.productions) for n in result.nodes.values()])
         prod = {'cost': np.empty(s), 'avail': np.empty(s), 'used': np.empty(s),
                 'type': np.empty(s), 'node': np.empty(s), 't': np.empty(s)}
         prod = pd.DataFrame(data=prod)
 
         n_prod = 0
-        for n, name in enumerate(self.result.nodes.keys()):
-            for i, c in enumerate(self.result.nodes[name].productions):
-                slices = prod.index[n_prod * h: (n_prod + 1) * h]
+        for n, name in enumerate(result.nodes.keys()):
+            for i, c in enumerate(result.nodes[name].productions):
+                slices = prod.index[n_prod * h * scn: (n_prod + 1) * h * scn]
                 prod.loc[slices, 'cost'] = c.cost
                 prod.loc[slices, 'type'] = c.type
                 prod.loc[slices, 'node'] = name
-                prod.loc[slices, 'avail'] = self.study.nodes[name].productions[i].quantity
-                prod.loc[slices, 'used'] = c.quantity
-                prod.loc[slices, 't'] = np.arange(h)
+                prod.loc[slices, 'avail'] = study.nodes[name].productions[i].quantity.flatten()
+                prod.loc[slices, 'used'] = c.quantity.flatten()
+                prod.loc[slices, 't'] = np.tile(np.arange(h), scn)
+                prod.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
 
                 n_prod += 1
 
         return prod
 
-    def _build_border(self):
+    @staticmethod
+    def _build_border(study: Study, result: Result):
         """
         Flat all data to build global border dataframe
         columns: | cost | avail | used | src | dest | t |
         """
-        h = self.study.horizon
-        s = h * sum([len(n.borders) for n in self.result.nodes.values()])
+        h = study.horizon
+        scn = study.nb_scn
+        s = h * scn * sum([len(n.borders) for n in result.nodes.values()])
         border = {'cost': np.empty(s), 'avail': np.empty(s), 'used': np.empty(s),
                   'src': np.empty(s), 'dest': np.empty(s), 't': np.empty(s)}
         border = pd.DataFrame(data=border)
 
         n_border = 0
-        for n, name in enumerate(self.result.nodes.keys()):
-            for i, c in enumerate(self.result.nodes[name].borders):
-                slices = border.index[n_border * h: (n_border + 1) * h]
+        for n, name in enumerate(result.nodes.keys()):
+            for i, c in enumerate(result.nodes[name].borders):
+                slices = border.index[n_border * h * scn: (n_border + 1) * h * scn]
                 border.loc[slices, 'cost'] = c.cost
                 border.loc[slices, 'dest'] = c.dest
                 border.loc[slices, 'src'] = name
-                border.loc[slices, 'avail'] = self.study.nodes[name].borders[i].quantity
-                border.loc[slices, 'used'] = c.quantity
-                border.loc[slices, 't'] = np.arange(h)
+                border.loc[slices, 'avail'] = study.nodes[name].borders[i].quantity.flatten()
+                border.loc[slices, 'used'] = c.quantity.flatten()
+                border.loc[slices, 't'] = np.tile(np.arange(h), scn)
+                border.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
 
                 n_border += 1
 

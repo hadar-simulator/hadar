@@ -10,7 +10,8 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from hadar.aggregator.result import Index, TimeIndex, ResultAggregator, NodeIndex, TypeIndex, SrcIndex, DestIndex
+from hadar.aggregator.result import Index, TimeIndex, ResultAggregator, NodeIndex, TypeIndex, SrcIndex, DestIndex, \
+    IntIndex
 from hadar.solver.input import Production, Consumption, Study
 from hadar.solver.output import OutputConsumption, OutputBorder, OutputNode, OutputProduction, Result
 
@@ -46,42 +47,41 @@ class TestIndex(unittest.TestCase):
         pd.testing.assert_series_equal(exp, i.filter(df))
 
 
-class TestTimeIndex(unittest.TestCase):
-
+class TestIntIndex(unittest.TestCase):
 
     def test_range(self):
-        i = TimeIndex()[2:6]
+        i = IntIndex('i')[2:6]
         self.assertEqual(False, i.all)
         self.assertEqual((2, 3, 4, 5), i.index)
 
     def test_list(self):
-        i = TimeIndex()[2, 6]
+        i = IntIndex('i')[2, 6]
         self.assertEqual(False, i.all)
         self.assertEqual((2, 6), i.index)
 
 
 class TestAggregator(unittest.TestCase):
     def setUp(self) -> None:
-        self.study = Study(['a', 'b', 'c'], horizon=2) \
-            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[120, 12], type='load')) \
-            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[130, 13], type='car')) \
-            .add_on_node('a', data=Production(cost=10, quantity=[130, 13], type='prod')) \
-            .add_on_node('b', data=Consumption(cost=10 ** 3, quantity=[120, 12], type='load')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[110, 11], type='prod')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[120, 12], type='nuclear')) \
-            .add_border(src='a', dest='b', quantity=[110, 11], cost=2) \
-            .add_border(src='a', dest='c', quantity=[120, 12], cost=2)
+        self.study = Study(['a', 'b', 'c'], horizon=2, nb_scn=2) \
+            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[120, 12], [12, 120]], type='load')) \
+            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[130, 13], [13, 130]], type='car')) \
+            .add_on_node('a', data=Production(cost=10, quantity=[[130, 13], [13, 130]], type='prod')) \
+            .add_on_node('b', data=Consumption(cost=10 ** 3, quantity=[[120, 12], [12, 120]], type='load')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[[110, 11], [11, 110]], type='prod')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[[120, 12], [12, 120]], type='nuclear')) \
+            .add_border(src='a', dest='b', quantity=[[110, 11], [11, 110]], cost=2) \
+            .add_border(src='a', dest='c', quantity=[[120, 12], [12, 120]], cost=2)
 
         out = {
-            'a': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[20, 2], type='load'),
-                                          OutputConsumption(cost=10 ** 3, quantity=[30, 3], type='car')],
-                            productions=[OutputProduction(cost=10, quantity=[30, 3], type='prod')],
-                            borders=[OutputBorder(dest='b', quantity=[10, 1], cost=2),
-                                     OutputBorder(dest='c', quantity=[20, 2], cost=2)]),
+            'a': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2], [2, 20]], type='load'),
+                                          OutputConsumption(cost=10 ** 3, quantity=[[30, 3], [3, 30]], type='car')],
+                            productions=[OutputProduction(cost=10, quantity=[[30, 3], [3, 30]], type='prod')],
+                            borders=[OutputBorder(dest='b', quantity=[[10, 1], [1, 10]], cost=2),
+                                     OutputBorder(dest='c', quantity=[[20, 2], [2, 20]], cost=2)]),
 
-            'b': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[20, 2], type='load')],
-                            productions=[OutputProduction(cost=20, quantity=[10, 1], type='prod'),
-                                         OutputProduction(cost=20, quantity=[20, 2], type='nuclear')],
+            'b': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2], [2, 20]], type='load')],
+                            productions=[OutputProduction(cost=20, quantity=[[10, 1], [1, 10]], type='prod'),
+                                         OutputProduction(cost=20, quantity=[[20, 2], [2, 20]], type='nuclear')],
                             borders=[])
         }
 
@@ -89,43 +89,43 @@ class TestAggregator(unittest.TestCase):
 
     def test_build_consumption(self):
         # Expected
-        exp = pd.DataFrame(data={'cost': [10 ** 3] * 6,
-                                 'asked': [120, 12, 130, 13, 120, 12],
-                                 'given': [20, 2, 30, 3, 20, 2],
-                                 'type': ['load', 'load', 'car', 'car', 'load', 'load'],
-                                 'node': ['a', 'a', 'a', 'a', 'b', 'b'],
-                                 't': [0, 1, 0, 1, 0, 1]}, dtype=float)
+        exp = pd.DataFrame(data={'cost': [10 ** 3] * 12,
+                                 'asked': [120, 12, 12, 120, 130, 13, 13, 130, 120, 12, 12, 120],
+                                 'given': [20, 2, 2, 20, 30, 3, 3, 30, 20, 2, 2, 20],
+                                 'type': ['load', 'load', 'load', 'load', 'car', 'car', 'car', 'car', 'load', 'load', 'load', 'load'],
+                                 'node': ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b'],
+                                 't':   [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                                 'scn': [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]}, dtype=float)
 
-        agg = ResultAggregator(study=self.study, result=self.result)
-        cons = agg._build_consumption()
+        cons = ResultAggregator._build_consumption(self.study, self.result)
 
         pd.testing.assert_frame_equal(exp, cons)
 
     def test_build_production(self):
         # Expected
-        exp = pd.DataFrame(data={'cost': [10, 10, 20, 20, 20, 20],
-                                 'avail': [130, 13, 110, 11, 120, 12],
-                                 'used': [30, 3, 10, 1, 20, 2],
-                                 'type': ['prod', 'prod', 'prod', 'prod', 'nuclear', 'nuclear'],
-                                 'node': ['a', 'a', 'b', 'b', 'b', 'b'],
-                                 't': [0, 1, 0, 1, 0, 1]}, dtype=float)
+        exp = pd.DataFrame(data={'cost': [10, 10, 10, 10, 20, 20, 20, 20, 20, 20, 20, 20],
+                                 'avail': [130, 13, 13, 130, 110, 11, 11, 110, 120, 12, 12, 120],
+                                 'used': [30, 3, 3, 30, 10, 1, 1, 10, 20, 2, 2, 20],
+                                 'type': ['prod', 'prod', 'prod', 'prod', 'prod', 'prod', 'prod', 'prod','nuclear', 'nuclear','nuclear', 'nuclear'],
+                                 'node': ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b'],
+                                 't':   [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+                                 'scn': [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]}, dtype=float)
 
-        agg = ResultAggregator(study=self.study, result=self.result)
-        prod = agg._build_production()
+        prod = ResultAggregator._build_production(self.study, self.result)
 
         pd.testing.assert_frame_equal(exp, prod)
 
     def test_build_border(self):
         # Expected
-        exp = pd.DataFrame(data={'cost': [2, 2, 2, 2],
-                                 'avail': [110, 11, 120, 12],
-                                 'used': [10, 1, 20, 2],
-                                 'src': ['a', 'a', 'a', 'a'],
-                                 'dest': ['b', 'b', 'c', 'c'],
-                                 't': [0, 1, 0, 1]}, dtype=float)
+        exp = pd.DataFrame(data={'cost': [2] * 8,
+                                 'avail': [110, 11, 11, 110, 120, 12, 12, 120],
+                                 'used': [10, 1, 1, 10, 20, 2, 2, 20],
+                                 'src': ['a'] * 8,
+                                 'dest': ['b', 'b', 'b', 'b', 'c', 'c', 'c', 'c'],
+                                 't':   [0, 1, 0, 1, 0, 1, 0, 1],
+                                 'scn': [0, 0, 1, 1, 0, 0, 1, 1]}, dtype=float)
 
-        agg = ResultAggregator(study=self.study, result=self.result)
-        border = agg._build_border()
+        border = ResultAggregator._build_border(self.study, self.result)
 
         pd.testing.assert_frame_equal(exp, border)
 
