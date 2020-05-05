@@ -137,7 +137,7 @@ class TestAggregator(unittest.TestCase):
                                       'given': [20, 2]}, dtype=float, index=index)
 
         agg = ResultAggregator(study=self.study, result=self.result)
-        cons = agg.agg_cons(agg.inode['a'], agg.itype['load'], agg.itime)
+        cons = agg.agg_cons(agg.iscn[0], agg.inode['a'], agg.itype['load'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
@@ -150,7 +150,7 @@ class TestAggregator(unittest.TestCase):
                                       'used': [30, 3, 10, 1]}, dtype=float, index=index)
 
         agg = ResultAggregator(study=self.study, result=self.result)
-        cons = agg.agg_prod(agg.inode['a', 'b'], agg.itype['prod'], agg.itime)
+        cons = agg.agg_prod(agg.iscn[0], agg.inode['a', 'b'], agg.itype['prod'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
@@ -163,7 +163,7 @@ class TestAggregator(unittest.TestCase):
                                       'used': [10, 1, 20, 2]}, dtype=float, index=index)
 
         agg = ResultAggregator(study=self.study, result=self.result)
-        cons = agg.agg_border(agg.isrc['a'], agg.idest['b', 'c'], agg.itime)
+        cons = agg.agg_border(agg.iscn[0], agg.isrc['a'], agg.idest['b', 'c'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
@@ -174,10 +174,10 @@ class TestAggregator(unittest.TestCase):
 
     def test_balance(self):
         agg = ResultAggregator(study=self.study, result=self.result)
-        np.testing.assert_array_equal([30, 3], agg.get_balance(node='a'))
-        np.testing.assert_array_equal([-10, -1], agg.get_balance(node='b'))
+        np.testing.assert_array_equal([[30, 3], [3, 30]], agg.get_balance(node='a'))
+        np.testing.assert_array_equal([[-10, -1], [-1, -10]], agg.get_balance(node='b'))
 
     def test_cost(self):
         agg = ResultAggregator(study=self.study, result=self.result)
-        np.testing.assert_array_equal([200360, 20036], agg.get_cost(node='a'))
-        np.testing.assert_array_equal([100600, 10060], agg.get_cost(node='b'))
+        np.testing.assert_array_equal([[200360, 20036], [20036, 200360]], agg.get_cost(node='a'))
+        np.testing.assert_array_equal([[100600, 10060], [10060, 100600]], agg.get_cost(node='b'))

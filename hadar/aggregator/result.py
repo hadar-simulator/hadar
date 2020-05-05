@@ -242,80 +242,88 @@ class ResultAggregator:
             return df
 
     @staticmethod
-    def _pivot(i0: Index, i1: Index, i2: Index, df: pd.DataFrame) -> pd.DataFrame:
+    def _pivot(i0: Index, i1: Index, i2: Index, i3: Index, df: pd.DataFrame) -> pd.DataFrame:
         """
         Pivot table by appling filter and index hirarchy asked by indexes.
 
         :param i0: first level index
         :param i1: second level index
         :param i2: third level index
+        :param i3: fourth level index
         :param df: dataframe to pivot
         :return: pivot table
         """
-        indexes = [i0.column, i1.column, i2.column]
-        pt = pd.pivot_table(data=df[i0.filter(df) & i1.filter(df) & i2.filter(df)],
+        indexes = [i0.column, i1.column, i2.column, i3.column]
+        pt = pd.pivot_table(data=df[i0.filter(df) & i1.filter(df) & i2.filter(df) & i3.filter(df)],
                             index=indexes, aggfunc=lambda x: x.iloc[0])
 
-        return ResultAggregator._remove_useless_index_level(df=pt, indexes=[i0, i1, i2])
+        return ResultAggregator._remove_useless_index_level(df=pt, indexes=[i0, i1, i2, i3])
 
     @staticmethod
-    def _assert_index(i0: Index, i1: Index, i2: Index, type: Type):
+    def _assert_index(i0: Index, i1: Index, i2: Index, i3: Index, type: Type):
         """
         Check indexes cohesion. Raise ValueError exception if indexes are wrong.
 
         :param i0: first level index
         :param i1: second level index
         :param i2: third level index
+        :param i3: fourth level index
         :param type: type to check inside index
         :return:
         """
-        if not (isinstance(i0, type) or isinstance(i1, type) or isinstance(i2, type)):
+        if not (isinstance(i0, type) or isinstance(i1, type) or isinstance(i2, type) or isinstance(i3, type)):
             raise ValueError('Indexes must contain a {}'.format(type.__class__.__name__))
 
-    def agg_cons(self, i0: Index, i1: Index, i2: Index) -> pd.DataFrame:
+    def agg_cons(self, i0: Index, i1: Index, i2: Index, i3: Index) -> pd.DataFrame:
         """
         Aggregate consumption according to index level and filter.
 
-        :param i0: first level index. Index type must be [NodeIndex, TypeIndex, TimeIndex]
-        :param i1: second level index. Index type must be [NodeIndex, TypeIndex, TimeIndex]
-        :param i2: third level index. Index type must be [NodeIndex, TypeIndex, TimeIndex]
+        :param i0: first level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
+        :param i1: second level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
+        :param i2: third level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
+        :param i3 fourth level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]
         :return: dataframe with hierarchical and filter index level asked
         """
-        ResultAggregator._assert_index(i0, i1, i2, TimeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, NodeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, TypeIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, TimeIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, NodeIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, TypeIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, ScnIndex)
 
-        return ResultAggregator._pivot(i0, i1, i2, self.consumption)
+        return ResultAggregator._pivot(i0, i1, i2, i3, self.consumption)
 
-    def agg_prod(self, i0: Index, i1: Index, i2: Index) -> pd.DataFrame:
+    def agg_prod(self, i0: Index, i1: Index, i2: Index, i3: Index) -> pd.DataFrame:
         """
         Aggregate production according to index level and filter.
 
-        :param i0: first level index. Index type must be [NodeIndex, TypeIndex, TimeIndex]
-        :param i1: second level index. Index type must be [NodeIndex, TypeIndex, TimeIndex]
-        :param i2: third level index. Index type must be [NodeIndex, TypeIndex, TimeIndex]
+        :param i0: first level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
+        :param i1: second level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
+        :param i2: third level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
+        :param i3 fourth level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]
         :return: dataframe with hierarchical and filter index level asked
         """
-        ResultAggregator._assert_index(i0, i1, i2, TimeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, NodeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, TypeIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, TimeIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, NodeIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, TypeIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, ScnIndex)
 
-        return ResultAggregator._pivot(i0, i1, i2, self.production)
+        return ResultAggregator._pivot(i0, i1, i2, i3, self.production)
 
-    def agg_border(self, i0: Index, i1: Index, i2: Index) -> pd.DataFrame:
+    def agg_border(self, i0: Index, i1: Index, i2: Index, i3: Index) -> pd.DataFrame:
         """
         Aggregate border according to index level and filter.
 
-        :param i0: first level index. Index type must be [DestIndex, SrcIndex, TimeIndex]
-        :param i1: second level index. Index type must be [DestIndex, SrcIndex, TimeIndex]
-        :param i2: third level index. Index type must be [DestIndex, SrcIndex, TimeIndex]
+        :param i0: first level index. Index type must be [DestIndex, SrcIndex, TimeIndex, ScnIndex]
+        :param i1: second level index. Index type must be [DestIndex, SrcIndex, TimeIndex, ScnIndex]
+        :param i2: third level index. Index type must be [DestIndex, SrcIndex, TimeIndex, ScnIndex]
+        :param i3 fourth level index. Index type must be [DestIndex, ScrIndex, TimeIndex, ScnIndex]
         :return: dataframe with hierarchical and filter index level asked
         """
-        ResultAggregator._assert_index(i0, i1, i2, TimeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, SrcIndex)
-        ResultAggregator._assert_index(i0, i1, i2, DestIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, TimeIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, SrcIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, DestIndex)
+        ResultAggregator._assert_index(i0, i1, i2, i3, ScnIndex)
 
-        return ResultAggregator._pivot(i0, i1, i2, self.border)
+        return ResultAggregator._pivot(i0, i1, i2, i3, self.border)
 
     def get_elements_inside(self, node: str):
         """
@@ -335,31 +343,34 @@ class ResultAggregator:
         :param node: node asked
         :return: timeline array with balance exchanges value
         """
-        balance = np.zeros(self.study.horizon)
+        balance = np.zeros((self.nb_scn, self.study.horizon))
 
-        im = pd.pivot_table(self.border[self.border['dest'] == node][['used', 't']], index='t', aggfunc=np.sum)
+        im = pd.pivot_table(self.border[self.border['dest'] == node][['used', 'scn', 't']], index=['scn', 't'], aggfunc=np.sum)
         if im.size > 0:
-            balance += -im['used'].values
+            balance += -im['used'].values.reshape(self.nb_scn, self.horizon)
 
-        exp = pd.pivot_table(self.border[self.border['src'] == node][['used', 't']], index='t', aggfunc=np.sum)
+        exp = pd.pivot_table(self.border[self.border['src'] == node][['used', 'scn', 't']], index=['scn', 't'], aggfunc=np.sum)
         if exp.size > 0:
-            balance += exp['used'].values
+            balance += exp['used'].values.reshape(self.nb_scn, self.horizon)
         return balance
 
     def get_cost(self, node: str) -> np.ndarray:
-        cost = np.zeros(self.horizon)
+        cost = np.zeros((self.nb_scn,  self.horizon))
         c, p, b = self.get_elements_inside(node)
         if c:
-            cons = self.agg_cons(self.inode[node], self.itime, self.itype)
-            cost += ((cons['asked'] - cons['given'])*cons['cost']).groupby(axis=0, level=0).sum().sort_index().values
+            cons = self.agg_cons(self.inode[node], self.itime, self.iscn, self.itype)
+            cost += ((cons['asked'] - cons['given'])*cons['cost']).groupby(axis=0, level=(0, 1))\
+                .sum().sort_index().values.reshape(self.nb_scn, self.horizon)
 
         if p:
-            prod = self.agg_prod(self.inode[node], self.itime, self.itype)
-            cost += (prod['used']*prod['cost']).groupby(axis=0, level=0).sum().sort_index().values
+            prod = self.agg_prod(self.inode[node], self.itime, self.iscn, self.itype)
+            cost += (prod['used']*prod['cost']).groupby(axis=0, level=(0, 1))\
+                .sum().sort_index().values.reshape(self.nb_scn, self.horizon)
 
         if b:
-            border = self.agg_border(self.isrc[node], self.itime, self.idest)
-            cost += (border['used']*border['cost']).groupby(axis=0, level=0).sum().sort_index().values
+            border = self.agg_border(self.isrc[node], self.itime, self.iscn, self.idest)
+            cost += (border['used']*border['cost']).groupby(axis=0, level=(0, 1))\
+                .sum().sort_index().values.reshape(self.nb_scn, self.horizon)
 
         return cost
 
@@ -371,6 +382,15 @@ class ResultAggregator:
         :return: study horizon
         """
         return self.study.horizon
+
+    @property
+    def nb_scn(self) -> int:
+        """
+        Shortcut to get study number of scenarios.
+
+        :return: study number of scenarios
+        """
+        return self.study.nb_scn
 
     @property
     def nodes(self) -> List[str]:
@@ -425,3 +445,12 @@ class ResultAggregator:
         :return: new instance of TimeIndex()
         """
         return TimeIndex()
+
+    @property
+    def iscn(self) -> ScnIndex:
+        """
+        Get a scenario index to specify scenario slice to aggregate consumption, production or border.
+
+        :return: new instance of ScnIndex()
+        """
+        return ScnIndex()
