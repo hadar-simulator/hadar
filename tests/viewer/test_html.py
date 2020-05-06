@@ -19,14 +19,15 @@ from hadar.viewer.html import HTMLPlotting
 
 class TestHTMLPlotting(unittest.TestCase):
     def setUp(self) -> None:
-        self.study = Study(['a', 'b'], horizon=2) \
-            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[20, 2], type='load')) \
-            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[30, 3], type='car')) \
-            .add_on_node('a', data=Production(cost=10, quantity=[60, 3], type='prod')) \
-            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[40, 2], type='load')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[10, 1], type='prod')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[20, 2], type='nuclear')) \
-            .add_border(src='a', dest='b', quantity=[10, 1], cost=2)
+        self.study = Study(['a', 'b'], horizon=3) \
+            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[20, 10, 2], type='load')) \
+            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[30, 15, 3], type='car')) \
+            .add_on_node('a', data=Production(cost=10, quantity=[60, 30, 5], type='prod')) \
+        \
+            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[40, 20, 2], type='load')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[10, 5, 1], type='prod')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[20, 10, 2], type='nuclear')) \
+            .add_border(src='a', dest='b', quantity=[10, 10, 10], cost=2)
 
         solver = LPSolver()
         self.result = solver.solve(study=self.study)
@@ -38,20 +39,20 @@ class TestHTMLPlotting(unittest.TestCase):
         self.hash = hashlib.sha3_256()
 
     def test_stack(self):
-        fig = self.plot.stack('a')
-        self.assert_fig('6ef4b03c8b7e95b00e483fbc58e084486b293d06', fig)
+        fig = self.plot.stack(node='a', scn=0)
+        self.assert_fig_hash('d9f9f004b98ca62be934d69d4fd0c1a302512242', fig)
 
     def test_map_exchanges(self):
-        fig = self.plot.exchanges_map(0)
-        self.assert_fig('9aa34f28665ea9e6766b271ffbc677d3cda6810b', fig)
+        fig = self.plot.exchanges_map(t=0, scn=0)
+        self.assert_fig_hash('9aa34f28665ea9e6766b271ffbc677d3cda6810b', fig)
 
-    def assert_fig(self, expected: str, fig: go.Figure):
+    def assert_fig_hash(self, expected: str, fig: go.Figure):
         h = hashlib.sha1()
         h.update(TestHTMLPlotting.get_html(fig))
         self.assertEqual(expected, h.hexdigest())
 
     @staticmethod
-    def get_html(fig: go.Figure) -> str:
+    def get_html(fig: go.Figure) -> bytes:
         html = plot(fig, include_plotlyjs=False, include_mathjax=False, output_type='div')
         # plotly use a random id. We need to extract it and replace it by constant
         # uuid can be find at ... <div id="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" class="plotly-graph-div" ...

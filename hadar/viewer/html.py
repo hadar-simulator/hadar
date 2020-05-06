@@ -76,11 +76,12 @@ class HTMLPlotting(ABCPlotting):
             pl_colorscale.append([k * h, 'rgb' + str((C[0], C[1], C[2]))])
         return pl_colorscale
 
-    def stack(self, node: str, prod_kind: str = 'used', cons_kind: str = 'asked'):
+    def stack(self, node: str, scn: int = 0, prod_kind: str = 'used', cons_kind: str = 'asked'):
         """
         Plot with production stacked with area and consumptions stacked by dashed lines.
 
-        :param node: select node to plot. If None, use a dropdown menu to select inside notebook
+        :param node: select node to plot.
+        :param scn: scenario index to plot.
         :param prod_kind: select which prod to stack : available ('avail') or 'used'
         :param cons_kind: select which cons to stacl : 'asked' or 'given'
         :return: plotly figure or jupyter widget to plot
@@ -91,14 +92,15 @@ class HTMLPlotting(ABCPlotting):
 
         # stack production with area
         if p > 0:
-            prod = self.agg.agg_prod(self.agg.inode[node], self.agg.itype, self.agg.itime).sort_values('cost', ascending=True)
+            prod = self.agg.agg_prod(self.agg.iscn[scn], self.agg.inode[node], self.agg.itype, self.agg.itime)\
+                .sort_values('cost', ascending=True)
             for i, type in enumerate(prod.index.get_level_values('type').unique()):
                 stack += prod.loc[type][prod_kind].sort_index().values
                 fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=type, mode='none',
                                          fill='tozeroy' if i == 0 else 'tonexty'))
 
         # add import in production stack
-        balance = self.agg.get_balance(node=node)
+        balance = self.agg.get_balance(node=node)[scn]
         im = -np.clip(balance, None, 0)
         if not (im == 0).all():
             stack += im
@@ -109,7 +111,8 @@ class HTMLPlotting(ABCPlotting):
         cons_lines = []
         # Stack consumptions with line
         if c > 0:
-            cons = self.agg.agg_cons(self.agg.inode[node], self.agg.itype, self.agg.itime).sort_values('cost', ascending=False)
+            cons = self.agg.agg_cons(self.agg.iscn[scn], self.agg.inode[node], self.agg.itype, self.agg.itime)\
+                .sort_values('cost', ascending=False)
             for i, type in enumerate(cons.index.get_level_values('type').unique()):
                 stack += cons.loc[type][cons_kind].sort_index().values
                 cons_lines.append([type, stack.copy()])
@@ -162,24 +165,26 @@ class HTMLPlotting(ABCPlotting):
                                     lon=[B[0], A[0], C[0]], text=str(qt), mode='lines',
                                     line=dict(width=4 * self.size, color=color)))
 
-    def exchanges_map(self, t: int, limit: int = None):
+    def exchanges_map(self, t: int, scn: int = 0, limit: int = None):
         """
         Plot a map with node (color are balance) and arrow between nodes (color for quantity).
 
         :param t: timestep to plot
+        :param scn: scenario index to plot
+        :param limit: limite to use as min/max for color scale. If not provided we use min/max from dataset.
         :return: plotly figure or jupyter widget to plot
         """
         if self.coord is None:
             raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
 
-        balances = [self.agg.get_balance(node=node)[t] for node in self.agg.nodes]
+        balances = [self.agg.get_balance(node=node)[scn, t] for node in self.agg.nodes]
         if limit is None:
             limit = max(max(balances), -min(balances))
 
         fig = go.Figure()
 
         # plot links
-        borders = self.agg.agg_border(SrcIndex(), DestIndex(), TimeIndex())
+        borders = self.agg.agg_border(self.agg.iscn[scn], self.agg.isrc, self.agg.idest, self.agg.itime)
         for src in borders.index.get_level_values('src').unique():
             for dest in borders.loc[src].index.get_level_values('dest').unique():
                 exchange = borders.loc[src, dest, t]['used']  # forward
