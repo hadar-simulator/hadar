@@ -148,7 +148,7 @@ class ResultAggregator:
         scn = study.nb_scn
         s = scn * h * sum([len(n.consumptions) for n in study.nodes.values()])
         cons = {'cost': np.empty(s), 'asked': np.empty(s), 'given': np.empty(s),
-                'type': np.empty(s), 'node': np.empty(s), 't': np.empty(s)}
+                'type': np.empty(s), 'node': np.empty(s), 't': np.empty(s), 'scn': np.empty(s)}
         cons = pd.DataFrame(data=cons)
 
         n_cons = 0
@@ -177,7 +177,7 @@ class ResultAggregator:
         scn = study.nb_scn
         s = scn * h * sum([len(n.productions) for n in result.nodes.values()])
         prod = {'cost': np.empty(s), 'avail': np.empty(s), 'used': np.empty(s),
-                'type': np.empty(s), 'node': np.empty(s), 't': np.empty(s)}
+                'type': np.empty(s), 'node': np.empty(s), 't': np.empty(s), 'scn': np.empty(s)}
         prod = pd.DataFrame(data=prod)
 
         n_prod = 0
@@ -206,7 +206,7 @@ class ResultAggregator:
         scn = study.nb_scn
         s = h * scn * sum([len(n.borders) for n in result.nodes.values()])
         border = {'cost': np.empty(s), 'avail': np.empty(s), 'used': np.empty(s),
-                  'src': np.empty(s), 'dest': np.empty(s), 't': np.empty(s)}
+                  'src': np.empty(s), 'dest': np.empty(s), 't': np.empty(s), 'scn': np.empty(s)}
         border = pd.DataFrame(data=border)
 
         n_border = 0
@@ -358,19 +358,19 @@ class ResultAggregator:
         cost = np.zeros((self.nb_scn,  self.horizon))
         c, p, b = self.get_elements_inside(node)
         if c:
-            cons = self.agg_cons(self.inode[node], self.itime, self.iscn, self.itype)
+            cons = self.agg_cons(self.inode[node], self.iscn, self.itime, self.itype)
             cost += ((cons['asked'] - cons['given'])*cons['cost']).groupby(axis=0, level=(0, 1))\
-                .sum().sort_index().values.reshape(self.nb_scn, self.horizon)
+                .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if p:
-            prod = self.agg_prod(self.inode[node], self.itime, self.iscn, self.itype)
+            prod = self.agg_prod(self.inode[node], self.iscn, self.itime, self.itype)
             cost += (prod['used']*prod['cost']).groupby(axis=0, level=(0, 1))\
-                .sum().sort_index().values.reshape(self.nb_scn, self.horizon)
+                .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if b:
-            border = self.agg_border(self.isrc[node], self.itime, self.iscn, self.idest)
+            border = self.agg_border(self.isrc[node], self.iscn, self.itime, self.idest)
             cost += (border['used']*border['cost']).groupby(axis=0, level=(0, 1))\
-                .sum().sort_index().values.reshape(self.nb_scn, self.horizon)
+                .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         return cost
 

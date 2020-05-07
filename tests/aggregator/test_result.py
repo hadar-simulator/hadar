@@ -62,26 +62,26 @@ class TestIntIndex(unittest.TestCase):
 
 class TestAggregator(unittest.TestCase):
     def setUp(self) -> None:
-        self.study = Study(['a', 'b', 'c'], horizon=2, nb_scn=2) \
-            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[120, 12], [12, 120]], type='load')) \
-            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[130, 13], [13, 130]], type='car')) \
-            .add_on_node('a', data=Production(cost=10, quantity=[[130, 13], [13, 130]], type='prod')) \
-            .add_on_node('b', data=Consumption(cost=10 ** 3, quantity=[[120, 12], [12, 120]], type='load')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[[110, 11], [11, 110]], type='prod')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[[120, 12], [12, 120]], type='nuclear')) \
-            .add_border(src='a', dest='b', quantity=[[110, 11], [11, 110]], cost=2) \
-            .add_border(src='a', dest='c', quantity=[[120, 12], [12, 120]], cost=2)
+        self.study = Study(['a', 'b', 'c'], horizon=3, nb_scn=2) \
+            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], type='load')) \
+            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[130, 13, 13], [13, 130, 130]], type='car')) \
+            .add_on_node('a', data=Production(cost=10, quantity=[[130, 13, 13], [13, 130, 130]], type='prod')) \
+            .add_on_node('b', data=Consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], type='load')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[[110, 11, 11], [11, 110, 110]], type='prod')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], type='nuclear')) \
+            .add_border(src='a', dest='b', quantity=[[110, 11, 11], [11, 110, 110]], cost=2) \
+            .add_border(src='a', dest='c', quantity=[[120, 12, 12], [12, 120, 120]], cost=2)
 
         out = {
-            'a': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2], [2, 20]], type='load'),
-                                          OutputConsumption(cost=10 ** 3, quantity=[[30, 3], [3, 30]], type='car')],
-                            productions=[OutputProduction(cost=10, quantity=[[30, 3], [3, 30]], type='prod')],
-                            borders=[OutputBorder(dest='b', quantity=[[10, 1], [1, 10]], cost=2),
-                                     OutputBorder(dest='c', quantity=[[20, 2], [2, 20]], cost=2)]),
+            'a': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], type='load'),
+                                          OutputConsumption(cost=10 ** 3, quantity=[[30, 3, 3], [3, 30, 30]], type='car')],
+                            productions=[OutputProduction(cost=10, quantity=[[30, 3, 3], [3, 30, 30]], type='prod')],
+                            borders=[OutputBorder(dest='b', quantity=[[10, 1, 1], [1, 10, 10]], cost=2),
+                                     OutputBorder(dest='c', quantity=[[20, 2, 2], [2, 20, 20]], cost=2)]),
 
-            'b': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2], [2, 20]], type='load')],
-                            productions=[OutputProduction(cost=20, quantity=[[10, 1], [1, 10]], type='prod'),
-                                         OutputProduction(cost=20, quantity=[[20, 2], [2, 20]], type='nuclear')],
+            'b': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], type='load')],
+                            productions=[OutputProduction(cost=20, quantity=[[10, 1, 1], [1, 10, 10]], type='prod'),
+                                         OutputProduction(cost=20, quantity=[[20, 2, 2], [2, 20, 20]], type='nuclear')],
                             borders=[])
         }
 
@@ -89,13 +89,13 @@ class TestAggregator(unittest.TestCase):
 
     def test_build_consumption(self):
         # Expected
-        exp = pd.DataFrame(data={'cost': [10 ** 3] * 12,
-                                 'asked': [120, 12, 12, 120, 130, 13, 13, 130, 120, 12, 12, 120],
-                                 'given': [20, 2, 2, 20, 30, 3, 3, 30, 20, 2, 2, 20],
-                                 'type': ['load', 'load', 'load', 'load', 'car', 'car', 'car', 'car', 'load', 'load', 'load', 'load'],
-                                 'node': ['a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'b', 'b', 'b'],
-                                 't':   [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-                                 'scn': [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]}, dtype=float)
+        exp = pd.DataFrame(data={'cost': [10 ** 3] * 18,
+                                 'asked': [120, 12, 12, 12, 120, 120, 130, 13, 13, 13, 130, 130, 120, 12, 12, 12, 120, 120],
+                                 'given': [20, 2, 2, 2, 20, 20, 30, 3, 3, 3, 30, 30, 20, 2, 2, 2, 20, 20],
+                                 'type': ['load'] * 6 + ['car'] * 6 + ['load'] * 6,
+                                 'node': ['a'] * 12 + ['b'] * 6,
+                                 't':   [0, 1, 2] * 6,
+                                 'scn': [0, 0, 0, 1, 1, 1] * 3}, dtype=float)
 
         cons = ResultAggregator._build_consumption(self.study, self.result)
 
@@ -103,13 +103,13 @@ class TestAggregator(unittest.TestCase):
 
     def test_build_production(self):
         # Expected
-        exp = pd.DataFrame(data={'cost': [10, 10, 10, 10, 20, 20, 20, 20, 20, 20, 20, 20],
-                                 'avail': [130, 13, 13, 130, 110, 11, 11, 110, 120, 12, 12, 120],
-                                 'used': [30, 3, 3, 30, 10, 1, 1, 10, 20, 2, 2, 20],
-                                 'type': ['prod', 'prod', 'prod', 'prod', 'prod', 'prod', 'prod', 'prod','nuclear', 'nuclear','nuclear', 'nuclear'],
-                                 'node': ['a', 'a', 'a', 'a', 'b', 'b', 'b', 'b', 'b', 'b', 'b', 'b'],
-                                 't':   [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
-                                 'scn': [0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1]}, dtype=float)
+        exp = pd.DataFrame(data={'cost': [10] * 6 + [20] * 12,
+                                 'avail': [130, 13, 13, 13, 130, 130, 110, 11, 11, 11, 110, 110, 120, 12, 12, 12, 120, 120],
+                                 'used': [30, 3, 3, 3, 30, 30, 10, 1, 1, 1, 10, 10, 20, 2, 2, 2, 20, 20],
+                                 'type': ['prod'] * 12 + ['nuclear'] * 6,
+                                 'node': ['a'] * 6 + ['b'] * 12,
+                                 't':   [0, 1, 2] * 6,
+                                 'scn': [0, 0, 0, 1, 1, 1] * 3}, dtype=float)
 
         prod = ResultAggregator._build_production(self.study, self.result)
 
@@ -117,13 +117,13 @@ class TestAggregator(unittest.TestCase):
 
     def test_build_border(self):
         # Expected
-        exp = pd.DataFrame(data={'cost': [2] * 8,
-                                 'avail': [110, 11, 11, 110, 120, 12, 12, 120],
-                                 'used': [10, 1, 1, 10, 20, 2, 2, 20],
-                                 'src': ['a'] * 8,
-                                 'dest': ['b', 'b', 'b', 'b', 'c', 'c', 'c', 'c'],
-                                 't':   [0, 1, 0, 1, 0, 1, 0, 1],
-                                 'scn': [0, 0, 1, 1, 0, 0, 1, 1]}, dtype=float)
+        exp = pd.DataFrame(data={'cost': [2] * 12,
+                                 'avail': [110, 11, 11, 11, 110, 110, 120, 12, 12, 12, 120, 120],
+                                 'used': [10, 1, 1, 1, 10, 10, 20, 2, 2, 2, 20, 20],
+                                 'src': ['a'] * 12,
+                                 'dest': ['b'] * 6 + ['c'] * 6,
+                                 't':   [0, 1, 2] * 4,
+                                 'scn': [0, 0, 0, 1, 1, 1] * 2}, dtype=float)
 
         border = ResultAggregator._build_border(self.study, self.result)
 
@@ -131,10 +131,10 @@ class TestAggregator(unittest.TestCase):
 
     def test_aggregate_cons(self):
         # Expected
-        index = pd.Index(data=[0, 1], dtype=float, name='t')
-        exp_cons = pd.DataFrame(data={'asked': [120, 12],
-                                      'cost': [10 ** 3] * 2,
-                                      'given': [20, 2]}, dtype=float, index=index)
+        index = pd.Index(data=[0, 1, 2], dtype=float, name='t')
+        exp_cons = pd.DataFrame(data={'asked': [120, 12, 12],
+                                      'cost': [10 ** 3] * 3,
+                                      'given': [20, 2, 2]}, dtype=float, index=index)
 
         agg = ResultAggregator(study=self.study, result=self.result)
         cons = agg.agg_cons(agg.iscn[0], agg.inode['a'], agg.itype['load'], agg.itime)
@@ -143,11 +143,12 @@ class TestAggregator(unittest.TestCase):
 
     def test_aggregate_prod(self):
         # Expected
-        index = pd.MultiIndex.from_tuples((('a', 'prod', 0.0), ('a', 'prod', 1.0), ('b', 'prod', 0.0), ('b', 'prod', 1.0)),
+        index = pd.MultiIndex.from_tuples((('a', 'prod', 0.0), ('a', 'prod', 1.0), ('a', 'prod', 2,0),
+                                           ('b', 'prod', 0.0), ('b', 'prod', 1.0), ('b', 'prod', 2,0)),
                                           names=['node', 'type', 't'], )
-        exp_cons = pd.DataFrame(data={'avail': [130, 13, 110, 11],
-                                      'cost': [10, 10, 20, 20],
-                                      'used': [30, 3, 10, 1]}, dtype=float, index=index)
+        exp_cons = pd.DataFrame(data={'avail': [130, 13, 13, 110, 11, 11],
+                                      'cost': [10, 10, 10, 20, 20, 20],
+                                      'used': [30, 3, 3, 10, 1, 1]}, dtype=float, index=index)
 
         agg = ResultAggregator(study=self.study, result=self.result)
         cons = agg.agg_prod(agg.iscn[0], agg.inode['a', 'b'], agg.itype['prod'], agg.itime)
@@ -156,11 +157,12 @@ class TestAggregator(unittest.TestCase):
 
     def test_aggregate_border(self):
         # Expected
-        index = pd.MultiIndex.from_tuples((('b', 0.0), ('b', 1.0), ('c', 0.0), ('c', 1.0)),
+        index = pd.MultiIndex.from_tuples((('b', 0.0), ('b', 1.0), ('b', 2,0),
+                                           ('c', 0.0), ('c', 1.0), ('c', 2,0)),
                                           names=['dest', 't'], )
-        exp_cons = pd.DataFrame(data={'avail': [110, 11, 120, 12],
-                                      'cost': [2, 2, 2, 2],
-                                      'used': [10, 1, 20, 2]}, dtype=float, index=index)
+        exp_cons = pd.DataFrame(data={'avail': [110, 11, 11, 120, 12, 12],
+                                      'cost': [2, 2, 2, 2, 2, 2],
+                                      'used': [10, 1, 1, 20, 2, 2]}, dtype=float, index=index)
 
         agg = ResultAggregator(study=self.study, result=self.result)
         cons = agg.agg_border(agg.iscn[0], agg.isrc['a'], agg.idest['b', 'c'], agg.itime)
@@ -174,10 +176,10 @@ class TestAggregator(unittest.TestCase):
 
     def test_balance(self):
         agg = ResultAggregator(study=self.study, result=self.result)
-        np.testing.assert_array_equal([[30, 3], [3, 30]], agg.get_balance(node='a'))
-        np.testing.assert_array_equal([[-10, -1], [-1, -10]], agg.get_balance(node='b'))
+        np.testing.assert_array_equal([[30, 3, 3], [3, 30, 30]], agg.get_balance(node='a'))
+        np.testing.assert_array_equal([[-10, -1, -1], [-1, -10, -10]], agg.get_balance(node='b'))
 
     def test_cost(self):
         agg = ResultAggregator(study=self.study, result=self.result)
-        np.testing.assert_array_equal([[200360, 20036], [20036, 200360]], agg.get_cost(node='a'))
-        np.testing.assert_array_equal([[100600, 10060], [10060, 100600]], agg.get_cost(node='b'))
+        np.testing.assert_array_equal([[200360, 20036, 20036], [20036, 200360, 200360]], agg.get_cost(node='a'))
+        np.testing.assert_array_equal([[100600, 10060, 10060], [10060, 100600, 100600]], agg.get_cost(node='b'))
