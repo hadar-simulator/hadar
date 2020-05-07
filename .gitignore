@@ -16,4 +16,6 @@
 **/build
 
 
+# DEv
 **/tmp
+**/.DS_Store
