@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from pandas import MultiIndex
 
-from hadar.preprocessing.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage, Clip, Rename, Drop, Fault, \
+from hadar.workflow.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage, Clip, Rename, Drop, Fault, \
     RepeatScenario, Pipeline
 
 

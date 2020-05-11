@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from numpy.random.mtrand import randint
 
-from hadar.preprocessing.pipeline import Pipeline, TO_SHUFFLER
+from hadar.workflow.pipeline import Pipeline, TO_SHUFFLER
 
 __all__ = ['Shuffler', 'Timeline']
 

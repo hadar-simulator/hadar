@@ -10,8 +10,8 @@ import pandas as pd
 import numpy as np
 from pandas import MultiIndex
 
-from hadar.preprocessing.pipeline import Rename, RepeatScenario, Fault, Clip, ToShuffler
-from hadar.preprocessing.shuffler import Shuffler
+from hadar.workflow.pipeline import Rename, RepeatScenario, Fault, Clip, ToShuffler
+from hadar.workflow.shuffler import Shuffler
 
 
 def range_sampler(low, high, size):

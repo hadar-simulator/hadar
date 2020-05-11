@@ -9,8 +9,8 @@ import logging
 import os
 import sys
 
-from .preprocessing.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario, ToShuffler
-from .preprocessing.shuffler import Shuffler
+from .workflow.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario, ToShuffler
+from .workflow.shuffler import Shuffler
 from .solver.input import Consumption, Border, Production, InputNode, Study
 from .solver.output import OutputProduction, OutputNode, OutputBorder, OutputConsumption, Result
 from .solver.solver import LPSolver, RemoteSolver

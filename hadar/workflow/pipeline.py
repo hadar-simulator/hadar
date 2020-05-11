@@ -216,7 +216,7 @@ class Pipeline:
 
 class Stage(ABC):
     """
-    Abstract method which represent an unit of compute. It can be addition with other to create preprocessing
+    Abstract method which represent an unit of compute. It can be addition with other to create workflow
     pipeline.
     """
 
