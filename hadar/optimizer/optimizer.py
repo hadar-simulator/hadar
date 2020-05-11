@@ -7,25 +7,25 @@
 
 from abc import ABC, abstractmethod
 
-from hadar.solver.input import Study
-from hadar.solver.output import Result
-from hadar.solver.lp.solver import solve_lp
-from hadar.solver.remote.solver import solve_remote
+from hadar.optimizer.input import Study
+from hadar.optimizer.output import Result
+from hadar.optimizer.lp.optimizer import solve_lp
+from hadar.optimizer.remote.optimizer import solve_remote
 
 
-__all__ = ['LPSolver', 'RemoteSolver']
+__all__ = ['LPOptimizer', 'RemoteOptimizer']
 
 
-class Solver(ABC):
-    """Solver interface to implement"""
+class Optimizer(ABC):
+    """Optimizer interface to implement"""
     @abstractmethod
     def solve(self, study: Study) -> Result:
         pass
 
 
-class LPSolver(Solver):
+class LPOptimizer(Optimizer):
     """
-    Basic Solver works with linear programming.
+    Basic Optimizer works with linear programming.
     """
     def solve(self, study: Study) -> Result:
         """
@@ -37,13 +37,13 @@ class LPSolver(Solver):
         return solve_lp(study)
 
 
-class RemoteSolver(Solver):
+class RemoteOptimizer(Optimizer):
     """
-    Use a remote solver to compute on cloud.
+    Use a remote optimizer to compute on cloud.
     """
     def __init__(self, url: str, token: str = ''):
         """
-        Server solver parameter.
+        Server optimizer parameter.
 
         :param url: server url
         :param token: server token if needed. default ''

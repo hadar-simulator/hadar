@@ -9,7 +9,7 @@ import numpy as np
 
 from typing import Union, List, Dict
 
-from hadar.solver.input import InputNode
+from hadar.optimizer.input import InputNode
 
 
 __all__ = ['OutputProduction', 'OutputNode', 'OutputBorder', 'OutputConsumption', 'Result']

@@ -11,10 +11,10 @@ import hadar as hd
 from tests.utils import assert_study
 
 
-class TestSolver(unittest.TestCase):
+class TestOptimizer(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.solver = hd.LPSolver()
+        self.optimizer = hd.LPOptimizer()
 
     def test_merit_order(self):
         """
@@ -49,7 +49,7 @@ class TestSolver(unittest.TestCase):
                 hd.OutputProduction(type='oil', cost=30, quantity=[[5, 1, 1], [1, 5, 5]])],
             borders=[])
 
-        res = self.solver.solve(study)
+        res = self.optimizer.solve(study)
         assert_study(self, hd.Result(nodes_expected), res)
 
     def test_exchange_two_nodes(self):
@@ -86,7 +86,7 @@ class TestSolver(unittest.TestCase):
             productions=[hd.OutputProduction(cost=20, quantity=[[10, 100]], type='prod')],
             borders=[])
 
-        res = self.solver.solve(study)
+        res = self.optimizer.solve(study)
         assert_study(self, hd.Result(nodes_expected), res)
 
     def test_exchange_two_concurrent_nodes(self):
@@ -137,7 +137,7 @@ class TestSolver(unittest.TestCase):
             productions=[hd.OutputProduction(cost=20, quantity=[[0]], type='nuclear')],
             borders=[])
 
-        res = self.solver.solve(study)
+        res = self.optimizer.solve(study)
 
         assert_study(self, hd.Result(nodes_expected), res)
 
@@ -176,7 +176,7 @@ class TestSolver(unittest.TestCase):
             productions=[],
             borders=[])
 
-        res = self.solver.solve(study)
+        res = self.optimizer.solve(study)
 
         assert_study(self, hd.Result(nodes_expected), res)
 
@@ -222,7 +222,7 @@ class TestSolver(unittest.TestCase):
             productions=[hd.OutputProduction(cost=10, quantity=[[10]], type='nuclear')],
             borders=[])
 
-        res = self.solver.solve(study)
+        res = self.optimizer.solve(study)
 
         assert_study(self, hd.Result(nodes_expected), res)
 
@@ -278,6 +278,6 @@ class TestSolver(unittest.TestCase):
             productions=[hd.OutputProduction(cost=50, quantity=[[25, 30]], type='nuclear')],
             borders=[], consumptions=[])
 
-        res = self.solver.solve(study)
+        res = self.optimizer.solve(study)
 
         assert_study(self, hd.Result(nodes_expected), res)

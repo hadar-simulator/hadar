@@ -12,8 +12,8 @@ import numpy as np
 
 from hadar.analyzer.result import Index, TimeIndex, ResultAnalyzer, NodeIndex, TypeIndex, SrcIndex, DestIndex, \
     IntIndex
-from hadar.solver.input import Production, Consumption, Study
-from hadar.solver.output import OutputConsumption, OutputBorder, OutputNode, OutputProduction, Result
+from hadar.optimizer.input import Production, Consumption, Study
+from hadar.optimizer.output import OutputConsumption, OutputBorder, OutputNode, OutputProduction, Result
 
 
 class TestIndex(unittest.TestCase):

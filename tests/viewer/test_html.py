@@ -12,8 +12,8 @@ import plotly.graph_objects as go
 from plotly.offline.offline import plot
 
 from hadar.analyzer.result import ResultAnalyzer
-from hadar.solver.input import Study, Production, Consumption
-from hadar.solver.solver import LPSolver
+from hadar.optimizer.input import Study, Production, Consumption
+from hadar.optimizer.optimizer import LPOptimizer
 from hadar.viewer.html import HTMLPlotting
 
 
@@ -29,8 +29,8 @@ class TestHTMLPlotting(unittest.TestCase):
             .add_on_node('b', data=Production(cost=20, quantity=[20, 10, 2], type='nuclear')) \
             .add_border(src='a', dest='b', quantity=[10, 10, 10], cost=2)
 
-        solver = LPSolver()
-        self.result = solver.solve(study=self.study)
+        optimizer = LPOptimizer()
+        self.result = optimizer.solve(study=self.study)
 
         self.agg = ResultAnalyzer(self.study, self.result)
         self.plot = HTMLPlotting(agg=self.agg, unit_symbol='MW', time_start='2020-02-01', time_end='2020-02-02',

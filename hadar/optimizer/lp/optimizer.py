@@ -15,10 +15,10 @@ from typing import List, Dict
 
 from ortools.linear_solver.pywraplp import Solver, Variable
 
-from hadar.solver.input import Study
-from hadar.solver.lp.domain import LPNode, LPProduction, LPConsumption, LPBorder
-from hadar.solver.lp.mapper import InputMapper, OutputMapper
-from hadar.solver.output import Result
+from hadar.optimizer.input import Study
+from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPBorder
+from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
+from hadar.optimizer.output import Result
 
 logger = logging.getLogger(__name__)
 

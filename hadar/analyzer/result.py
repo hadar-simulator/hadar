@@ -10,8 +10,8 @@ from typing import Union, TypeVar, List, Generic, Type
 import pandas as pd
 import numpy as np
 
-from hadar.solver.output import Result, OutputNode
-from hadar.solver.input import Study
+from hadar.optimizer.output import Result, OutputNode
+from hadar.optimizer.input import Study
 
 __all__ = ['ResultAnalyzer']
 

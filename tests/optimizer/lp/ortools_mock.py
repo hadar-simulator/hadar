@@ -6,7 +6,7 @@
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 from ortools.linear_solver.pywraplp import Solver, Variable
 
-from hadar.solver.input import DTO
+from hadar.optimizer.input import DTO
 
 
 class MockNumVar(DTO, Variable):

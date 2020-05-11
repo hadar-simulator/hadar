@@ -11,9 +11,9 @@ import sys
 
 from .workflow.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario, ToShuffler
 from .workflow.shuffler import Shuffler
-from .solver.input import Consumption, Border, Production, InputNode, Study
-from .solver.output import OutputProduction, OutputNode, OutputBorder, OutputConsumption, Result
-from .solver.solver import LPSolver, RemoteSolver
+from .optimizer.input import Consumption, Border, Production, InputNode, Study
+from .optimizer.output import OutputProduction, OutputNode, OutputBorder, OutputConsumption, Result
+from .optimizer.optimizer import LPOptimizer, RemoteOptimizer
 from .viewer.html import HTMLPlotting
 from .viewer.jupyter import JupyterPlotting
 from .analyzer.result import ResultAnalyzer

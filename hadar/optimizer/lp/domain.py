@@ -9,7 +9,7 @@ from typing import List, Union
 
 from ortools.linear_solver.pywraplp import Variable
 
-from hadar.solver.input import DTO
+from hadar.optimizer.input import DTO
 
 
 class SerializableVariable(DTO):

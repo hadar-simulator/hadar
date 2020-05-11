@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 
 class ABCPlotting(ABC):
     """
-    Abstract method to plot solver result.
+    Abstract method to plot optimizer result.
     """
 
     @abstractmethod

@@ -9,9 +9,9 @@ import pickle
 import unittest
 from unittest.mock import MagicMock
 
-from hadar.solver.input import Study, Consumption
-from hadar.solver.output import Result, OutputConsumption, OutputNode
-from hadar.solver.remote.solver import _solve_remote_wrap
+from hadar.optimizer.input import Study, Consumption
+from hadar.optimizer.output import Result, OutputConsumption, OutputNode
+from hadar.optimizer.remote.optimizer import _solve_remote_wrap
 
 
 class MockRequest:
@@ -23,7 +23,7 @@ class MockResponse:
         self.content = content
         self.status_code = code
 
-class RemoteSolverTest(unittest.TestCase):
+class RemoteOptimizerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.study = Study(node_names=['a'], horizon=1) \

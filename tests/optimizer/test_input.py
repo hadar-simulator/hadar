@@ -7,7 +7,7 @@
 
 import unittest
 import numpy as np
-from hadar.solver.input import Study, Consumption, Production, Border
+from hadar.optimizer.input import Study, Consumption, Production, Border
 
 
 class TestStudy(unittest.TestCase):

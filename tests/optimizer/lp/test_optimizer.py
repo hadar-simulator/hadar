@@ -8,13 +8,13 @@ import pickle
 import unittest
 from unittest.mock import MagicMock
 
-from hadar.solver.input import Study, Consumption
-from hadar.solver.lp.domain import LPConsumption, LPProduction, LPBorder, LPNode, SerializableVariable
-from hadar.solver.lp.mapper import InputMapper, OutputMapper
-from hadar.solver.lp.solver import ObjectiveBuilder, AdequacyBuilder, _solve_batch
-from hadar.solver.lp.solver import solve_lp
-from hadar.solver.output import OutputConsumption, OutputNode, Result
-from tests.solver.lp.ortools_mock import MockConstraint, MockNumVar, MockObjective, MockSolver
+from hadar.optimizer.input import Study, Consumption
+from hadar.optimizer.lp.domain import LPConsumption, LPProduction, LPBorder, LPNode, SerializableVariable
+from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
+from hadar.optimizer.lp.optimizer import ObjectiveBuilder, AdequacyBuilder, _solve_batch
+from hadar.optimizer.lp.optimizer import solve_lp
+from hadar.optimizer.output import OutputConsumption, OutputNode, Result
+from tests.optimizer.lp.ortools_mock import MockConstraint, MockNumVar, MockObjective, MockSolver
 
 
 class TestObjectiveBuilder(unittest.TestCase):

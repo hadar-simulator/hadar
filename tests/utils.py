@@ -7,7 +7,7 @@
 
 import numpy as np
 
-from hadar.solver.output import Result
+from hadar.optimizer.output import Result
 
 
 def assert_study(self, expected: Result, result: Result):

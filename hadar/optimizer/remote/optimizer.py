@@ -10,8 +10,8 @@ import pickle
 
 import requests
 
-from hadar.solver.input import Study
-from hadar.solver.output import Result
+from hadar.optimizer.input import Study
+from hadar.optimizer.output import Result
 
 
 logger = logging.getLogger(__name__)
