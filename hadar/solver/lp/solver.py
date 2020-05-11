@@ -158,7 +158,7 @@ class AdequacyBuilder:
         """
         for bord in borders:
             self.constraints[(t, bord.src)].SetCoefficient(bord.variable, -1)  # Export from src
-            self.importations[(t, bord.dest)] = bord.variable  # Import to dest
+            self.importations[(t, bord.src, bord.dest)] = bord.variable  # Import to dest
             self.logger.debug('Add border %s for %s into adequacy constraint', bord.dest, name)
 
     def build(self):
@@ -168,8 +168,8 @@ class AdequacyBuilder:
         :return:
         """
         # Apply import border in adequacy
-        for key, var in self.importations.items():
-            self.constraints[key].SetCoefficient(var, 1)
+        for (t, src, dest), var in self.importations.items():
+            self.constraints[(t, dest)].SetCoefficient(var, 1)
 
 
 def _solve_batch(params) -> bytes:

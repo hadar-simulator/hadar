@@ -225,3 +225,59 @@ class TestSolver(unittest.TestCase):
         res = self.solver.solve(study)
 
         assert_study(self, hd.Result(nodes_expected), res)
+
+
+    def test_many_borders_on_node(self):
+        """
+        Capacity
+        |           A           | -------->  |           B           |
+        | load: 10              |  20 @ 10   | load: 15, 25          |
+        | gas:  20 @ 80         |               /\
+                    /\                          |
+                    |                           |
+                    | 20 @ 10                   | 20 @ 10
+                    |                           |
+        |           C           | ---------------
+        | nuclear: 30 @ 50      |
+
+
+        Adequacy
+        |           A           | -------------> |           B           |
+        | load: 10              |  0, 10 @ 10    | load: 15, 25          |
+        | gas:  0, 5 @ 80       |                   /\
+                    /\                              |
+                    |                               |
+                    | 20 @ 10                       | 15 @ 10
+                    |                               |
+        |           C           | -------------------
+        | nuclear: 25, 30 @ 50  |
+
+        :return:
+        """
+        study = hd.Study(node_names=['a', 'b', 'c'], horizon=2) \
+            .add_on_node('a', data=hd.Consumption(cost=10 ** 6, quantity=10, type='load')) \
+            .add_on_node('a', data=hd.Production(cost=80, quantity=20, type='gas')) \
+            .add_on_node('b', data=hd.Consumption(cost=10 ** 6, quantity=[15, 25], type='load')) \
+            .add_on_node('c', data=hd.Production(cost=50, quantity=30, type='nuclear')) \
+            .add_border(src='a', dest='b', quantity=20, cost=10) \
+            .add_border(src='c', dest='a', quantity=20, cost=10) \
+            .add_border(src='c', dest='b', quantity=15, cost=10)
+
+
+        nodes_expected = {}
+        nodes_expected['a'] = hd.OutputNode(
+            consumptions=[hd.OutputConsumption(cost=10 ** 6, quantity=[[10, 10]], type='load')],
+            productions=[hd.OutputProduction(cost=80, quantity=[[0, 5]], type='gas')],
+            borders=[hd.OutputBorder(dest='b', quantity=[[0, 10]], cost=10)])
+
+        nodes_expected['b'] = hd.OutputNode(
+            consumptions=[hd.OutputConsumption(cost=10 ** 6, quantity=[[15, 25]], type='load')],
+            productions=[], borders=[])
+
+        nodes_expected['c'] = hd.OutputNode(
+            productions=[hd.OutputProduction(cost=50, quantity=[[25, 30]], type='nuclear')],
+            borders=[], consumptions=[])
+
+        res = self.solver.solve(study)
+
+        assert_study(self, hd.Result(nodes_expected), res)
