@@ -12,7 +12,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from matplotlib.cm import coolwarm
 
-from hadar.aggregator.result import ResultAggregator, NodeIndex, SrcIndex, TimeIndex, DestIndex, TypeIndex
+from hadar.analyzer.result import ResultAnalyzer, NodeIndex, SrcIndex, TimeIndex, DestIndex, TypeIndex
 from hadar.viewer.abc import ABCPlotting
 
 
@@ -22,7 +22,7 @@ class HTMLPlotting(ABCPlotting):
     """
     Plotting implementation interactive html graphics. (Use plotly)
     """
-    def __init__(self, agg: ResultAggregator, unit_symbol: str = '',
+    def __init__(self, agg: ResultAnalyzer, unit_symbol: str = '',
                  time_start=None, time_end=None,
                  cmap=coolwarm,
                  node_coord: Dict[str, List[float]] = None,

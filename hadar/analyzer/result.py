@@ -13,7 +13,7 @@ import numpy as np
 from hadar.solver.output import Result, OutputNode
 from hadar.solver.input import Study
 
-__all__ = ['ResultAggregator']
+__all__ = ['ResultAnalyzer']
 
 
 T = TypeVar('T')
@@ -120,7 +120,7 @@ class ScnIndex(IntIndex):
         IntIndex.__init__(self, column='scn')
 
 
-class ResultAggregator:
+class ResultAnalyzer:
     """
     Single object to encapsulate all postprocessing aggregation.
     """
@@ -134,9 +134,9 @@ class ResultAggregator:
         self.result = result
         self.study = study
 
-        self.consumption = ResultAggregator._build_consumption(self.study, self.result)
-        self.production = ResultAggregator._build_production(self.study, self.result)
-        self.border = ResultAggregator._build_border(self.study, self.result)
+        self.consumption = ResultAnalyzer._build_consumption(self.study, self.result)
+        self.production = ResultAnalyzer._build_production(self.study, self.result)
+        self.border = ResultAnalyzer._build_border(self.study, self.result)
 
     @staticmethod
     def _build_consumption(study: Study, result: Result):
@@ -237,7 +237,7 @@ class ResultAggregator:
         # TODO refactor without the help of indexes
         if indexes[0].is_alone() and indexes[0].index[0] in df.index:
             df = df.loc[indexes[0].index[0]].copy()
-            return ResultAggregator._remove_useless_index_level(df, indexes[1:])
+            return ResultAnalyzer._remove_useless_index_level(df, indexes[1:])
         else:
             return df
 
@@ -257,7 +257,7 @@ class ResultAggregator:
         pt = pd.pivot_table(data=df[i0.filter(df) & i1.filter(df) & i2.filter(df) & i3.filter(df)],
                             index=indexes, aggfunc=lambda x: x.iloc[0])
 
-        return ResultAggregator._remove_useless_index_level(df=pt, indexes=[i0, i1, i2, i3])
+        return ResultAnalyzer._remove_useless_index_level(df=pt, indexes=[i0, i1, i2, i3])
 
     @staticmethod
     def _assert_index(i0: Index, i1: Index, i2: Index, i3: Index, type: Type):
@@ -284,12 +284,12 @@ class ResultAggregator:
         :param i3 fourth level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]
         :return: dataframe with hierarchical and filter index level asked
         """
-        ResultAggregator._assert_index(i0, i1, i2, i3, TimeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, i3, NodeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, i3, TypeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, i3, ScnIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, TimeIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, NodeIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, TypeIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, ScnIndex)
 
-        return ResultAggregator._pivot(i0, i1, i2, i3, self.consumption)
+        return ResultAnalyzer._pivot(i0, i1, i2, i3, self.consumption)
 
     def agg_prod(self, i0: Index, i1: Index, i2: Index, i3: Index) -> pd.DataFrame:
         """
@@ -301,12 +301,12 @@ class ResultAggregator:
         :param i3 fourth level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]
         :return: dataframe with hierarchical and filter index level asked
         """
-        ResultAggregator._assert_index(i0, i1, i2, i3, TimeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, i3, NodeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, i3, TypeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, i3, ScnIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, TimeIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, NodeIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, TypeIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, ScnIndex)
 
-        return ResultAggregator._pivot(i0, i1, i2, i3, self.production)
+        return ResultAnalyzer._pivot(i0, i1, i2, i3, self.production)
 
     def agg_border(self, i0: Index, i1: Index, i2: Index, i3: Index) -> pd.DataFrame:
         """
@@ -318,12 +318,12 @@ class ResultAggregator:
         :param i3 fourth level index. Index type must be [DestIndex, ScrIndex, TimeIndex, ScnIndex]
         :return: dataframe with hierarchical and filter index level asked
         """
-        ResultAggregator._assert_index(i0, i1, i2, i3, TimeIndex)
-        ResultAggregator._assert_index(i0, i1, i2, i3, SrcIndex)
-        ResultAggregator._assert_index(i0, i1, i2, i3, DestIndex)
-        ResultAggregator._assert_index(i0, i1, i2, i3, ScnIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, TimeIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, SrcIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, DestIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, ScnIndex)
 
-        return ResultAggregator._pivot(i0, i1, i2, i3, self.border)
+        return ResultAnalyzer._pivot(i0, i1, i2, i3, self.border)
 
     def get_elements_inside(self, node: str):
         """

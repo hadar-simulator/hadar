@@ -10,7 +10,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from hadar.aggregator.result import Index, TimeIndex, ResultAggregator, NodeIndex, TypeIndex, SrcIndex, DestIndex, \
+from hadar.analyzer.result import Index, TimeIndex, ResultAnalyzer, NodeIndex, TypeIndex, SrcIndex, DestIndex, \
     IntIndex
 from hadar.solver.input import Production, Consumption, Study
 from hadar.solver.output import OutputConsumption, OutputBorder, OutputNode, OutputProduction, Result
@@ -60,7 +60,7 @@ class TestIntIndex(unittest.TestCase):
         self.assertEqual((2, 6), i.index)
 
 
-class TestAggregator(unittest.TestCase):
+class TestAnalyzer(unittest.TestCase):
     def setUp(self) -> None:
         self.study = Study(['a', 'b', 'c'], horizon=3, nb_scn=2) \
             .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], type='load')) \
@@ -97,7 +97,7 @@ class TestAggregator(unittest.TestCase):
                                  't':   [0, 1, 2] * 6,
                                  'scn': [0, 0, 0, 1, 1, 1] * 3}, dtype=float)
 
-        cons = ResultAggregator._build_consumption(self.study, self.result)
+        cons = ResultAnalyzer._build_consumption(self.study, self.result)
 
         pd.testing.assert_frame_equal(exp, cons)
 
@@ -111,7 +111,7 @@ class TestAggregator(unittest.TestCase):
                                  't':   [0, 1, 2] * 6,
                                  'scn': [0, 0, 0, 1, 1, 1] * 3}, dtype=float)
 
-        prod = ResultAggregator._build_production(self.study, self.result)
+        prod = ResultAnalyzer._build_production(self.study, self.result)
 
         pd.testing.assert_frame_equal(exp, prod)
 
@@ -125,7 +125,7 @@ class TestAggregator(unittest.TestCase):
                                  't':   [0, 1, 2] * 4,
                                  'scn': [0, 0, 0, 1, 1, 1] * 2}, dtype=float)
 
-        border = ResultAggregator._build_border(self.study, self.result)
+        border = ResultAnalyzer._build_border(self.study, self.result)
 
         pd.testing.assert_frame_equal(exp, border)
 
@@ -136,7 +136,7 @@ class TestAggregator(unittest.TestCase):
                                       'cost': [10 ** 3] * 3,
                                       'given': [20, 2, 2]}, dtype=float, index=index)
 
-        agg = ResultAggregator(study=self.study, result=self.result)
+        agg = ResultAnalyzer(study=self.study, result=self.result)
         cons = agg.agg_cons(agg.iscn[0], agg.inode['a'], agg.itype['load'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
@@ -150,7 +150,7 @@ class TestAggregator(unittest.TestCase):
                                       'cost': [10, 10, 10, 20, 20, 20],
                                       'used': [30, 3, 3, 10, 1, 1]}, dtype=float, index=index)
 
-        agg = ResultAggregator(study=self.study, result=self.result)
+        agg = ResultAnalyzer(study=self.study, result=self.result)
         cons = agg.agg_prod(agg.iscn[0], agg.inode['a', 'b'], agg.itype['prod'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
@@ -164,22 +164,22 @@ class TestAggregator(unittest.TestCase):
                                       'cost': [2, 2, 2, 2, 2, 2],
                                       'used': [10, 1, 1, 20, 2, 2]}, dtype=float, index=index)
 
-        agg = ResultAggregator(study=self.study, result=self.result)
+        agg = ResultAnalyzer(study=self.study, result=self.result)
         cons = agg.agg_border(agg.iscn[0], agg.isrc['a'], agg.idest['b', 'c'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
     def test_get_elements_inide(self):
-        agg = ResultAggregator(study=self.study, result=self.result)
+        agg = ResultAnalyzer(study=self.study, result=self.result)
         self.assertEqual((2, 1, 2), agg.get_elements_inside('a'))
         self.assertEqual((1, 2, 0), agg.get_elements_inside('b'))
 
     def test_balance(self):
-        agg = ResultAggregator(study=self.study, result=self.result)
+        agg = ResultAnalyzer(study=self.study, result=self.result)
         np.testing.assert_array_equal([[30, 3, 3], [3, 30, 30]], agg.get_balance(node='a'))
         np.testing.assert_array_equal([[-10, -1, -1], [-1, -10, -10]], agg.get_balance(node='b'))
 
     def test_cost(self):
-        agg = ResultAggregator(study=self.study, result=self.result)
+        agg = ResultAnalyzer(study=self.study, result=self.result)
         np.testing.assert_array_equal([[200360, 20036, 20036], [20036, 200360, 200360]], agg.get_cost(node='a'))
         np.testing.assert_array_equal([[100600, 10060, 10060], [10060, 100600, 100600]], agg.get_cost(node='b'))

@@ -16,7 +16,7 @@ from .solver.output import OutputProduction, OutputNode, OutputBorder, OutputCon
 from .solver.solver import LPSolver, RemoteSolver
 from .viewer.html import HTMLPlotting
 from .viewer.jupyter import JupyterPlotting
-from .aggregator.result import ResultAggregator
+from .analyzer.result import ResultAnalyzer
 
 __version__ = '0.2.1'
 
