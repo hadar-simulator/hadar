@@ -2,7 +2,7 @@ name: main
 on:
   push:
     branches-ignore:
-      - 'releases/**'
+      - 'release/**'
       - 'master'
 jobs:
   build:
