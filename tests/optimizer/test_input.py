@@ -7,23 +7,23 @@
 
 import unittest
 import numpy as np
-from hadar.optimizer.input import Study, Consumption, Production, Border
+from hadar.optimizer.input import Study, Consumption, Production, Link
 
 
 class TestStudy(unittest.TestCase):
     def test_create_study(self):
         c = Consumption(type='load', cost=20, quantity=10)
         p = Production(type='nuclear', cost=20, quantity=10)
-        b = Border(dest='a', cost=20, quantity=10)
+        l = Link(dest='a', cost=20, quantity=10)
 
         study = Study(['a', 'b'], horizon=1) \
             .add_on_node(node='a', data=c) \
             .add_on_node(node='a', data=p) \
-            .add_border(src='b', dest='a', cost=20, quantity=10)
+            .add_link(src='b', dest='a', cost=20, quantity=10)
 
         self.assertEqual(c, study.nodes['a'].consumptions[0])
         self.assertEqual(p, study.nodes['a'].productions[0])
-        self.assertEqual(b, study.nodes['b'].borders[0])
+        self.assertEqual(l, study.nodes['b'].links[0])
         self.assertEqual(1, study.horizon)
 
     def test_wrong_node_list(self):
@@ -76,32 +76,32 @@ class TestStudy(unittest.TestCase):
 
         self.assertRaises(ValueError, test)
 
-    def test_wrong_border_cost(self):
+    def test_wrong_link_cost(self):
         def test():
             study = Study(node_names=['fr', 'be'], horizon=1) \
-                .add_border(src='fr', dest='be', cost=-10, quantity=10)
+                .add_link(src='fr', dest='be', cost=-10, quantity=10)
 
         self.assertRaises(ValueError, test)
 
-    def test_wrong_border_quantity(self):
+    def test_wrong_link_quantity(self):
         def test():
             study = Study(node_names=['fr', 'be'], horizon=1) \
-                .add_border(src='fr', dest='be', cost=10, quantity=-10)
+                .add_link(src='fr', dest='be', cost=10, quantity=-10)
 
         self.assertRaises(ValueError, test)
 
-    def test_wrong_border_dest_not_node(self):
+    def test_wrong_link_dest_not_node(self):
         def test():
             study = Study(node_names=['fr', 'be'], horizon=1) \
-                .add_border(src='fr', dest='it', cost=10, quantity=10)
+                .add_link(src='fr', dest='it', cost=10, quantity=10)
 
         self.assertRaises(ValueError, test)
 
-    def test_wrong_border_dest_not_unique(self):
+    def test_wrong_link_dest_not_unique(self):
         def test():
             study = Study(node_names=['fr', 'be'], horizon=1) \
-                .add_border(src='fr', dest='be', cost=10, quantity=10) \
-                .add_border(src='fr', dest='be', cost=10, quantity=10)
+                .add_link(src='fr', dest='be', cost=10, quantity=10) \
+                .add_link(src='fr', dest='be', cost=10, quantity=10)
 
         self.assertRaises(ValueError, test)
 

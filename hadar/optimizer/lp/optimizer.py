@@ -16,7 +16,7 @@ from typing import List, Dict
 from ortools.linear_solver.pywraplp import Solver, Variable
 
 from hadar.optimizer.input import Study
-from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPBorder
+from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPLink
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
 from hadar.optimizer.output import Result
 
@@ -47,7 +47,7 @@ class ObjectiveBuilder:
         """
         self._add_consumption(node.consumptions)
         self._add_productions(node.productions)
-        self._add_borders(node.borders)
+        self._add_borders(node.links)
 
     def _add_consumption(self, consumptions: List[LPConsumption]):
         """
@@ -71,7 +71,7 @@ class ObjectiveBuilder:
             self.objective.SetCoefficient(prod.variable, prod.cost)
             self.logger.debug('Add production %s into objective', prod.type)
 
-    def _add_borders(self, borders: List[LPBorder]):
+    def _add_borders(self, borders: List[LPLink]):
         """
         Add border cost. That mean cost to use a border capacity.
 
@@ -116,7 +116,7 @@ class AdequacyBuilder:
 
         self._add_consumptions(name, t, node.consumptions)
         self._add_productions(name, t, node.productions)
-        self._add_borders(name, t, node.borders)
+        self._add_borders(name, t, node.links)
 
     def _add_consumptions(self, name: str, t: int, consumptions: List[LPConsumption]):
         """
@@ -145,7 +145,7 @@ class AdequacyBuilder:
             self.constraints[(t, name)].SetCoefficient(prod.variable, 1)
             self.logger.debug('Add prod %s for %s into adequacy constraint', prod.type, name)
 
-    def _add_borders(self, name: str, t: int, borders: List[LPBorder]):
+    def _add_borders(self, name: str, t: int, borders: List[LPLink]):
         """
         Add borders. That mean the border export is like a consumption.
         After all node added. The same export, become also an import for destination node.

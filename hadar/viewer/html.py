@@ -184,11 +184,11 @@ class HTMLPlotting(ABCPlotting):
         fig = go.Figure()
 
         # plot links
-        borders = self.agg.agg_border(self.agg.iscn[scn], self.agg.isrc, self.agg.idest, self.agg.itime)
-        for src in borders.index.get_level_values('src').unique():
-            for dest in borders.loc[src].index.get_level_values('dest').unique():
-                exchange = borders.loc[src, dest, t]['used']  # forward
-                exchange -= borders.loc[dest, src, t]['used'] if (dest, src, t) in borders.index else 0  # backward
+        links = self.agg.agg_link(self.agg.iscn[scn], self.agg.isrc, self.agg.idest, self.agg.itime)
+        for src in links.index.get_level_values('src').unique():
+            for dest in links.loc[src].index.get_level_values('dest').unique():
+                exchange = links.loc[src, dest, t]['used']  # forward
+                exchange -= links.loc[dest, src, t]['used'] if (dest, src, t) in links.index else 0  # backward
 
                 color = 'rgb' + str(self.cmap(abs(exchange) / 2 / limit + 0.5)[:-1])
                 if exchange > 0:

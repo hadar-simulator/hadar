@@ -73,13 +73,13 @@ class LPProduction(DTO):
         return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.type)
 
 
-class LPBorder(DTO):
+class LPLink(DTO):
     """
-    Border element for linear programming
+    Link element for linear programming
     """
     def __init__(self, src: str, dest: str, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0):
         """
-        Instance border.
+        Instance Link.
 
         :param src: node source name
         :param dest: node destination name
@@ -105,14 +105,14 @@ class LPNode(DTO):
     """
     Node element for linear programming
     """
-    def __init__(self, consumptions: List[LPConsumption], productions: List[LPProduction], borders: List[LPBorder]):
+    def __init__(self, consumptions: List[LPConsumption], productions: List[LPProduction], links: List[LPLink]):
         """
         Instance node.
 
         :param consumptions: consumptions list
         :param productions: productions list
-        :param borders: border list
+        :param links: links list
         """
         self.consumptions = consumptions
         self.productions = productions
-        self.borders = borders
+        self.links = links

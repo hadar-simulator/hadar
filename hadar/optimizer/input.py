@@ -10,7 +10,7 @@ from typing import List, Union
 import numpy as np
 
 
-__all__ = ['Consumption', 'Border', 'Production', 'InputNode', 'Study']
+__all__ = ['Consumption', 'Link', 'Production', 'InputNode', 'Study']
 
 
 class DTO:
@@ -65,13 +65,13 @@ class Production(DTO):
         self.quantity = np.array(quantity)
 
 
-class Border(DTO):
+class Link(DTO):
     """
     Border element
     """
     def __init__(self, dest: str, quantity: Union[List, np.ndarray, float], cost: int = 0):
         """
-        Create border.
+        Create link.
 
         :param dest: node name destination (to export)
         :param quantity: transfer capacity
@@ -86,17 +86,17 @@ class InputNode(DTO):
     """
     Node element
     """
-    def __init__(self, consumptions: List[Consumption], productions: List[Production], borders: List[Border]):
+    def __init__(self, consumptions: List[Consumption], productions: List[Production], links: List[Link]):
         """
         Create node element.
 
         :param consumptions: list of consumptions inside node
         :param productions: list of productions inside node
-        :param borders: list of borders inside node
+        :param links: list of borders inside node
         """
         self.consumptions = consumptions
         self.productions = productions
-        self.borders = borders
+        self.links = links
 
 
 class Study(DTO):
@@ -115,7 +115,7 @@ class Study(DTO):
         if len(node_names) > len(set(node_names)):
             raise ValueError('some nodes are not unique')
 
-        self._nodes = {name: InputNode(consumptions=[], productions=[], borders=[]) for name in node_names}
+        self._nodes = {name: InputNode(consumptions=[], productions=[], links=[]) for name in node_names}
         self.horizon = horizon
         self.nb_scn = nb_scn
 
@@ -124,7 +124,7 @@ class Study(DTO):
     def nodes(self):
         return self._nodes
 
-    def add_on_node(self, node: str, data=Union[Production, Consumption, Border]):
+    def add_on_node(self, node: str, data=Union[Production, Consumption, Link]):
         """
         Attach a production or consumption into a node.
 
@@ -143,9 +143,9 @@ class Study(DTO):
 
         return self
 
-    def add_border(self, src: str, dest: str, cost: int, quantity: Union[List[float], np.ndarray, float]):
+    def add_link(self, src: str, dest: str, cost: int, quantity: Union[List[float], np.ndarray, float]):
         """
-        Add a border inside network.
+        Add a link inside network.
 
         :param src: source node name
         :param dest: destination node name
@@ -157,11 +157,11 @@ class Study(DTO):
             raise ValueError('border cost must be positive')
         if dest not in self._nodes.keys():
             raise ValueError('border destination must be a valid node')
-        if dest in [b.dest for b in self._nodes[src].borders]:
+        if dest in [l.dest for l in self._nodes[src].links]:
             raise ValueError('border destination must be unique on a node')
 
         quantity = self._validate_quantity(quantity)
-        self._nodes[src].borders.append(Border(dest=dest, quantity=quantity, cost=cost))
+        self._nodes[src].links.append(Link(dest=dest, quantity=quantity, cost=cost))
 
         return self
 

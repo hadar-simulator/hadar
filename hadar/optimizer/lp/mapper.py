@@ -8,7 +8,7 @@
 from ortools.linear_solver.pywraplp import Solver
 
 from hadar.optimizer.input import Study
-from hadar.optimizer.lp.domain import LPBorder, LPConsumption, LPNode, LPProduction
+from hadar.optimizer.lp.domain import LPLink, LPConsumption, LPNode, LPProduction
 from hadar.optimizer.output import OutputNode, Result
 
 
@@ -44,11 +44,11 @@ class InputMapper:
                                     variable=self.solver.NumVar(0, float(p.quantity[scn][t]), 'prod {} on {} at t={} for scn={}'.format(p.type, name, t, scn)))
                        for p in self.study.nodes[name].productions]
 
-        borders = [LPBorder(dest=b.dest, cost=float(b.cost), src=name, quantity=b.quantity[scn][t],
-                            variable=self.solver.NumVar(0, float(b.quantity[scn][t]), 'border on {} to {} at t={} for scn={}'.format(name, b.dest, t, scn)))
-                   for b in self.study.nodes[name].borders]
+        links = [LPLink(dest=l.dest, cost=float(l.cost), src=name, quantity=l.quantity[scn][t],
+                          variable=self.solver.NumVar(0, float(l.quantity[scn][t]), 'link on {} to {} at t={} for scn={}'.format(name, l.dest, t, scn)))
+                   for l in self.study.nodes[name].links]
 
-        return LPNode(consumptions=consumptions, productions=productions, borders=borders)
+        return LPNode(consumptions=consumptions, productions=productions, links=links)
 
 
 class OutputMapper:
@@ -80,8 +80,8 @@ class OutputMapper:
         for i in range(len(vars.productions)):
             self.nodes[name].productions[i].quantity[scn, t] = vars.productions[i].variable.solution_value()
 
-        for i in range(len(vars.borders)):
-            self.nodes[name].borders[i].quantity[scn, t] = vars.borders[i].variable.solution_value()
+        for i in range(len(vars.links)):
+            self.nodes[name].links[i].quantity[scn, t] = vars.links[i].variable.solution_value()
 
     def get_result(self) -> Result:
         """

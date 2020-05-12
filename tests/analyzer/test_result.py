@@ -13,7 +13,7 @@ import numpy as np
 from hadar.analyzer.result import Index, TimeIndex, ResultAnalyzer, NodeIndex, TypeIndex, SrcIndex, DestIndex, \
     IntIndex
 from hadar.optimizer.input import Production, Consumption, Study
-from hadar.optimizer.output import OutputConsumption, OutputBorder, OutputNode, OutputProduction, Result
+from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result
 
 
 class TestIndex(unittest.TestCase):
@@ -69,20 +69,20 @@ class TestAnalyzer(unittest.TestCase):
             .add_on_node('b', data=Consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], type='load')) \
             .add_on_node('b', data=Production(cost=20, quantity=[[110, 11, 11], [11, 110, 110]], type='prod')) \
             .add_on_node('b', data=Production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], type='nuclear')) \
-            .add_border(src='a', dest='b', quantity=[[110, 11, 11], [11, 110, 110]], cost=2) \
-            .add_border(src='a', dest='c', quantity=[[120, 12, 12], [12, 120, 120]], cost=2)
+            .add_link(src='a', dest='b', quantity=[[110, 11, 11], [11, 110, 110]], cost=2) \
+            .add_link(src='a', dest='c', quantity=[[120, 12, 12], [12, 120, 120]], cost=2)
 
         out = {
             'a': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], type='load'),
                                           OutputConsumption(cost=10 ** 3, quantity=[[30, 3, 3], [3, 30, 30]], type='car')],
                             productions=[OutputProduction(cost=10, quantity=[[30, 3, 3], [3, 30, 30]], type='prod')],
-                            borders=[OutputBorder(dest='b', quantity=[[10, 1, 1], [1, 10, 10]], cost=2),
-                                     OutputBorder(dest='c', quantity=[[20, 2, 2], [2, 20, 20]], cost=2)]),
+                            links=[OutputLink(dest='b', quantity=[[10, 1, 1], [1, 10, 10]], cost=2),
+                                   OutputLink(dest='c', quantity=[[20, 2, 2], [2, 20, 20]], cost=2)]),
 
             'b': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], type='load')],
                             productions=[OutputProduction(cost=20, quantity=[[10, 1, 1], [1, 10, 10]], type='prod'),
                                          OutputProduction(cost=20, quantity=[[20, 2, 2], [2, 20, 20]], type='nuclear')],
-                            borders=[])
+                            links=[])
         }
 
         self.result = Result(nodes=out)
@@ -115,7 +115,7 @@ class TestAnalyzer(unittest.TestCase):
 
         pd.testing.assert_frame_equal(exp, prod)
 
-    def test_build_border(self):
+    def test_build_link(self):
         # Expected
         exp = pd.DataFrame(data={'cost': [2] * 12,
                                  'avail': [110, 11, 11, 11, 110, 110, 120, 12, 12, 12, 120, 120],
@@ -125,9 +125,9 @@ class TestAnalyzer(unittest.TestCase):
                                  't':   [0, 1, 2] * 4,
                                  'scn': [0, 0, 0, 1, 1, 1] * 2}, dtype=float)
 
-        border = ResultAnalyzer._build_border(self.study, self.result)
+        link = ResultAnalyzer.link(self.study, self.result)
 
-        pd.testing.assert_frame_equal(exp, border)
+        pd.testing.assert_frame_equal(exp, link)
 
     def test_aggregate_cons(self):
         # Expected
@@ -155,7 +155,7 @@ class TestAnalyzer(unittest.TestCase):
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
-    def test_aggregate_border(self):
+    def test_aggregate_link(self):
         # Expected
         index = pd.MultiIndex.from_tuples((('b', 0.0), ('b', 1.0), ('b', 2,0),
                                            ('c', 0.0), ('c', 1.0), ('c', 2,0)),
@@ -165,7 +165,7 @@ class TestAnalyzer(unittest.TestCase):
                                       'used': [10, 1, 1, 20, 2, 2]}, dtype=float, index=index)
 
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        cons = agg.agg_border(agg.iscn[0], agg.isrc['a'], agg.idest['b', 'c'], agg.itime)
+        cons = agg.agg_link(agg.iscn[0], agg.isrc['a'], agg.idest['b', 'c'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 

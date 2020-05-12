@@ -35,7 +35,7 @@ def assert_study(self, expected: Result, result: Result):
                              'Production {} for node {} has different cost'.format(prod_expected.type, name))
 
         # Borders
-        for border_expected, border_res in zip(node.borders, res.borders):
+        for border_expected, border_res in zip(node.links, res.links):
             self.assertEqual(border_expected.dest, border_res.dest,
                              "Border for node {} has different type".format(name))
             np.testing.assert_array_equal(border_expected.quantity, border_res.quantity,

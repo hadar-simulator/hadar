@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from hadar.optimizer.input import Study, Consumption
-from hadar.optimizer.lp.domain import LPConsumption, LPProduction, LPBorder, LPNode, SerializableVariable
+from hadar.optimizer.lp.domain import LPConsumption, LPProduction, LPLink, LPNode, SerializableVariable
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
 from hadar.optimizer.lp.optimizer import ObjectiveBuilder, AdequacyBuilder, _solve_batch
 from hadar.optimizer.lp.optimizer import solve_lp
@@ -27,8 +27,8 @@ class TestObjectiveBuilder(unittest.TestCase):
         # Input
         consumptions = [LPConsumption(type='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
         productions = [LPProduction(type='solar', quantity=10, cost=20, variable=MockNumVar(0, 20, 'solar'))]
-        borders = [LPBorder(src='fr', dest='be', quantity=10, cost=30, variable=MockNumVar(0, 30, 'be'))]
-        node = LPNode(consumptions=consumptions, productions=productions, borders=borders)
+        links = [LPLink(src='fr', dest='be', quantity=10, cost=30, variable=MockNumVar(0, 30, 'be'))]
+        node = LPNode(consumptions=consumptions, productions=productions, links=links)
 
         # Expected
         coeffs = {MockNumVar(0, 10, 'load'): 10, MockNumVar(0, 20, 'solar'): 20, MockNumVar(0, 30, 'be'): 30}
@@ -51,10 +51,10 @@ class TestAdequacyBuilder(unittest.TestCase):
         # Input
         fr_consumptions = [LPConsumption(type='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
         fr_productions = [LPProduction(type='solar', quantity=10, cost=20, variable=MockNumVar(0, 20, 'solar'))]
-        fr_borders = [LPBorder(src='fr', dest='be', quantity=10, cost=30, variable=MockNumVar(0, 30, 'be'))]
-        fr_node = LPNode(consumptions=fr_consumptions, productions=fr_productions, borders=fr_borders)
+        fr_links = [LPLink(src='fr', dest='be', quantity=10, cost=30, variable=MockNumVar(0, 30, 'be'))]
+        fr_node = LPNode(consumptions=fr_consumptions, productions=fr_productions, links=fr_links)
 
-        be_node = LPNode(consumptions=[], productions=[], borders=[])
+        be_node = LPNode(consumptions=[], productions=[], links=[])
 
         # Expected
         fr_coeffs = {MockNumVar(0, 10, 'load'): 1, MockNumVar(0, 20, 'solar'): 1, MockNumVar(0, 30, 'be'): -1}
@@ -92,13 +92,13 @@ class TestSolve(unittest.TestCase):
         adequacy.build = MagicMock()
 
         in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))
-        var = LPNode(consumptions=[in_cons], productions=[], borders=[])
+        var = LPNode(consumptions=[in_cons], productions=[], links=[])
         in_mapper = InputMapper(solver=solver, study=study)
         in_mapper.get_var = MagicMock(return_value=var)
 
         # Expected
         in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, 'load')))
-        exp_var = LPNode(consumptions=[in_cons], productions=[], borders=[])
+        exp_var = LPNode(consumptions=[in_cons], productions=[], links=[])
 
         # Test
         res = _solve_batch((study, 0, solver, objective, adequacy, in_mapper))
@@ -120,11 +120,11 @@ class TestSolve(unittest.TestCase):
 
         # Expected
         out_a = OutputNode(consumptions=[OutputConsumption(type='load', cost=10, quantity=[0])],
-                           productions=[], borders=[])
+                           productions=[], links=[])
         exp_result = Result(nodes={'a': out_a})
 
         in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, '')))
-        exp_var = LPNode(consumptions=[in_cons], productions=[], borders=[])
+        exp_var = LPNode(consumptions=[in_cons], productions=[], links=[])
 
         # Mock
         out_mapper = OutputMapper(study=study)

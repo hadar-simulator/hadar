@@ -136,7 +136,7 @@ class ResultAnalyzer:
 
         self.consumption = ResultAnalyzer._build_consumption(self.study, self.result)
         self.production = ResultAnalyzer._build_production(self.study, self.result)
-        self.border = ResultAnalyzer._build_border(self.study, self.result)
+        self.link = ResultAnalyzer.link(self.study, self.result)
 
     @staticmethod
     def _build_consumption(study: Study, result: Result):
@@ -197,33 +197,33 @@ class ResultAnalyzer:
         return prod
 
     @staticmethod
-    def _build_border(study: Study, result: Result):
+    def link(study: Study, result: Result):
         """
-        Flat all data to build global border dataframe
+        Flat all data to build global link dataframe
         columns: | cost | avail | used | src | dest | t |
         """
         h = study.horizon
         scn = study.nb_scn
-        s = h * scn * sum([len(n.borders) for n in result.nodes.values()])
-        border = {'cost': np.empty(s), 'avail': np.empty(s), 'used': np.empty(s),
+        s = h * scn * sum([len(n.links) for n in result.nodes.values()])
+        link = {'cost': np.empty(s), 'avail': np.empty(s), 'used': np.empty(s),
                   'src': np.empty(s), 'dest': np.empty(s), 't': np.empty(s), 'scn': np.empty(s)}
-        border = pd.DataFrame(data=border)
+        link = pd.DataFrame(data=link)
 
-        n_border = 0
+        n_link = 0
         for n, name in enumerate(result.nodes.keys()):
-            for i, c in enumerate(result.nodes[name].borders):
-                slices = border.index[n_border * h * scn: (n_border + 1) * h * scn]
-                border.loc[slices, 'cost'] = c.cost
-                border.loc[slices, 'dest'] = c.dest
-                border.loc[slices, 'src'] = name
-                border.loc[slices, 'avail'] = study.nodes[name].borders[i].quantity.flatten()
-                border.loc[slices, 'used'] = c.quantity.flatten()
-                border.loc[slices, 't'] = np.tile(np.arange(h), scn)
-                border.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
+            for i, c in enumerate(result.nodes[name].links):
+                slices = link.index[n_link * h * scn: (n_link + 1) * h * scn]
+                link.loc[slices, 'cost'] = c.cost
+                link.loc[slices, 'dest'] = c.dest
+                link.loc[slices, 'src'] = name
+                link.loc[slices, 'avail'] = study.nodes[name].links[i].quantity.flatten()
+                link.loc[slices, 'used'] = c.quantity.flatten()
+                link.loc[slices, 't'] = np.tile(np.arange(h), scn)
+                link.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
 
-                n_border += 1
+                n_link += 1
 
-        return border
+        return link
 
     @staticmethod
     def _remove_useless_index_level(df: pd.DataFrame, indexes: List[Index]) -> pd.DataFrame:
@@ -308,9 +308,9 @@ class ResultAnalyzer:
 
         return ResultAnalyzer._pivot(i0, i1, i2, i3, self.production)
 
-    def agg_border(self, i0: Index, i1: Index, i2: Index, i3: Index) -> pd.DataFrame:
+    def agg_link(self, i0: Index, i1: Index, i2: Index, i3: Index) -> pd.DataFrame:
         """
-        Aggregate border according to index level and filter.
+        Aggregate link according to index level and filter.
 
         :param i0: first level index. Index type must be [DestIndex, SrcIndex, TimeIndex, ScnIndex]
         :param i1: second level index. Index type must be [DestIndex, SrcIndex, TimeIndex, ScnIndex]
@@ -323,18 +323,18 @@ class ResultAnalyzer:
         ResultAnalyzer._assert_index(i0, i1, i2, i3, DestIndex)
         ResultAnalyzer._assert_index(i0, i1, i2, i3, ScnIndex)
 
-        return ResultAnalyzer._pivot(i0, i1, i2, i3, self.border)
+        return ResultAnalyzer._pivot(i0, i1, i2, i3, self.link)
 
     def get_elements_inside(self, node: str):
         """
         Get numbers of elements by node.
 
         :param node: node name
-        :return: (nb of consumptions, nb of productions, nb of border (export))
+        :return: (nb of consumptions, nb of productions, nb of links (export))
         """
         return len(self.result.nodes[node].consumptions),\
                len(self.result.nodes[node].productions),\
-               len(self.result.nodes[node].borders)
+               len(self.result.nodes[node].links)
 
     def get_balance(self, node: str) -> np.ndarray:
         """
@@ -345,11 +345,11 @@ class ResultAnalyzer:
         """
         balance = np.zeros((self.nb_scn, self.study.horizon))
 
-        im = pd.pivot_table(self.border[self.border['dest'] == node][['used', 'scn', 't']], index=['scn', 't'], aggfunc=np.sum)
+        im = pd.pivot_table(self.link[self.link['dest'] == node][['used', 'scn', 't']], index=['scn', 't'], aggfunc=np.sum)
         if im.size > 0:
             balance += -im['used'].values.reshape(self.nb_scn, self.horizon)
 
-        exp = pd.pivot_table(self.border[self.border['src'] == node][['used', 'scn', 't']], index=['scn', 't'], aggfunc=np.sum)
+        exp = pd.pivot_table(self.link[self.link['src'] == node][['used', 'scn', 't']], index=['scn', 't'], aggfunc=np.sum)
         if exp.size > 0:
             balance += exp['used'].values.reshape(self.nb_scn, self.horizon)
         return balance
@@ -368,8 +368,8 @@ class ResultAnalyzer:
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if b:
-            border = self.agg_border(self.isrc[node], self.iscn, self.itime, self.idest)
-            cost += (border['used']*border['cost']).groupby(axis=0, level=(0, 1))\
+            link = self.agg_link(self.isrc[node], self.iscn, self.itime, self.idest)
+            cost += (link['used']*link['cost']).groupby(axis=0, level=(0, 1))\
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         return cost
@@ -422,7 +422,7 @@ class ResultAnalyzer:
     @property
     def isrc(self) -> SrcIndex:
         """
-        Get a source index to specify source slice to aggregate border.
+        Get a source index to specify source slice to aggregate link.
 
         :return: new instance of SrcIndex()
         """
@@ -431,7 +431,7 @@ class ResultAnalyzer:
     @property
     def idest(self) -> DestIndex:
         """
-        Get a destination index to specify destination slice to aggregate border.
+        Get a destination index to specify destination slice to aggregate link.
 
         :return: new instance of DestIndex()
         """
@@ -440,7 +440,7 @@ class ResultAnalyzer:
     @property
     def itime(self) -> TimeIndex:
         """
-        Get a time index to specify time slice to aggregate consumption, production or border.
+        Get a time index to specify time slice to aggregate consumption, production or link.
 
         :return: new instance of TimeIndex()
         """
@@ -449,7 +449,7 @@ class ResultAnalyzer:
     @property
     def iscn(self) -> ScnIndex:
         """
-        Get a scenario index to specify scenario slice to aggregate consumption, production or border.
+        Get a scenario index to specify scenario slice to aggregate consumption, production or link.
 
         :return: new instance of ScnIndex()
         """

@@ -12,7 +12,7 @@ from typing import Union, List, Dict
 from hadar.optimizer.input import InputNode
 
 
-__all__ = ['OutputProduction', 'OutputNode', 'OutputBorder', 'OutputConsumption', 'Result']
+__all__ = ['OutputProduction', 'OutputNode', 'OutputLink', 'OutputConsumption', 'Result']
 
 
 class DTO:
@@ -76,9 +76,9 @@ class OutputProduction(DTO):
         self.quantity = np.array(quantity)
 
 
-class OutputBorder(DTO):
+class OutputLink(DTO):
     """
-    Border element
+    Link element
     """
     def __init__(self, dest: str, quantity: Union[np.ndarray, list], cost: int = 0):
         """
@@ -100,17 +100,17 @@ class OutputNode(DTO):
     def __init__(self,
                  consumptions: List[OutputConsumption],
                  productions: List[OutputProduction],
-                 borders: List[OutputBorder]):
+                 links: List[OutputLink]):
         """
         Create Node.
 
         :param consumptions: consumptions list
         :param productions: productions list
-        :param borders:  border list
+        :param links:  border list
         """
         self.consumptions = consumptions
         self.productions = productions
-        self.borders = borders
+        self.links = links
 
     @staticmethod
     def build_like_input(input: InputNode):
@@ -120,14 +120,14 @@ class OutputNode(DTO):
         :param input: InputNode to copy
         :return: OutputNode like InputNode with all quantity at zero
         """
-        output = OutputNode(consumptions=[], productions=[], borders=[])
+        output = OutputNode(consumptions=[], productions=[], links=[])
 
         output.consumptions = [OutputConsumption(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
                                for i in input.consumptions]
         output.productions = [OutputProduction(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
                               for i in input.productions]
-        output.borders = [OutputBorder(dest=i.dest, cost=i.cost, quantity=np.zeros_like(i.quantity))
-                          for i in input.borders]
+        output.links = [OutputLink(dest=i.dest, cost=i.cost, quantity=np.zeros_like(i.quantity))
+                        for i in input.links]
         return output
 
 
