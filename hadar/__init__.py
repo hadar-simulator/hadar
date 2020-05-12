@@ -1,8 +1,24 @@
+#  Copyright (c) 2019-2020, RTE (https://www.rte-france.com)
+#  See AUTHORS.txt
+#  This Source Code Form is subject to the terms of the Apache License, version 2.0.
+#  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
+#  SPDX-License-Identifier: Apache-2.0
+#  This file is part of hadar-simulator, a python adequacy library for everyone.
+
 import logging
 import os
 import sys
 
-__version__ = '0.1.2'
+from .workflow.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario, ToShuffler
+from .workflow.shuffler import Shuffler
+from .optimizer.input import Consumption, Link, Production, InputNode, Study
+from .optimizer.output import OutputProduction, OutputNode, OutputLink, OutputConsumption, Result
+from .optimizer.optimizer import LPOptimizer, RemoteOptimizer
+from .viewer.html import HTMLPlotting
+from .viewer.jupyter import JupyterPlotting
+from .analyzer.result import ResultAnalyzer
+
+__version__ = '0.2.0'
 
 level = os.getenv('HADAR_LOG', 'WARNING')
 

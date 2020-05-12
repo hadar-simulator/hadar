@@ -1,5 +1,13 @@
-from hadar.solver.input import *
-from hadar.solver.output import Result
+#  Copyright (c) 2019-2020, RTE (https://www.rte-france.com)
+#  See AUTHORS.txt
+#  This Source Code Form is subject to the terms of the Apache License, version 2.0.
+#  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
+#  SPDX-License-Identifier: Apache-2.0
+#  This file is part of hadar-simulator, a python adequacy library for everyone.
+
+import numpy as np
+
+from hadar.optimizer.output import Result
 
 
 def assert_study(self, expected: Result, result: Result):
@@ -10,30 +18,30 @@ def assert_study(self, expected: Result, result: Result):
 
         # Consumptions
         for cons_expected, cons_res in zip(node.consumptions, res.consumptions):
-            self.assertEqual(cons_expected.type, cons_res.type,
-                             "Consumption for node {} has different type".format(name))
+            self.assertEqual(cons_expected.name, cons_res.name,
+                             "Consumption for node {} has different name".format(name))
             np.testing.assert_array_equal(cons_expected.quantity, cons_res.quantity,
-                             'Consumption {} for node {} has different quantity'.format(cons_expected.type, name))
+                             'Consumption {} for node {} has different quantity'.format(cons_expected.name, name))
             self.assertEqual(cons_expected.cost, cons_res.cost,
-                             'Consumption {} for node {} has different cost'.format(cons_expected.type, name))
+                             'Consumption {} for node {} has different cost'.format(cons_expected.name, name))
 
         # Productions
         for prod_expected, prod_res in zip(node.productions, res.productions):
-            self.assertEqual(prod_expected.type, prod_res.type,
-                             "Production for node {} has different type".format(name))
+            self.assertEqual(prod_expected.name, prod_res.name,
+                             "Production for node {} has different name".format(name))
             np.testing.assert_array_equal(prod_expected.quantity, prod_res.quantity,
-                             'Production {} for node {} has different quantity'.format(prod_expected.type, name))
+                             'Production {} for node {} has different quantity'.format(prod_expected.name, name))
             self.assertEqual(prod_expected.cost, prod_res.cost,
-                             'Production {} for node {} has different cost'.format(prod_expected.type, name))
+                             'Production {} for node {} has different cost'.format(prod_expected.name, name))
 
-        # Borders
-        for border_expected, border_res in zip(node.borders, res.borders):
-            self.assertEqual(border_expected.dest, border_res.dest,
-                             "Border for node {} has different type".format(name))
-            np.testing.assert_array_equal(border_expected.quantity, border_res.quantity,
-                             'Border {} for node {} has different quantity'.format(border_expected.dest, name))
-            self.assertEqual(border_expected.cost, border_res.cost,
-                             'Border {} for node {} has different cost'.format(border_expected.dest, name))
+        # Links
+        for link_expected, link_res in zip(node.links, res.links):
+            self.assertEqual(link_expected.dest, link_res.dest,
+                             "Link for node {} has different name".format(name))
+            np.testing.assert_array_equal(link_expected.quantity, link_res.quantity,
+                             'Link {} for node {} has different quantity'.format(link_expected.dest, name))
+            self.assertEqual(link_expected.cost, link_res.cost,
+                             'Link {} for node {} has different cost'.format(link_expected.dest, name))
 
 
 def plot(d):
@@ -41,9 +49,9 @@ def plot(d):
     print('=============================================================================================')
     print("Node ", d.state.name, 'rac=', d.state.rac, 'cost=', d.state.cost)
     print('\nEvents')
-    print('\ttype\tmes')
+    print('\tname\tmes')
     for event in d.events:
-        print('\t{type: <8}{mes}'.format(type=event.type, mes=event.message))
+        print('\t{name: <8}{mes}'.format(name=event.name, mes=event.message))
 
     print(d.state.consumptions)
     print(d.state.productions)

@@ -2,7 +2,7 @@ name: staging
 on:
   push:
     branches:
-      - 'releases/**'
+      - 'release/**'
 jobs:
   build:
     runs-on: ubuntu-latest

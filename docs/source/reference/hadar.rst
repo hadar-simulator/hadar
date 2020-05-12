@@ -5,10 +5,12 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 4
 
-   hadar.solver
+   hadar.analyzer
+   hadar.optimizer
    hadar.viewer
-   hadar.aggregator
+   hadar.workflow
 
 Module contents
 ---------------

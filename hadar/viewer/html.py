@@ -1,17 +1,28 @@
+#  Copyright (c) 2019-2020, RTE (https://www.rte-france.com)
+#  See AUTHORS.txt
+#  This Source Code Form is subject to the terms of the Apache License, version 2.0.
+#  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
+#  SPDX-License-Identifier: Apache-2.0
+#  This file is part of hadar-simulator, a python adequacy library for everyone.
+
 from typing import Dict, List
 
+import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 from matplotlib.cm import coolwarm
 
-from hadar.aggregator.result import *
+from hadar.analyzer.result import ResultAnalyzer, NodeIndex, SrcIndex, TimeIndex, DestIndex, NameIndex
 from hadar.viewer.abc import ABCPlotting
 
+
+__all__ = ['HTMLPlotting']
 
 class HTMLPlotting(ABCPlotting):
     """
     Plotting implementation interactive html graphics. (Use plotly)
     """
-    def __init__(self, agg, unit_symbol: str = '',
+    def __init__(self, agg: ResultAnalyzer, unit_symbol: str = '',
                  time_start=None, time_end=None,
                  cmap=coolwarm,
                  node_coord: Dict[str, List[float]] = None,
@@ -65,11 +76,12 @@ class HTMLPlotting(ABCPlotting):
             pl_colorscale.append([k * h, 'rgb' + str((C[0], C[1], C[2]))])
         return pl_colorscale
 
-    def stack(self, node: str, prod_kind: str = 'used', cons_kind: str = 'asked'):
+    def stack(self, node: str, scn: int = 0, prod_kind: str = 'used', cons_kind: str = 'asked'):
         """
         Plot with production stacked with area and consumptions stacked by dashed lines.
 
-        :param node: select node to plot. If None, use a dropdown menu to select inside notebook
+        :param node: select node to plot.
+        :param scn: scenario index to plot.
         :param prod_kind: select which prod to stack : available ('avail') or 'used'
         :param cons_kind: select which cons to stacl : 'asked' or 'given'
         :return: plotly figure or jupyter widget to plot
@@ -80,14 +92,15 @@ class HTMLPlotting(ABCPlotting):
 
         # stack production with area
         if p > 0:
-            prod = self.agg.agg_prod(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=True)
-            for i, type in enumerate(prod.index.get_level_values('type').unique()):
-                stack += prod.loc[type][prod_kind].sort_index().values
-                fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=type, mode='none',
+            prod = self.agg.agg_prod(self.agg.iscn[scn], self.agg.inode[node], self.agg.iname, self.agg.itime)\
+                .sort_values('cost', ascending=True)
+            for i, name in enumerate(prod.index.get_level_values('name').unique()):
+                stack += prod.loc[name][prod_kind].sort_index().values
+                fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=name, mode='none',
                                          fill='tozeroy' if i == 0 else 'tonexty'))
 
         # add import in production stack
-        balance = self.agg.get_balance(node=node)
+        balance = self.agg.get_balance(node=node)[scn]
         im = -np.clip(balance, None, 0)
         if not (im == 0).all():
             stack += im
@@ -98,10 +111,11 @@ class HTMLPlotting(ABCPlotting):
         cons_lines = []
         # Stack consumptions with line
         if c > 0:
-            cons = self.agg.agg_cons(NodeIndex(node), TypeIndex(), TimeIndex()).sort_values('cost', ascending=False)
-            for i, type in enumerate(cons.index.get_level_values('type').unique()):
-                stack += cons.loc[type][cons_kind].sort_index().values
-                cons_lines.append([type, stack.copy()])
+            cons = self.agg.agg_cons(self.agg.iscn[scn], self.agg.inode[node], self.agg.iname, self.agg.itime)\
+                .sort_values('cost', ascending=False)
+            for i, name in enumerate(cons.index.get_level_values('name').unique()):
+                stack += cons.loc[name][cons_kind].sort_index().values
+                cons_lines.append([name, stack.copy()])
 
         # Add export in consumption stack
         exp = np.clip(balance, 0, None)
@@ -110,9 +124,9 @@ class HTMLPlotting(ABCPlotting):
             cons_lines.append(['export', stack.copy()])
 
         # Plot line in the reverse sens to avoid misunderstood during graphics analyze
-        for i, (type, stack) in enumerate(cons_lines[::-1]):
+        for i, (name, stack) in enumerate(cons_lines[::-1]):
             fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), line_color=self.cmap_cons[i % 10],
-                                     name= type, line=dict(width=2)))
+                                     name= name, line=dict(width=2)))
 
         fig.update_layout(title_text='Stack for node %s' % node,
                           yaxis_title="Quantity %s" % self.unit, xaxis_title="time")
@@ -151,28 +165,30 @@ class HTMLPlotting(ABCPlotting):
                                     lon=[B[0], A[0], C[0]], text=str(qt), mode='lines',
                                     line=dict(width=4 * self.size, color=color)))
 
-    def exchanges_map(self, t: int, limit: int = None):
+    def exchanges_map(self, t: int, scn: int = 0, limit: int = None):
         """
         Plot a map with node (color are balance) and arrow between nodes (color for quantity).
 
         :param t: timestep to plot
+        :param scn: scenario index to plot
+        :param limit: limite to use as min/max for color scale. If not provided we use min/max from dataset.
         :return: plotly figure or jupyter widget to plot
         """
         if self.coord is None:
             raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
 
-        balances = [self.agg.get_balance(node=node)[t] for node in self.agg.nodes]
+        balances = [self.agg.get_balance(node=node)[scn, t] for node in self.agg.nodes]
         if limit is None:
             limit = max(max(balances), -min(balances))
 
         fig = go.Figure()
 
         # plot links
-        borders = self.agg.agg_border(SrcIndex(), DestIndex(), TimeIndex())
-        for src in borders.index.get_level_values('src').unique():
-            for dest in borders.loc[src].index.get_level_values('dest').unique():
-                exchange = borders.loc[src, dest, t]['used']  # forward
-                exchange -= borders.loc[dest, src, t]['used'] if (dest, src, t) in borders.index else 0  # backward
+        links = self.agg.agg_link(self.agg.iscn[scn], self.agg.isrc, self.agg.idest, self.agg.itime)
+        for src in links.index.get_level_values('src').unique():
+            for dest in links.loc[src].index.get_level_values('dest').unique():
+                exchange = links.loc[src, dest, t]['used']  # forward
+                exchange -= links.loc[dest, src, t]['used'] if (dest, src, t) in links.index else 0  # backward
 
                 color = 'rgb' + str(self.cmap(abs(exchange) / 2 / limit + 0.5)[:-1])
                 if exchange > 0:

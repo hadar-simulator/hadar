@@ -21,18 +21,59 @@ Each kind of network has a needs of adequacy. On one side, some network nodes ne
 items such as watt, litter, package. And other side, some network nodes produce items.
 Applying adequacy on network, is tring to find the best available exchanges to avoid any lack at the best cost.
 
+For example, a electric grid can have some nodes wich produce too more power and some nodes wich produce not enough power.
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Tutorials:
+.. image:: https://mermaid.ink/img/eyJjb2RlIjoiZ3JhcGggTFJcblx0QVtBPGJyLz5sb2FkPTIwPGJyLz5wcm9kPTMwXSAtLT5CW0I8YnIvPmxvYWQ9MjA8YnIvPnByb2Q9MTBdXG5cdFx0XHRcdFx0IiwibWVybWFpZCI6eyJ0aGVtZSI6ImRlZmF1bHQifSwidXBkYXRlRWRpdG9yIjpmYWxzZX0
 
-   tutorials/get-started.rst
-   tutorials/cost.rst
-   tutorials/fr-de.rst
-   tutorials/investment.rst
+In this case, A produce 10 more and B need 10 more. Perform adequecy is quiet easy : A will share 10 to B
+
+.. image:: https://mermaid.ink/img/eyJjb2RlIjoiZ3JhcGggTFJcblx0QVtBPGJyLz5sb2FkPTIwPGJyLz5wcm9kPTMwXSAtLT4gfHNoYXJlIDEwfCBCW0I8YnIvPmxvYWQ9MjA8YnIvPnByb2Q9MTBdXG5cdFx0XHRcdFx0IiwibWVybWFpZCI6eyJ0aGVtZSI6ImRlZmF1bHQifX0)
+
+Hadar compute adequacy from simple to complex network. For example, to compute above network, just few line need::
+
+   from hadar.solver.input import *
+   from hadar.solver.study import solve
+
+   study = Study(['a', 'b']) \
+      .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[20, 20], type='load')) \
+      .add_on_node('a', data=Production(cost=10, quantity=[30, 30], type='prod')) \
+      .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[20, 20], type='load')) \
+      .add_on_node('b', data=Production(cost=20, quantity=[10, 10], type='prod')) \
+      .add_border(src='a', dest='b', quantity=[10, 10], cost=2) \
+
+   res = solve(study)
+
+Then you can analyze by yourself result or use hadar aggragator and plotting::
+
+   from hadar.aggregator.result import ResultAggregator
+   from hadar.viewer.jupyter import JupyterPlotting
+   plot = JupyterPlotting(agg=ResultAggregator(study, res),
+                       node_coord={'a': [2.33, 48.86], 'b': [4.38, 50.83]})
+   plot.stack(node='a')
+
+.. image:: /_static/get-started-1.png
+
+Or ::
+
+   plot.stack(node='b')
+.. image:: /_static/get-started-2.png
+
+Or ::
+
+   plot.exchanges_map(t=0)
+.. image:: /_static/get-started-3.png
 
 .. toctree::
    :maxdepth: 2
    :caption: Reference:
 
-   reference/hadar.rst
+   reference/hadar.analyzer.rst
+   reference/hadar.optimizer.rst
+   reference/hadar.analyzer.rst
+   reference/hadar.viewer.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Legal Terms
+
+   terms/terms.rst

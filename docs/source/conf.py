@@ -19,7 +19,7 @@ import hadar
 # -- Project information -----------------------------------------------------
 master_doc = 'index'
 project = 'hadar-simulator'
-copyright = '2020, RTE'
+copyright = 'Except where otherwise noted, this content is Copyright (c) 2020, RTE (https://www.rte-france.com) and licensed under a CC-BY-4.0 (https://creativecommons.org/licenses/by/4.0/) license.'
 author = 'RTE'
 
 # The full version, including alpha/beta/rc tags
@@ -58,3 +58,5 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 nbsphinx_execute = 'never'
+
+autodoc_mock_imports = ['pandas', 'numpy', 'ortools', 'plotly', 'jupyter', 'matplotlib', 'requests']
