@@ -67,9 +67,9 @@ Or ::
    :maxdepth: 2
    :caption: Reference:
 
-   reference/hadar.preprocessing.rst
-   reference/hadar.solver.rst
-   reference/hadar.aggregator.rst
+   reference/hadar.analyzer.rst
+   reference/hadar.optimizer.rst
+   reference/hadar.analyzer.rst
    reference/hadar.viewer.rst
 
 .. toctree::
