@@ -27,10 +27,10 @@ class RemoteOptimizerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.study = Study(node_names=['a'], horizon=1) \
-            .add_on_node('a', data=Consumption(cost=0, quantity=[0], type='load'))
+            .add_on_node('a', data=Consumption(cost=0, quantity=[0], name='load'))
 
         self.result = Result(nodes={
-            'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], type='load')],
+            'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
                             productions=[], links=[])})
 
     def test_success(self):

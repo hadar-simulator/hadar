@@ -36,12 +36,12 @@ class InputMapper:
         :param scn: scenario index
         :return: LPNode according to node name at t in study
         """
-        consumptions = [LPConsumption(type=c.type, cost=float(c.cost), quantity=c.quantity[scn][t],
-                                      variable=self.solver.NumVar(0, float(c.quantity[scn][t]), name='lol {} on {} at t={} for scn={}'.format(c.type, name, t, scn)))
+        consumptions = [LPConsumption(name=c.name, cost=float(c.cost), quantity=c.quantity[scn][t],
+                                      variable=self.solver.NumVar(0, float(c.quantity[scn][t]), name='lol {} on {} at t={} for scn={}'.format(c.name, name, t, scn)))
                         for c in self.study.nodes[name].consumptions]
 
-        productions = [LPProduction(type=p.type, cost=float(p.cost), quantity=p.quantity[scn][t],
-                                    variable=self.solver.NumVar(0, float(p.quantity[scn][t]), 'prod {} on {} at t={} for scn={}'.format(p.type, name, t, scn)))
+        productions = [LPProduction(name=p.name, cost=float(p.cost), quantity=p.quantity[scn][t],
+                                    variable=self.solver.NumVar(0, float(p.quantity[scn][t]), 'prod {} on {} at t={} for scn={}'.format(p.name, name, t, scn)))
                        for p in self.study.nodes[name].productions]
 
         links = [LPLink(dest=l.dest, cost=float(l.cost), src=name, quantity=l.quantity[scn][t],

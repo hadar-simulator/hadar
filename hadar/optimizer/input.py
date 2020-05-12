@@ -35,39 +35,39 @@ class Consumption(DTO):
     Consumption element.
     """
 
-    def __init__(self, quantity: Union[List, np.ndarray, float], cost: int = 0, type: str = ''):
+    def __init__(self, quantity: Union[List, np.ndarray, float], cost: int = 0, name: str = ''):
         """
         Create consumption.
 
         :param quantity: quantity to match
         :param cost: cost of unavailability
-        :param type: type of consumption (unique for each node)
+        :param name: name of consumption (unique for each node)
         """
         self.cost = cost
         self.quantity = np.array(quantity)
-        self.type = type
+        self.name = name
 
 
 class Production(DTO):
     """
     Production element
     """
-    def __init__(self, quantity: Union[List, np.ndarray, float], cost: int = 0, type: str = 'in'):
+    def __init__(self, quantity: Union[List, np.ndarray, float], cost: int = 0, name: str = 'in'):
         """
         Create production
 
         :param quantity: capacity production
         :param cost: cost of use
-        :param type: type of production (unique for each node)
+        :param name: name of production (unique for each node)
         """
-        self.type = type
+        self.name = name
         self.cost = cost
         self.quantity = np.array(quantity)
 
 
 class Link(DTO):
     """
-    Border element
+    Link element
     """
     def __init__(self, dest: str, quantity: Union[List, np.ndarray, float], cost: int = 0):
         """
@@ -92,7 +92,7 @@ class InputNode(DTO):
 
         :param consumptions: list of consumptions inside node
         :param productions: list of productions inside node
-        :param links: list of borders inside node
+        :param links: list of links inside node
         """
         self.consumptions = consumptions
         self.productions = productions
@@ -154,11 +154,11 @@ class Study(DTO):
         :return:
         """
         if cost < 0:
-            raise ValueError('border cost must be positive')
+            raise ValueError('link cost must be positive')
         if dest not in self._nodes.keys():
-            raise ValueError('border destination must be a valid node')
+            raise ValueError('link destination must be a valid node')
         if dest in [l.dest for l in self._nodes[src].links]:
-            raise ValueError('border destination must be unique on a node')
+            raise ValueError('link destination must be unique on a node')
 
         quantity = self._validate_quantity(quantity)
         self._nodes[src].links.append(Link(dest=dest, quantity=quantity, cost=cost))
@@ -168,8 +168,8 @@ class Study(DTO):
     def _add_production(self, node: str, prod: Production):
         if prod.cost < 0:
             raise ValueError('production cost must be positive')
-        if prod.type in [p.type for p in self._nodes[node].productions]:
-            raise ValueError('production type must be unique on a node')
+        if prod.name in [p.name for p in self._nodes[node].productions]:
+            raise ValueError('production name must be unique on a node')
 
         prod.quantity = self._validate_quantity(prod.quantity)
         self._nodes[node].productions.append(prod)
@@ -177,8 +177,8 @@ class Study(DTO):
     def _add_consumption(self, node: str, cons: Consumption):
         if cons.cost < 0:
             raise ValueError('consumption cost must be positive')
-        if cons.type in [c.type for c in self._nodes[node].consumptions]:
-            raise ValueError('consumption type must be unique on a node')
+        if cons.name in [c.name for c in self._nodes[node].consumptions]:
+            raise ValueError('consumption name must be unique on a node')
 
         cons.quantity = self._validate_quantity(cons.quantity)
         self._nodes[node].consumptions.append(cons)

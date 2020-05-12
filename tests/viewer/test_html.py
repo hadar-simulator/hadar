@@ -20,13 +20,13 @@ from hadar.viewer.html import HTMLPlotting
 class TestHTMLPlotting(unittest.TestCase):
     def setUp(self) -> None:
         self.study = Study(['a', 'b'], horizon=3) \
-            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[20, 10, 2], type='load')) \
-            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[30, 15, 3], type='car')) \
-            .add_on_node('a', data=Production(cost=10, quantity=[60, 30, 5], type='prod')) \
+            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[20, 10, 2], name='load')) \
+            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[30, 15, 3], name='car')) \
+            .add_on_node('a', data=Production(cost=10, quantity=[60, 30, 5], name='prod')) \
         \
-            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[40, 20, 2], type='load')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[10, 5, 1], type='prod')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[20, 10, 2], type='nuclear')) \
+            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[40, 20, 2], name='load')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[10, 5, 1], name='prod')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[20, 10, 2], name='nuclear')) \
             .add_link(src='a', dest='b', quantity=[10, 10, 10], cost=2)
 
         optimizer = LPOptimizer()

@@ -25,18 +25,18 @@ class LPConsumption(DTO):
     Consumption element for linear programming.
     """
 
-    def __init__(self, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0, type: str = ''):
+    def __init__(self, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0, name: str = ''):
         """
         Instance consumption.
 
         :param quantity: quantity to match
         :param variable: ortools variables. represent a loss of load inside equation
         :param cost: unavailability cost
-        :param type: consumption type name
+        :param name: consumption name
         """
         self.cost = cost
         self.quantity = quantity
-        self.type = type
+        self.name = name
         self.variable = variable
 
     def __reduce__(self):
@@ -44,23 +44,23 @@ class LPConsumption(DTO):
         Help pickle to serialize object, specially variable object
         :return: (constructor, values...)
         """
-        return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.type)
+        return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.name)
 
 class LPProduction(DTO):
     """
     Production element for linear programming.
     """
 
-    def __init__(self, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0, type: str = 'in'):
+    def __init__(self, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0, name: str = 'in'):
         """
         Instance production.
 
         :param quantity: production capacity
         :param variable: ortools variables. Represent production used inside equation
         :param cost: cost of use
-        :param type: production type name
+        :param name: production name
         """
-        self.type = type
+        self.name = name
         self.cost = cost
         self.variable = variable
         self.quantity = quantity
@@ -70,7 +70,7 @@ class LPProduction(DTO):
         Help pickle to serialize object, specially variable object
         :return: (constructor, values...)
         """
-        return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.type)
+        return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.name)
 
 
 class LPLink(DTO):
@@ -83,7 +83,7 @@ class LPLink(DTO):
 
         :param src: node source name
         :param dest: node destination name
-        :param quantity: border capacity
+        :param quantity: link capacity
         :param variable: ortools variables. Represent border used inside equation
         :param cost: cost of use
         """

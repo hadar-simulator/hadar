@@ -46,32 +46,32 @@ class OutputConsumption(DTO):
     """
     Consumption element
     """
-    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, type: str = ''):
+    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, name: str = ''):
         """
         Create instance.
 
         :param quantity: quantity matched by node
         :param cost: cost of unavailability
-        :param type: consumption type (unique in a node)
+        :param name: consumption name (unique in a node)
         """
         self.cost = cost
         self.quantity = np.array(quantity)
-        self.type = type
+        self.name = name
 
 
 class OutputProduction(DTO):
     """
     Production element
     """
-    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, type: str = 'in'):
+    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, name: str = 'in'):
         """
         Create instance.
 
         :param quantity: capacity used by node
         :param cost: cost of use
-        :param type: production type (unique in a node)
+        :param name: production name (unique in a node)
         """
-        self.type = type
+        self.name = name
         self.cost = cost
         self.quantity = np.array(quantity)
 
@@ -106,7 +106,7 @@ class OutputNode(DTO):
 
         :param consumptions: consumptions list
         :param productions: productions list
-        :param links:  border list
+        :param links:  link list
         """
         self.consumptions = consumptions
         self.productions = productions
@@ -122,9 +122,9 @@ class OutputNode(DTO):
         """
         output = OutputNode(consumptions=[], productions=[], links=[])
 
-        output.consumptions = [OutputConsumption(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
+        output.consumptions = [OutputConsumption(name=i.name, cost=i.cost, quantity=np.zeros_like(i.quantity))
                                for i in input.consumptions]
-        output.productions = [OutputProduction(type=i.type, cost=i.cost, quantity=np.zeros_like(i.quantity))
+        output.productions = [OutputProduction(name=i.name, cost=i.cost, quantity=np.zeros_like(i.quantity))
                               for i in input.productions]
         output.links = [OutputLink(dest=i.dest, cost=i.cost, quantity=np.zeros_like(i.quantity))
                         for i in input.links]

@@ -47,7 +47,7 @@ class ObjectiveBuilder:
         """
         self._add_consumption(node.consumptions)
         self._add_productions(node.productions)
-        self._add_borders(node.links)
+        self._add_links(node.links)
 
     def _add_consumption(self, consumptions: List[LPConsumption]):
         """
@@ -58,7 +58,7 @@ class ObjectiveBuilder:
         """
         for cons in consumptions:
             self.objective.SetCoefficient(cons.variable, cons.cost)
-            self.logger.debug('Add consumption %s into objective', cons.type)
+            self.logger.debug('Add consumption %s into objective', cons.name)
 
     def _add_productions(self, prods: List[LPProduction]):
         """
@@ -69,18 +69,18 @@ class ObjectiveBuilder:
         """
         for prod in prods:
             self.objective.SetCoefficient(prod.variable, prod.cost)
-            self.logger.debug('Add production %s into objective', prod.type)
+            self.logger.debug('Add production %s into objective', prod.name)
 
-    def _add_borders(self, borders: List[LPLink]):
+    def _add_links(self, links: List[LPLink]):
         """
-        Add border cost. That mean cost to use a border capacity.
+        Add link cost. That mean cost to use a link capacity.
 
-        :param borders: borders with cost to use and used quantity variable
+        :param links: links with cost to use and used quantity variable
         :return:
         """
-        for border in borders:
-            self.objective.SetCoefficient(border.variable, border.cost)
-            self.logger.debug('Add border %s->%s to objective', border.src, border.dest)
+        for link in links:
+            self.objective.SetCoefficient(link.variable, link.cost)
+            self.logger.debug('Add link %s->%s to objective', link.src, link.dest)
 
     def build(self):
         pass  # Currently nothing are need at the end. But we keep builder pattern syntax
@@ -116,7 +116,7 @@ class AdequacyBuilder:
 
         self._add_consumptions(name, t, node.consumptions)
         self._add_productions(name, t, node.productions)
-        self._add_borders(name, t, node.links)
+        self._add_links(name, t, node.links)
 
     def _add_consumptions(self, name: str, t: int, consumptions: List[LPConsumption]):
         """
@@ -130,7 +130,7 @@ class AdequacyBuilder:
         """
         for cons in consumptions:
             self.constraints[(t, name)].SetCoefficient(cons.variable, 1)
-            self.logger.debug('Add lol %s for %s into adequacy constraint', cons.type, name)
+            self.logger.debug('Add lol %s for %s into adequacy constraint', cons.name, name)
 
     def _add_productions(self, name: str, t: int, productions: List[LPProduction]):
         """
@@ -143,23 +143,23 @@ class AdequacyBuilder:
         """
         for prod in productions:
             self.constraints[(t, name)].SetCoefficient(prod.variable, 1)
-            self.logger.debug('Add prod %s for %s into adequacy constraint', prod.type, name)
+            self.logger.debug('Add prod %s for %s into adequacy constraint', prod.name, name)
 
-    def _add_borders(self, name: str, t: int, borders: List[LPLink]):
+    def _add_links(self, name: str, t: int, links: List[LPLink]):
         """
-        Add borders. That mean the border export is like a consumption.
+        Add links. That mean the link export is like a consumption.
         After all node added. The same export, become also an import for destination node.
-        Therefore border has to be set like production for destination node.
+        Therefore link has to be set like production for destination node.
 
         :param name: node's name
         :param t: timestamp
-        :param borders: border with export quantity as variable
+        :param links: link with export quantity as variable
         :return:
         """
-        for bord in borders:
-            self.constraints[(t, bord.src)].SetCoefficient(bord.variable, -1)  # Export from src
-            self.importations[(t, bord.src, bord.dest)] = bord.variable  # Import to dest
-            self.logger.debug('Add border %s for %s into adequacy constraint', bord.dest, name)
+        for link in links:
+            self.constraints[(t, link.src)].SetCoefficient(link.variable, -1)  # Export from src
+            self.importations[(t, link.src, link.dest)] = link.variable  # Import to dest
+            self.logger.debug('Add link %s for %s into adequacy constraint', link.dest, name)
 
     def build(self):
         """
@@ -167,7 +167,7 @@ class AdequacyBuilder:
 
         :return:
         """
-        # Apply import border in adequacy
+        # Apply import link in adequacy
         for (t, src, dest), var in self.importations.items():
             self.constraints[(t, dest)].SetCoefficient(var, 1)
 

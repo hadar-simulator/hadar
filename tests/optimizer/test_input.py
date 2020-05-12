@@ -12,8 +12,8 @@ from hadar.optimizer.input import Study, Consumption, Production, Link
 
 class TestStudy(unittest.TestCase):
     def test_create_study(self):
-        c = Consumption(type='load', cost=20, quantity=10)
-        p = Production(type='nuclear', cost=20, quantity=10)
+        c = Consumption(name='load', cost=20, quantity=10)
+        p = Production(name='nuclear', cost=20, quantity=10)
         l = Link(dest='a', cost=20, quantity=10)
 
         study = Study(['a', 'b'], horizon=1) \
@@ -35,44 +35,44 @@ class TestStudy(unittest.TestCase):
     def test_wrong_production_cost(self):
         def test():
             study = Study(node_names=['fr'], horizon=1) \
-                .add_on_node(node='fr', data=Production(type='solar', cost=-1, quantity=10))
+                .add_on_node(node='fr', data=Production(name='solar', cost=-1, quantity=10))
 
         self.assertRaises(ValueError, test)
 
     def test_wrong_production_quantity(self):
         def test():
             study = Study(node_names=['fr'], horizon=1) \
-                .add_on_node(node='fr', data=Production(type='solar', cost=10, quantity=-1))
+                .add_on_node(node='fr', data=Production(name='solar', cost=10, quantity=-1))
 
         self.assertRaises(ValueError, test)
 
-    def test_wrong_production_type(self):
+    def test_wrong_production_name(self):
         def test():
             study = Study(node_names=['fr'], horizon=1) \
-                .add_on_node(node='fr', data=Production(type='solar', cost=10, quantity=10)) \
-                .add_on_node(node='fr', data=Production(type='solar', cost=10, quantity=10))
+                .add_on_node(node='fr', data=Production(name='solar', cost=10, quantity=10)) \
+                .add_on_node(node='fr', data=Production(name='solar', cost=10, quantity=10))
 
         self.assertRaises(ValueError, test)
 
     def test_wrong_consumption_cost(self):
         def test():
             study = Study(node_names=['fr'], horizon=1) \
-                .add_on_node(node='fr', data=Consumption(type='load', cost=-10, quantity=10))
+                .add_on_node(node='fr', data=Consumption(name='load', cost=-10, quantity=10))
 
         self.assertRaises(ValueError, test)
 
     def test_wrong_consumption_quantity(self):
         def test():
             study = Study(node_names=['fr'], horizon=1) \
-                .add_on_node(node='fr', data=Consumption(type='load', cost=10, quantity=-10))
+                .add_on_node(node='fr', data=Consumption(name='load', cost=10, quantity=-10))
 
         self.assertRaises(ValueError, test)
 
-    def test_wrong_consumption_type(self):
+    def test_wrong_consumption_name(self):
         def test():
             study = Study(node_names=['fr'], horizon=1) \
-                .add_on_node(node='fr', data=Consumption(type='load', cost=10, quantity=10)) \
-                .add_on_node(node='fr', data=Consumption(type='load', cost=10, quantity=10))
+                .add_on_node(node='fr', data=Consumption(name='load', cost=10, quantity=10)) \
+                .add_on_node(node='fr', data=Consumption(name='load', cost=10, quantity=10))
 
         self.assertRaises(ValueError, test)
 

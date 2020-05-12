@@ -84,10 +84,10 @@ class DestIndex(Index[str]):
         Index.__init__(self, column='dest')
 
 
-class TypeIndex(Index[str]):
-    """Index implementation to filter type of elements"""
+class NameIndex(Index[str]):
+    """Index implementation to filter name of elements"""
     def __init__(self):
-        Index.__init__(self, column='type')
+        Index.__init__(self, column='name')
 
 
 class IntIndex(Index[int]):
@@ -142,13 +142,13 @@ class ResultAnalyzer:
     def _build_consumption(study: Study, result: Result):
         """
         Flat all data to build global consumption dataframe
-        columns: | cost | type | node | asked | given | t |
+        columns: | cost | name | node | asked | given | t |
         """
         h = study.horizon
         scn = study.nb_scn
         s = scn * h * sum([len(n.consumptions) for n in study.nodes.values()])
         cons = {'cost': np.empty(s), 'asked': np.empty(s), 'given': np.empty(s),
-                'type': np.empty(s), 'node': np.empty(s), 't': np.empty(s), 'scn': np.empty(s)}
+                'name': np.empty(s), 'node': np.empty(s), 't': np.empty(s), 'scn': np.empty(s)}
         cons = pd.DataFrame(data=cons)
 
         n_cons = 0
@@ -156,7 +156,7 @@ class ResultAnalyzer:
             for i, c in enumerate(result.nodes[name].consumptions):
                 slices = cons.index[n_cons * h * scn: (n_cons + 1) * h * scn]
                 cons.loc[slices, 'cost'] = c.cost
-                cons.loc[slices, 'type'] = c.type
+                cons.loc[slices, 'name'] = c.name
                 cons.loc[slices, 'node'] = name
                 cons.loc[slices, 'asked'] = study.nodes[name].consumptions[i].quantity.flatten()
                 cons.loc[slices, 'given'] = c.quantity.flatten()
@@ -171,13 +171,13 @@ class ResultAnalyzer:
     def _build_production(study: Study, result: Result):
         """
         Flat all data to build global production dataframe
-        columns: | cost | avail | used | type | node | t |
+        columns: | cost | avail | used | name | node | t |
         """
         h = study.horizon
         scn = study.nb_scn
         s = scn * h * sum([len(n.productions) for n in result.nodes.values()])
         prod = {'cost': np.empty(s), 'avail': np.empty(s), 'used': np.empty(s),
-                'type': np.empty(s), 'node': np.empty(s), 't': np.empty(s), 'scn': np.empty(s)}
+                'name': np.empty(s), 'node': np.empty(s), 't': np.empty(s), 'scn': np.empty(s)}
         prod = pd.DataFrame(data=prod)
 
         n_prod = 0
@@ -185,7 +185,7 @@ class ResultAnalyzer:
             for i, c in enumerate(result.nodes[name].productions):
                 slices = prod.index[n_prod * h * scn: (n_prod + 1) * h * scn]
                 prod.loc[slices, 'cost'] = c.cost
-                prod.loc[slices, 'type'] = c.type
+                prod.loc[slices, 'name'] = c.name
                 prod.loc[slices, 'node'] = name
                 prod.loc[slices, 'avail'] = study.nodes[name].productions[i].quantity.flatten()
                 prod.loc[slices, 'used'] = c.quantity.flatten()
@@ -278,15 +278,15 @@ class ResultAnalyzer:
         """
         Aggregate consumption according to index level and filter.
 
-        :param i0: first level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
-        :param i1: second level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
-        :param i2: third level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
-        :param i3 fourth level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]
+        :param i0: first level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
+        :param i1: second level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
+        :param i2: third level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
+        :param i3 fourth level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]
         :return: dataframe with hierarchical and filter index level asked
         """
         ResultAnalyzer._assert_index(i0, i1, i2, i3, TimeIndex)
         ResultAnalyzer._assert_index(i0, i1, i2, i3, NodeIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, TypeIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, NameIndex)
         ResultAnalyzer._assert_index(i0, i1, i2, i3, ScnIndex)
 
         return ResultAnalyzer._pivot(i0, i1, i2, i3, self.consumption)
@@ -295,15 +295,15 @@ class ResultAnalyzer:
         """
         Aggregate production according to index level and filter.
 
-        :param i0: first level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
-        :param i1: second level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
-        :param i2: third level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]]
-        :param i3 fourth level index. Index type must be [NodeIndex, TypeIndex, TimeIndex, ScnIndex]
+        :param i0: first level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
+        :param i1: second level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
+        :param i2: third level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
+        :param i3 fourth level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]
         :return: dataframe with hierarchical and filter index level asked
         """
         ResultAnalyzer._assert_index(i0, i1, i2, i3, TimeIndex)
         ResultAnalyzer._assert_index(i0, i1, i2, i3, NodeIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, TypeIndex)
+        ResultAnalyzer._assert_index(i0, i1, i2, i3, NameIndex)
         ResultAnalyzer._assert_index(i0, i1, i2, i3, ScnIndex)
 
         return ResultAnalyzer._pivot(i0, i1, i2, i3, self.production)
@@ -358,12 +358,12 @@ class ResultAnalyzer:
         cost = np.zeros((self.nb_scn,  self.horizon))
         c, p, b = self.get_elements_inside(node)
         if c:
-            cons = self.agg_cons(self.inode[node], self.iscn, self.itime, self.itype)
+            cons = self.agg_cons(self.inode[node], self.iscn, self.itime, self.iname)
             cost += ((cons['asked'] - cons['given'])*cons['cost']).groupby(axis=0, level=(0, 1))\
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if p:
-            prod = self.agg_prod(self.inode[node], self.iscn, self.itime, self.itype)
+            prod = self.agg_prod(self.inode[node], self.iscn, self.itime, self.iname)
             cost += (prod['used']*prod['cost']).groupby(axis=0, level=(0, 1))\
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
@@ -411,13 +411,13 @@ class ResultAnalyzer:
         return NodeIndex()
 
     @property
-    def itype(self) -> TypeIndex:
+    def iname(self) -> NameIndex:
         """
-        Get a type index to specify type slice to aggregate consumption or production.
+        Get a name index to specify name slice to aggregate consumption or production.
 
-        :return: new instance of TypeIndex()
+        :return: new instance of NameIndex()
         """
-        return TypeIndex()
+        return NameIndex()
 
     @property
     def isrc(self) -> SrcIndex:

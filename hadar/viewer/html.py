@@ -12,7 +12,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from matplotlib.cm import coolwarm
 
-from hadar.analyzer.result import ResultAnalyzer, NodeIndex, SrcIndex, TimeIndex, DestIndex, TypeIndex
+from hadar.analyzer.result import ResultAnalyzer, NodeIndex, SrcIndex, TimeIndex, DestIndex, NameIndex
 from hadar.viewer.abc import ABCPlotting
 
 
@@ -92,11 +92,11 @@ class HTMLPlotting(ABCPlotting):
 
         # stack production with area
         if p > 0:
-            prod = self.agg.agg_prod(self.agg.iscn[scn], self.agg.inode[node], self.agg.itype, self.agg.itime)\
+            prod = self.agg.agg_prod(self.agg.iscn[scn], self.agg.inode[node], self.agg.iname, self.agg.itime)\
                 .sort_values('cost', ascending=True)
-            for i, type in enumerate(prod.index.get_level_values('type').unique()):
-                stack += prod.loc[type][prod_kind].sort_index().values
-                fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=type, mode='none',
+            for i, name in enumerate(prod.index.get_level_values('name').unique()):
+                stack += prod.loc[name][prod_kind].sort_index().values
+                fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=name, mode='none',
                                          fill='tozeroy' if i == 0 else 'tonexty'))
 
         # add import in production stack
@@ -111,11 +111,11 @@ class HTMLPlotting(ABCPlotting):
         cons_lines = []
         # Stack consumptions with line
         if c > 0:
-            cons = self.agg.agg_cons(self.agg.iscn[scn], self.agg.inode[node], self.agg.itype, self.agg.itime)\
+            cons = self.agg.agg_cons(self.agg.iscn[scn], self.agg.inode[node], self.agg.iname, self.agg.itime)\
                 .sort_values('cost', ascending=False)
-            for i, type in enumerate(cons.index.get_level_values('type').unique()):
-                stack += cons.loc[type][cons_kind].sort_index().values
-                cons_lines.append([type, stack.copy()])
+            for i, name in enumerate(cons.index.get_level_values('name').unique()):
+                stack += cons.loc[name][cons_kind].sort_index().values
+                cons_lines.append([name, stack.copy()])
 
         # Add export in consumption stack
         exp = np.clip(balance, 0, None)
@@ -124,9 +124,9 @@ class HTMLPlotting(ABCPlotting):
             cons_lines.append(['export', stack.copy()])
 
         # Plot line in the reverse sens to avoid misunderstood during graphics analyze
-        for i, (type, stack) in enumerate(cons_lines[::-1]):
+        for i, (name, stack) in enumerate(cons_lines[::-1]):
             fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), line_color=self.cmap_cons[i % 10],
-                                     name= type, line=dict(width=2)))
+                                     name= name, line=dict(width=2)))
 
         fig.update_layout(title_text='Stack for node %s' % node,
                           yaxis_title="Quantity %s" % self.unit, xaxis_title="time")

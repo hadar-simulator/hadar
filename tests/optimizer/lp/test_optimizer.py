@@ -25,8 +25,8 @@ class TestObjectiveBuilder(unittest.TestCase):
         solver = MockSolver()
 
         # Input
-        consumptions = [LPConsumption(type='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
-        productions = [LPProduction(type='solar', quantity=10, cost=20, variable=MockNumVar(0, 20, 'solar'))]
+        consumptions = [LPConsumption(name='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
+        productions = [LPProduction(name='solar', quantity=10, cost=20, variable=MockNumVar(0, 20, 'solar'))]
         links = [LPLink(src='fr', dest='be', quantity=10, cost=30, variable=MockNumVar(0, 30, 'be'))]
         node = LPNode(consumptions=consumptions, productions=productions, links=links)
 
@@ -49,8 +49,8 @@ class TestAdequacyBuilder(unittest.TestCase):
         solver = MockSolver()
 
         # Input
-        fr_consumptions = [LPConsumption(type='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
-        fr_productions = [LPProduction(type='solar', quantity=10, cost=20, variable=MockNumVar(0, 20, 'solar'))]
+        fr_consumptions = [LPConsumption(name='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
+        fr_productions = [LPProduction(name='solar', quantity=10, cost=20, variable=MockNumVar(0, 20, 'solar'))]
         fr_links = [LPLink(src='fr', dest='be', quantity=10, cost=30, variable=MockNumVar(0, 30, 'be'))]
         fr_node = LPNode(consumptions=fr_consumptions, productions=fr_productions, links=fr_links)
 
@@ -77,7 +77,7 @@ class TestSolve(unittest.TestCase):
     def test_solve_batch(self):
         # Input
         study = Study(node_names=['a'], horizon=1, nb_scn=1) \
-            .add_on_node(node='a', data=Consumption(type='load', cost=10, quantity=[10]))
+            .add_on_node(node='a', data=Consumption(name='load', cost=10, quantity=[10]))
 
         # Mock
         solver = MockSolver()
@@ -91,13 +91,13 @@ class TestSolve(unittest.TestCase):
         adequacy.add_node = MagicMock()
         adequacy.build = MagicMock()
 
-        in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))
+        in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))
         var = LPNode(consumptions=[in_cons], productions=[], links=[])
         in_mapper = InputMapper(solver=solver, study=study)
         in_mapper.get_var = MagicMock(return_value=var)
 
         # Expected
-        in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, 'load')))
+        in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, 'load')))
         exp_var = LPNode(consumptions=[in_cons], productions=[], links=[])
 
         # Test
@@ -116,14 +116,14 @@ class TestSolve(unittest.TestCase):
     def test_solve(self):
         # Input
         study = Study(node_names=['a'], horizon=1, nb_scn=1) \
-            .add_on_node(node='a', data=Consumption(type='load', cost=10, quantity=[10]))
+            .add_on_node(node='a', data=Consumption(name='load', cost=10, quantity=[10]))
 
         # Expected
-        out_a = OutputNode(consumptions=[OutputConsumption(type='load', cost=10, quantity=[0])],
+        out_a = OutputNode(consumptions=[OutputConsumption(name='load', cost=10, quantity=[0])],
                            productions=[], links=[])
         exp_result = Result(nodes={'a': out_a})
 
-        in_cons = LPConsumption(type='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, '')))
+        in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, '')))
         exp_var = LPNode(consumptions=[in_cons], productions=[], links=[])
 
         # Mock

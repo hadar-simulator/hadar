@@ -10,7 +10,7 @@ import unittest
 import pandas as pd
 import numpy as np
 
-from hadar.analyzer.result import Index, TimeIndex, ResultAnalyzer, NodeIndex, TypeIndex, SrcIndex, DestIndex, \
+from hadar.analyzer.result import Index, TimeIndex, ResultAnalyzer, NodeIndex, NameIndex, SrcIndex, DestIndex, \
     IntIndex
 from hadar.optimizer.input import Production, Consumption, Study
 from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result
@@ -63,25 +63,25 @@ class TestIntIndex(unittest.TestCase):
 class TestAnalyzer(unittest.TestCase):
     def setUp(self) -> None:
         self.study = Study(['a', 'b', 'c'], horizon=3, nb_scn=2) \
-            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], type='load')) \
-            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[130, 13, 13], [13, 130, 130]], type='car')) \
-            .add_on_node('a', data=Production(cost=10, quantity=[[130, 13, 13], [13, 130, 130]], type='prod')) \
-            .add_on_node('b', data=Consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], type='load')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[[110, 11, 11], [11, 110, 110]], type='prod')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], type='nuclear')) \
+            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], name='load')) \
+            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[130, 13, 13], [13, 130, 130]], name='car')) \
+            .add_on_node('a', data=Production(cost=10, quantity=[[130, 13, 13], [13, 130, 130]], name='prod')) \
+            .add_on_node('b', data=Consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], name='load')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[[110, 11, 11], [11, 110, 110]], name='prod')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], name='nuclear')) \
             .add_link(src='a', dest='b', quantity=[[110, 11, 11], [11, 110, 110]], cost=2) \
             .add_link(src='a', dest='c', quantity=[[120, 12, 12], [12, 120, 120]], cost=2)
 
         out = {
-            'a': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], type='load'),
-                                          OutputConsumption(cost=10 ** 3, quantity=[[30, 3, 3], [3, 30, 30]], type='car')],
-                            productions=[OutputProduction(cost=10, quantity=[[30, 3, 3], [3, 30, 30]], type='prod')],
+            'a': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load'),
+                                          OutputConsumption(cost=10 ** 3, quantity=[[30, 3, 3], [3, 30, 30]], name='car')],
+                            productions=[OutputProduction(cost=10, quantity=[[30, 3, 3], [3, 30, 30]], name='prod')],
                             links=[OutputLink(dest='b', quantity=[[10, 1, 1], [1, 10, 10]], cost=2),
                                    OutputLink(dest='c', quantity=[[20, 2, 2], [2, 20, 20]], cost=2)]),
 
-            'b': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], type='load')],
-                            productions=[OutputProduction(cost=20, quantity=[[10, 1, 1], [1, 10, 10]], type='prod'),
-                                         OutputProduction(cost=20, quantity=[[20, 2, 2], [2, 20, 20]], type='nuclear')],
+            'b': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load')],
+                            productions=[OutputProduction(cost=20, quantity=[[10, 1, 1], [1, 10, 10]], name='prod'),
+                                         OutputProduction(cost=20, quantity=[[20, 2, 2], [2, 20, 20]], name='nuclear')],
                             links=[])
         }
 
@@ -92,7 +92,7 @@ class TestAnalyzer(unittest.TestCase):
         exp = pd.DataFrame(data={'cost': [10 ** 3] * 18,
                                  'asked': [120, 12, 12, 12, 120, 120, 130, 13, 13, 13, 130, 130, 120, 12, 12, 12, 120, 120],
                                  'given': [20, 2, 2, 2, 20, 20, 30, 3, 3, 3, 30, 30, 20, 2, 2, 2, 20, 20],
-                                 'type': ['load'] * 6 + ['car'] * 6 + ['load'] * 6,
+                                 'name': ['load'] * 6 + ['car'] * 6 + ['load'] * 6,
                                  'node': ['a'] * 12 + ['b'] * 6,
                                  't':   [0, 1, 2] * 6,
                                  'scn': [0, 0, 0, 1, 1, 1] * 3}, dtype=float)
@@ -106,7 +106,7 @@ class TestAnalyzer(unittest.TestCase):
         exp = pd.DataFrame(data={'cost': [10] * 6 + [20] * 12,
                                  'avail': [130, 13, 13, 13, 130, 130, 110, 11, 11, 11, 110, 110, 120, 12, 12, 12, 120, 120],
                                  'used': [30, 3, 3, 3, 30, 30, 10, 1, 1, 1, 10, 10, 20, 2, 2, 2, 20, 20],
-                                 'type': ['prod'] * 12 + ['nuclear'] * 6,
+                                 'name': ['prod'] * 12 + ['nuclear'] * 6,
                                  'node': ['a'] * 6 + ['b'] * 12,
                                  't':   [0, 1, 2] * 6,
                                  'scn': [0, 0, 0, 1, 1, 1] * 3}, dtype=float)
@@ -137,7 +137,7 @@ class TestAnalyzer(unittest.TestCase):
                                       'given': [20, 2, 2]}, dtype=float, index=index)
 
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        cons = agg.agg_cons(agg.iscn[0], agg.inode['a'], agg.itype['load'], agg.itime)
+        cons = agg.agg_cons(agg.iscn[0], agg.inode['a'], agg.iname['load'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
@@ -145,13 +145,13 @@ class TestAnalyzer(unittest.TestCase):
         # Expected
         index = pd.MultiIndex.from_tuples((('a', 'prod', 0.0), ('a', 'prod', 1.0), ('a', 'prod', 2,0),
                                            ('b', 'prod', 0.0), ('b', 'prod', 1.0), ('b', 'prod', 2,0)),
-                                          names=['node', 'type', 't'], )
+                                          names=['node', 'name', 't'], )
         exp_cons = pd.DataFrame(data={'avail': [130, 13, 13, 110, 11, 11],
                                       'cost': [10, 10, 10, 20, 20, 20],
                                       'used': [30, 3, 3, 10, 1, 1]}, dtype=float, index=index)
 
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        cons = agg.agg_prod(agg.iscn[0], agg.inode['a', 'b'], agg.itype['prod'], agg.itime)
+        cons = agg.agg_prod(agg.iscn[0], agg.inode['a', 'b'], agg.iname['prod'], agg.itime)
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
