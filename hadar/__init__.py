@@ -18,7 +18,7 @@ from .viewer.html import HTMLPlotting
 from .viewer.jupyter import JupyterPlotting
 from .analyzer.result import ResultAnalyzer
 
-__version__ = '0.2.1'
+__version__ = '0.2.0'
 
 level = os.getenv('HADAR_LOG', 'WARNING')
 
