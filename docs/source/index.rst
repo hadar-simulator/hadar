@@ -64,16 +64,40 @@ Or ::
 .. image:: /_static/get-started-3.png
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
+   :caption: Architecture:
+
+   architecture/overview.rst
+   architecture/workflow.rst
+   architecture/optimizer.rst
+   architecture/analyzer.rst
+   architecture/viewer.rst
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Mathematics:
+
+   mathematics/linear-model.rst
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Dev Guide:
+
+   dev-guide/repository.rst
+   dev-guide/best-practices.rst
+   dev-guide/devops.rst
+
+.. toctree::
+   :maxdepth: 1
    :caption: Reference:
 
-   reference/hadar.analyzer.rst
+   reference/hadar.workflow.rst
    reference/hadar.optimizer.rst
    reference/hadar.analyzer.rst
    reference/hadar.viewer.rst
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Legal Terms
 
    terms/terms.rst
