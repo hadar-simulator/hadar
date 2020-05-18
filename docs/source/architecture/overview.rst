@@ -2,12 +2,6 @@ Overview
 ========
 
 Welcome to the Hadar Architecture Documentation.
-If you are here that mean you want to go deeper into Hadar gears.
-If you want just to know how to use Hadar, then `tutorials <https://hadar-simulator.org/tutorials>`_ will be a better place to you.
-
-If you want just to see mathematics model then mathematics section will be better for you.
-
-Ok If you are still here than mean you want to speak about code, class, method and you are at the right place.
 
 Hadar purpose is to be *an adequacy library for everyone*.
 Term *everyone* is important, Hadar must be such easy that everyone can use it.
@@ -16,11 +10,11 @@ And Hadar must be such flexible that everyone business can use it or customize i
 **Why these goals ?**
 
 We design Hadar in the same spirit of python libraries like numy or scipy, and moreover like scikit-learn.
-Before scikit-learn, people how want to develop machine learning have to had strong skill in mathematics background to develop their own code.
-Some *ready to go* code existed but was not easy to use and flexible.
+Before scikit-learn, people who want to develop machine learning have to had strong skill in mathematics background to develop their own code.
+Some *ready to go* codes existed but were not easy to use and flexible.
 
-Scikit-learn release the power of machine learning by abstract complex algorithms into very streight forward API.
-It was designed like a toolbox to handle full machine learning vision, where user can juste assemble scikit-learn component or build their own.
+Scikit-learn release the power of machine learning by abstract complex algorithms into very straight forward API.
+It was designed like a toolbox to handle full machine learning framework, where user can juste assemble scikit-learn component or build their own.
 
 Hadar want to be the next scikit-learn for adequacy.
 Hadar has to be easy to use and flexible, which if we translate into architecture terms become **high abstraction level** and **independent modules**.
@@ -29,10 +23,10 @@ Hadar has to be easy to use and flexible, which if we translate into architectur
 Independent modules
 -------------------
 
-User has the choice : Use only Hadar components, assemble them and create a full solution to generate adequacy study, solve it and analyze result. Or use their parts.
+User has the choice : Use only Hadar components, assemble them and create a full solution to generate, solve and analyze adequacy study. Or build their parts.
 
 
-To reach this constraint, we split Hadar into 4 main modules which can be use together or separated :
+To reach this constraint, we split Hadar into 4 main modules which can be use together or apart :
 
 - **workflow:** module used to generate data study. Hadar handle deterministic computation like stochastic. For stochastic computation user needs to generate many scenarios. Workflow will help user by providing a highly customizable pipeline framework to transform and generate data.
 
