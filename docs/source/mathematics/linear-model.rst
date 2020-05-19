@@ -1,3 +1,5 @@
+.. _linear-model:
+
 Linear Model
 ============
 

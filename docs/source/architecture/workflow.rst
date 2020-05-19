@@ -13,10 +13,10 @@ Are you sur wind will blow next week or sun will shines ? If not, you eolian or 
 
 Of course, we can not predict futur with such precision. It's why we use *stochastic* computation. *Stochastic* means there are fluky behavior in the pyshics we want simulate. Simulation is quiet useless, if result is a unique result.
 
- The best solution could to be to compute a *God function* which tell you for each input variation (solar production, line, consumptions) what is the adequacy result. Like that, Hadar has just to analyze function, its derivates etc to predict futur. But this *Got function* doesn't exist, we just have an algorithm which tell us adequacy according to one fixed set of input data.
+The best solution could be to compute a *God function* which tell you for each input variation (solar production, line, consumptions) what is the adequacy result. Like that, Hadar has just to analyze function, its derivates, min, max, etc to predict futur. But this *God function* doesn't exist, we just have an algorithm which tell us adequacy according to one fixed set of input data.
 
 
-It's why we use *Monte Carlo* algorithm. Monte Carlo run many *scenarios* to analyze many different behavior. Scenario with more consumption in cities, less solar production, less coat production or one line deleted due to crash. By this method we recreate *Got function* by sampling it with the Monte-Carlo method.
+It's why we use *Monte Carlo* algorithm. Monte Carlo run many *scenarios* to analyze many different behavior. Scenario with more consumption in cities, less solar production, less coal production or one line deleted due to crash. By this method we recreate *God function* by sampling it with the Monte-Carlo method.
 
 
 TODO Monte Carlo sampling graphics
@@ -55,7 +55,8 @@ For examples, you have many coal production. Each production plan has 10 generat
 
 In this example, if input is a constant time series of 1,000 MW, you will have as output 10 timeseries with random drop of 100 MW during 24 to 168 timestep.
 
-**Create its own Stage**
+Create its own Stage
+********************
 
 :code:`RepeatScenario`, :code:`Fault` and all other are build upon :code:`Stage` abstract class. A Stage is specified by its :code:`Plug` (we will see sooner) and a :code:`_process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame` to implement. :code:`timeline` variable inside method is the data passed thought pipeline to transform.
 
@@ -86,7 +87,8 @@ For example, you have thousand of scenarios, your stage has to generate gaussian
           return scenario.drop(['mean', 'sigma'], axis=1)
 
 
-**What's Plug ?**
+What's Plug ?
+*************
 
 You are already see :code:`FreePlug` and :code:`RestrictedPlug`, what's it ?
 
