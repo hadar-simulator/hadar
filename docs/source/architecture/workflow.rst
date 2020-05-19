@@ -11,10 +11,12 @@ When you want to simulate a network adequacy, you can perform a *deterministic* 
 
 Are you sur wind will blow next week or sun will shines ? If not, you eolian or solar production could change. Can you warrant that no failure will occur on your network next month or next year ?
 
-Of course, we can not predict futur with such precision. The best solution could to be to compute a *God function* which tell you for each input variation (solar production, line, consumptions) what is the adequacy result. Like that, Hadar has just to analyze function, its derivates etc to predict futur. But this *Got function* doesn't exist, we just have an algorithm which tell us adequacy according to one fixed set of input data.
+Of course, we can not predict futur with such precision. It's why we use *stochastic* computation. *Stochastic* means there are fluky behavior in the pyshics we want simulate. Simulation is quiet useless, if result is a unique result.
+
+ The best solution could to be to compute a *God function* which tell you for each input variation (solar production, line, consumptions) what is the adequacy result. Like that, Hadar has just to analyze function, its derivates etc to predict futur. But this *Got function* doesn't exist, we just have an algorithm which tell us adequacy according to one fixed set of input data.
 
 
-It's why we use *stochastic* computation. With stochastic computation, you run many *scenarios* to analyze many different behavior. Scenario with more consumption in cities, less solar production, less coat production or one line deleted due to crash. By this method we recreate *Got function* by sampling it with the Monte-Carlo method.
+It's why we use *Monte Carlo* algorithm. Monte Carlo run many *scenarios* to analyze many different behavior. Scenario with more consumption in cities, less solar production, less coat production or one line deleted due to crash. By this method we recreate *Got function* by sampling it with the Monte-Carlo method.
 
 
 TODO Monte Carlo sampling graphics
@@ -25,11 +27,11 @@ Workflow will help user to generate these scenarios and sample them to create a 
 The main issue when we want to *help people generating their scenarios* is they are as many generating process than user.
 Therefore workflow is build upon a Stage and Pipeline Architecture.
 
- 
+
 Stages, Pipelines & Plug
 ------------------------
 
-Stage is an atomic process applied to data. In workflow, data is a pandas Dataframe with this form
+Stage is an atomic process applied on data. In workflow, data is a pandas Dataframe with this form
 
 TODO stage data
 
@@ -40,14 +42,14 @@ For examples, you have many coal production. Each production plan has 10 generat
 
     # In this example, one timestep = one hour
     import hadar as hd
-    
+
     # Copy scenarios ten times
     copy = hd.RepeatScenario(n=10)
-    
+
     # Apply on each scenario random fault, such as power drop is 100 MW, there is 0.01% chance of failure each hour
     # if failture, it's a least for the whole day and until next week.
     fault = hd.Fault(loss=100, occur_freq=0.0001, downtime_min=24, downtime_max=168)
-    
+
     pipe = copy + fault
     out = pipe.compute(in)
 
@@ -118,14 +120,14 @@ Of cours he can develop sampling algorithm, but he can  also use :code:`Shuffler
 
 #. It will schedule pipelines compute. If shuffler is used with pipeline, it will distribute pipeline running over computer cores. A good tips !
 
-#. Yes it samples data to create study scenarios.
+#. It samples data to create study scenarios.
 
 TODO shuffler graphics
 
 Below an example how to use Shuffler ::
 
     shuffler = Shuffler()
-    # Add raw data as a bumpy array
+    # Add raw data as a numpy array
     shuffler.add_data(name='solar', data=np.array([[1, 2, 3], [5, 6, 7]]))
 
     # Add pipeline and its input data
@@ -139,4 +141,3 @@ Below an example how to use Shuffler ::
     # Get result according name given
     solar = res['solar']
     load = res['load']
-
