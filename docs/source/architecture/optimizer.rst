@@ -1,7 +1,7 @@
 Optimizer
 =========
 
-Optimizer is the heart of Hadar. Behind it, there is adequacy solver. There are more than one optimizer :
+Optimizer is the heart of Hadar. Behind it, there are :
 
 #. Input object called :code:`Study`. Output object called :code:`Result`. These two objects encapsulate all data needed to compute adequacy.
 
@@ -31,9 +31,9 @@ LPOptimizer
 
 Before read this chapter, we kindly advertise you to read :ref:`Linear Model <linear-model>`
 
-:code:`LPOptimizer` translate data into optimization problem. Hadar algorithms focus only on modeling problem and uses `or-tools <https://developers.google.com/optimization>`_ to solve problem it.
+:code:`LPOptimizer` translate data into optimization problem. Hadar algorithms focus only on modeling problem and uses `or-tools <https://developers.google.com/optimization>`_ to solve problem.
 
-To achive modeling goal, :code:`LPOptimizer` is designed to receive :code:`Study` object, convert data into or-tools *Variables*. Then *Variables* are placed inside objective and constraint equations. Equations are solved by or-tools. Finally *Variables* are converted to Result object.
+To achive modeling goal, :code:`LPOptimizer` is designed to receive :code:`Study` object, convert data into or-tools *Variables*. Then *Variables* are placed inside objective and constraint equations. Equations are solved by or-tools. Finally *Variables* are converted to :code:`Result` object.
 
 Analyze that in details.
 
@@ -48,8 +48,8 @@ Therefore, :code:`InputMapper` roles are just to create new object with ortools 
     LPLink(dest=l.dest,
            cost=float(l.cost),
            src=name,
-           quantity=l.quantity[scn][t],
-           variable=self.solver.NumVar(0, float(l.quantity[scn][t]),
+           quantity=l.quantity[scn, t],
+           variable=self.solver.NumVar(0, float(l.quantity[scn, t]),
               'link on {} to {} at t={} for scn={}'.format(name, l.dest, t, scn)
            )
      )
@@ -69,7 +69,7 @@ Line seems strange due to complex index. First we select good node *name*, then 
 .. math::
     Cons_{final} = Cons_{given} - Cons_{var}
 
-Keep in mind that :math:`Cons_{var}` is the lost of load. So we need to substract it from initial consumption to get really consumption available.
+Keep in mind that :math:`Cons_{var}` is the lost of load. So we need to substract it from initial consumption to get really consumption sustained.
 
 Modeler
 *******
@@ -139,9 +139,9 @@ Study
 
 #. node level with node name as key.
 
-#. type elements level with *consumption*, *production* and *link* entries. Represented inside :code:`InputNode` object.
+#. type elements level with *consumption*, *production* and *link* entries. Represented by :code:`InputNode` object.
 
-#. element with index as key. Represented with :code:`Consumption`, :code:`Production`, :code:`Link` objects
+#. element with index as key. Represented by :code:`Consumption`, :code:`Production`, :code:`Link` objects
 
 Most important attribute could be :code:`quantity` which represent quantity of power used in network. For link, is a transfert capacity. For production is a generation capacity. For consumption is a forced load to sustain.
 
@@ -176,6 +176,7 @@ Study includes also check mechanism to be sure: node existe, consumption is uniq
 Result
 ------
 
-:code:`Result` look like :code:`Study`, it has the same hierarchical structure, same element, just different naming to respect *Domain Driven Development* . Indeed, :code:`Result`is used as output computation, therefore we can reuse the same object.
+:code:`Result` look like :code:`Study`, it has the same hierarchical structure, same element, just different naming to respect *Domain Driven Development* . Indeed, :code:`Result` is used as output computation, therefore we can reuse the same object.
+:code:`Result` is the glue between optimizer and analyzer (or any else postprocessing).
 
 :code:`Result` souldn't be created by user. User will only read it. So, :code:`Result` has not fluent API to help construction.
