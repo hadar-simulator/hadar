@@ -78,12 +78,12 @@ Hadar has to build problem optimization. These algorithms are encapsulated insid
 
 :code:`ObjectiveBuilder` get node by its method :code:`add_node`. Then for all productions, consumptions, links, it adds :math:`variable * cost` into objective equation.
 
-:code:`AdequacyBuilder` is a bit more tricky. For each node, it will create a new adequacy contraint equation (c.f. :ref:`Linear Model <linear-model>`). Coefficients, here are 1 or -1 depending of *inner* power or *outer* power. You also have see these lines ::
+:code:`AdequacyBuilder` is a bit more tricky. For each node, it will create a new adequacy contraint equation (c.f. :ref:`Linear Model <linear-model>`). Coefficients, here are 1 or -1 depending of *inner* power or *outer* power. Have you seen these line ? ::
 
     self.constraints[(t, link.src)].SetCoefficient(link.variable, -1)  # Export from src
     self.importations[(t, link.src, link.dest)] = link.variable  # Import to dest
 
-Hadar has to set power importation to *dest* node equation. But maybe this node is not yet setup and this constraint equation doesn't exist yet. Therefore he has to store all constraint equations and all link capacities. And at the end :code:`build()` is called ::
+Hadar has to set power importation to *dest* node equation. But maybe this node is not yet setup and this constraint equation doesn't exist yet. Therefore he has to store all constraint equations and all link capacities. And at the end :code:`build()` is called, which will add importation terms into all adequacy constraints to finalize equations. ::
 
     def build(self):
         """
@@ -95,9 +95,8 @@ Hadar has to set power importation to *dest* node equation. But maybe this node 
         for (t, src, dest), var in self.importations.items():
             self.constraints[(t, dest)].SetCoefficient(var, 1)
 
-Which will add importation terms into all adequacy constraints to finalize equations.
 
-:code:`solve_batch` method resolve study scenario by scenario. It iterates over node and time, calls :code:`InputMapper`, then constructs problem with :code:`*Buidler`, and asks or-tools to solve problem.
+:code:`solve_batch` method resolve study for one scenario. It iterates over node and time, calls :code:`InputMapper`, then constructs problem with :code:`*Buidler`, and asks or-tools to solve problem.
 
 :code:`solve_lp` applies the last iteration over scenarios and it's the entry point for linear programming optimizer. After all scenarios are solved, results are mapped to :code:`Result` object.
 
