@@ -57,7 +57,7 @@ class Index(Generic[T]):
             return df[self.column].notnull()
         return df[self.column].isin(self.index)
 
-    def is_alone(self):
+    def is_alone(self) -> bool:
         """
         Ask if index filter element is alone.
 

@@ -11,7 +11,8 @@ Therefore :code:`Optimizer` is an abstract class build on *Strategy* pattern. Us
 
 Today, two optimizers are present :code:`LPOptimizer` and :code:`RemoteOptimizer`
 
-TODO ULM Optimizer
+.. image:: /_static/architecture/optimizer/ulm-optimizer.png
+    :scale: 50%
 
 RemoteOptimizer
 ---------------
@@ -100,6 +101,8 @@ Hadar has to set power importation to *dest* node equation. But maybe this node 
 
 :code:`solve_lp` applies the last iteration over scenarios and it's the entry point for linear programming optimizer. After all scenarios are solved, results are mapped to :code:`Result` object.
 
+.. image:: /_static/architecture/optimizer/lpoptimizer.png
+
 Or-tools, multiprocessing & pickle nightmare
 ............................................
 
@@ -129,7 +132,6 @@ It should work, but in fact not... I don't know why, when multiprocessing want t
     # hadar.optimizer.lp.solver._solve_batch
     return pickle.dumps(variables)
 
-TODO ULM LPOptimizer
 
 Study
 -----

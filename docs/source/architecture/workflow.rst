@@ -19,7 +19,7 @@ The best solution could be to compute a *God function* which tell you for each i
 It's why we use *Monte Carlo* algorithm. Monte Carlo run many *scenarios* to analyze many different behavior. Scenario with more consumption in cities, less solar production, less coal production or one line deleted due to crash. By this method we recreate *God function* by sampling it with the Monte-Carlo method.
 
 
-TODO Monte Carlo sampling graphics
+.. image:: /_static/architecture/workflow/monte-carlo.png
 
 
 Workflow will help user to generate these scenarios and sample them to create a stochastic study.
@@ -145,7 +145,7 @@ Of course he can develop sampling algorithm, but he can  also use :code:`Shuffle
 
 #. It samples data to create study scenarios.
 
-TODO shuffler graphics
+.. image:: /_static/architecture/workflow/shuffler.png
 
 Below an example how to use Shuffler ::
 

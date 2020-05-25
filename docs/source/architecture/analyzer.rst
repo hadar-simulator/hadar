@@ -138,8 +138,7 @@ Each kind of index has to inherent from this class. :code:`Index` object encapsu
             Index.__init__(self, column='node')
 
 
-TODO index ULM
-
+.. image:: /_static/architecture/analyzer/ulm-index.png
 Index instantiation are completely hidden for user. It created implicitly when user types :code:`agg.ixxx[yy]`. Then, hadar will
 
 #. check that mandatory indexes are given with :code:`_assert_index` method.
