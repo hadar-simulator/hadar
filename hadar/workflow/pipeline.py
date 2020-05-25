@@ -464,10 +464,9 @@ class Fault(FocusStage):
         self.downtime_min = downtime_min
         self.downtime_max = downtime_max
         self.seed = np.random.randint(0, 100000000) if seed is None else seed
-
-    def _process_scenarios(self, n_scn: int, scenario: pd.DataFrame) -> pd.DataFrame:
         np.random.seed(self.seed)
 
+    def _process_scenarios(self, n_scn: int, scenario: pd.DataFrame) -> pd.DataFrame:
         horizon = scenario.shape[0]
         nb_faults = np.random.choice([0, 1], size=horizon, p=[1 - self.occur_freq, self.occur_freq]).sum()
 

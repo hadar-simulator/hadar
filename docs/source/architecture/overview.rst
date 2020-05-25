@@ -4,8 +4,10 @@ Overview
 Welcome to the Hadar Architecture Documentation.
 
 Hadar purpose is to be *an adequacy library for everyone*.
-Term *everyone* is important, Hadar must be such easy that everyone can use it.
-And Hadar must be such flexible that everyone business can use it or customize it.
+
+#. Term *everyone* is important, Hadar must be such easy that everyone can use it.
+
+#. And Hadar must be such flexible that everyone business can use it or customize it.
 
 **Why these goals ?**
 
@@ -14,7 +16,7 @@ Before scikit-learn, people who want to develop machine learning have to had str
 Some *ready to go* codes existed but were not easy to use and flexible.
 
 Scikit-learn release the power of machine learning by abstract complex algorithms into very straight forward API.
-It was designed like a toolbox to handle full machine learning framework, where user can juste assemble scikit-learn component or build their own.
+It was designed like a toolbox to handle full machine learning framework, where user can just assemble scikit-learn component or build their own.
 
 Hadar want to be the next scikit-learn for adequacy.
 Hadar has to be easy to use and flexible, which if we translate into architecture terms become **high abstraction level** and **independent modules**.
@@ -37,7 +39,7 @@ To reach this constraint, we split Hadar into 4 main modules which can be use to
 
 - **viewer** analyzer output will be numpy matrix or pandas Dataframe, it great but not enough to analyze result. Viewer uses the analyzer feature and API to generate graphics from study data.
 
-As said, these modules can be used together to handle complet adequacy study lifecycle or used seperately.
+As said, these modules can be used together to handle complete adequacy study lifecycle or used apart.
 
 TODO graph architecture module
 
@@ -48,8 +50,7 @@ High Abstraction API
 Each above modules are like a tiny independent libraries. Therefore each module has a high level API.
 High abstraction, is a bit confuse to handle and benchmark. For us a high abstraction is when user doesn't need to know mathematics or technicals stuffs when he uses library.
 
-Scikit-learn is the best example of high abstraction level API. For example, if we just want to start a complet SVM research
-::
+Scikit-learn is the best example of high abstraction level API. For example, if we just want to start a complete SVM research ::
 
     from sklean.svm import SVR
     svm = SVR()
@@ -57,11 +58,10 @@ Scikit-learn is the best example of high abstraction level API. For example, if 
     y_pred = svm.predict(X_test)
 
 
-How many people using this features know that scikit-learn tries to project data into higher space to find a linear regression inside. And to accelerate computation, it uses mathematics feature called *a kernel trick* because problem respect strict requirements ? Perhaps just few people and it's all the beauty of an high level API, it hidden background gear.
+How many people using this feature know that scikit-learn tries to project data into higher space to find a linear regression inside. And to accelerate computation, it uses mathematics a feature called *a kernel trick* because problem respect strict requirements ? Perhaps just few people and it's all the beauty of an high level API, it hidden background gear.
 
 
-Hadar tries to keep this high abstraction features. Look at the *Get Started* example
-::
+Hadar tries to keep this high abstraction features. Look at the *Get Started* example ::
 
     import hadar as hd
     
@@ -89,4 +89,3 @@ All architecture focuses on : High Abstraction and Independent module. You can a
 
 
 Let't start code explanation.
-

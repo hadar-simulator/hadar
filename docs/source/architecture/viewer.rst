@@ -1,7 +1,7 @@
 Viewer
 ======
 
-Even with the highest level analyzer features. Data remains simple matrix or tables. Viewer is the end of Hadar framework, it will create amazing plot to bring most valuable data for humain analysis.
+Even with the highest level analyzer features. Data remains simple matrix or tables. Viewer is the end of Hadar framework, it will create amazing plot to bring most valuable data for human analysis.
 
 Viewer use Analyzer API to build plots. It like an extract layer to convert numeric result to visual result.
 
