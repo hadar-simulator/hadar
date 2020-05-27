@@ -50,8 +50,7 @@ You are in the technical documentation.
    :caption: Dev Guide:
 
    dev-guide/repository.rst
-   dev-guide/best-practices.rst
-   dev-guide/devops.rst
+   dev-guide/contributing.rst
 
 .. toctree::
    :maxdepth: 1

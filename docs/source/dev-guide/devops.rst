@@ -1,4 +1,0 @@
-Devops lifecycle
-================
-
-Hello world
