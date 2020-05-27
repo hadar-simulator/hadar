@@ -5,9 +5,9 @@ For a high abstraction and to be agnostic about technology, Hadar uses objects a
 
 Today, there is only :code:`ResultAnalyzer`, with two features level:
 
-* **high level ** user asks directly to compute global cost and global remain capacity, etc.
+* **high level** user asks directly to compute global cost and global remain capacity, etc.
 
-* **low level ** user asks *raw* data represented inside pandas Dataframe.
+* **low level** user asks *raw* data represented inside pandas Dataframe.
 
 Before speaking about this features, let's see how data are transformed.
 

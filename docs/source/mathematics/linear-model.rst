@@ -3,7 +3,7 @@
 Linear Model
 ============
 
-Main Optimizer is a :code:`LPOptimizer`. It creates linear programming problem represented grid adequacy. We will see mathematics problem, step by step
+The main optimizer is :code:`LPOptimizer`. It creates linear programming problem representing network adequacy. We will see mathematics problem, step by step
 
 #. Basic adequacy equations
 #. Add lack of adequacy terms (lost of load and spillage)
@@ -13,18 +13,18 @@ As you will see, :math:`\Gamma_x` represents a quantity in network, :math:`\over
 Basic adequacy
 --------------
 
-Let's begin by the first adequacy behavior. We have a graph :math:`G(N, L)` with :math:`N` nodes on the graph and :math:`L`  edges on this graph.
+Let's begin by the first adequacy behavior. We have a graph :math:`G(N, L)` with :math:`N` nodes on the graph and :math:`L`  unidirectional edges on this graph.
 
 Variables
 *********
 
-* :math:`n \in N` a node belongs graph
+* :math:`n \in N` a node belongs to graph
 
 * :math:`T \in \mathbb{Z}_+` time horizon
 
-Edge variabl
+Edge variables
 
-* :math:`l \in L` an edge belongs to graphs
+* :math:`l \in L` an unidirectional edge belongs to graphs
 
 * :math:`\overline{\Gamma_l} \in \mathbb{R}^T_+` maximum power transfert capacity for :math:`l`
 
@@ -32,9 +32,9 @@ Edge variabl
 
 * :math:`\gamma_l \in \mathbb{R}^T_+` proportional cost when :math:`\Gamma_l` is used
 
-* :math:`L^n_\uparrow \subset L` set of edges with a upstream to node :math:`n`
+* :math:`L^n_\uparrow \subset L` set of edges with direction to node :math:`n` (i.e. importation for :math:`n`)
 
-* :math:`L^n_\downarrow \subset L` set of edges with a downstream from node :math:`n`
+* :math:`L^n_\downarrow \subset L` set of edges with direction from node :math:`n` (i.e. exportation for :math:`n`)
 
 
 Productions variables
