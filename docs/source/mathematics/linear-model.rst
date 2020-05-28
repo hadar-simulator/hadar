@@ -8,7 +8,7 @@ The main optimizer is :code:`LPOptimizer`. It creates linear programming problem
 #. Basic adequacy equations
 #. Add lack of adequacy terms (lost of load and spillage)
 
-As you will see, :math:`\Gamma_x` represents a quantity in network, :math:`\overline{\Gamma_x}` is the maximum, :math:`\underline{\Gamma_x}` is the minimum, :math:`\overline{\underline{\Gamma_x}}` is the maximum and minimum a.k.a it's a forced quantity. Upper case grec letter is for quantity, and lower case grec letter is for cost :math:`\gamma_x` associated to this quantity.
+    As you will see, :math:`\Gamma_x` represents a quantity in network, :math:`\overline{\Gamma_x}` is the maximum, :math:`\underline{\Gamma_x}` is the minimum, :math:`\overline{\underline{\Gamma_x}}` is the maximum and minimum a.k.a it's a forced quantity. Upper case grec letter is for quantity, and lower case grec letter is for cost :math:`\gamma_x` associated to this quantity.
 
 Basic adequacy
 --------------
@@ -73,18 +73,21 @@ Constraint
 First constraint is from Kirschhoff law and describes balance between productions and consumptions
 
 .. math::
-    \Pi_{kirschhoff} : \forall n, \sum^{C^n}_{c}{\underline{\overline{\Gamma_c}}} + \sum^{L^n_{\downarrow}}_{l}{ \Gamma_l } = \sum^{P^n}_{p}{ \Gamma_p } + \sum^{L^n_{\uparrow}}_{l}{ \Gamma_l }
+    \begin{array}{rcl}
+    \Pi_{kirschhoff} &:& \forall n &,& \sum^{C^n}_{c}{\underline{\overline{\Gamma_c}}} + \sum^{L^n_{\downarrow}}_{l}{ \Gamma_l } = \sum^{P^n}_{p}{ \Gamma_p } + \sum^{L^n_{\uparrow}}_{l}{ \Gamma_l }
+    \end{array}
 
 Then productions and edges need to be bounded
 
 .. math::
-    \Pi_{Edge\ bound}: \forall l \in L,  0 \le \Gamma_{l} \le \overline{\Gamma_l} \\
-    \Pi_{Prod\ bound}:
+    \begin{array}{rcl}
+    \Pi_{Edge\ bound} &:& \forall l \in L &,&  0 \le \Gamma_{l} \le \overline{\Gamma_l} \\
+    \Pi_{Prod\ bound} &:&
     \left\{ \begin{array}{cl}
     \forall n \in N \\
     \forall p \in P^n
-    \end{array} \right.
-    , 0 \le \Gamma_p \le \overline{\Gamma_p}
+    \end{array} \right. &,& 0 \le \Gamma_p \le \overline{\Gamma_p}
+    \end{array}
 
 
 Lack of adequacy
@@ -95,7 +98,7 @@ Variables
 
 Sometime, there are a lack of adequacy because there are not enough production, called *lost of load*.
 
-Like :math:`\Gamma_x` mean present quantity, :math:`\Lambda_x` represent a lack in network (consumption or production) to reach adequacy. Like for :math:`\Gamma_x`, lower case grec letter :math:`\lambda_x` is for cost associated to this lack.
+    Like :math:`\Gamma_x` means quantity present in network, :math:`\Lambda_x` represents a lack in network (consumption or production) to reach adequacy. Like for :math:`\Gamma_x`, lower case grec letter :math:`\lambda_x` is for cost associated to this lack.
 
 * :math:`\Lambda_c \in \mathbb{R}^T_+` lost of load for :math:`c` consumption
 
@@ -118,14 +121,17 @@ Constraints
 Kirschhoff law needs an update too. Lost of Load is represented like a *fantom* import of energy to reach adequacy.
 
 .. math::
-        \Pi_{kirschhoff} : \forall n, \sum^{C^n}_{c}{\underline{\overline{\Gamma_c}}} + \sum^{L^n_{\downarrow}}_{l}{ \Gamma_l } = \sum^{P^n}_{p}{ \Gamma_p } + \sum^{L^n_{\uparrow}}_{l}{ \Gamma_l } + \underbrace{\sum^{C^n}_{c}{ \Lambda_c }}
+    \begin{array}{rcl}
+        \Pi_{kirschhoff} &:& \forall n &,& \sum^{C^n}_{c}{\underline{\overline{\Gamma_c}}} + \sum^{L^n_{\downarrow}}_{l}{ \Gamma_l } = \sum^{P^n}_{p}{ \Gamma_p } + \sum^{L^n_{\uparrow}}_{l}{ \Gamma_l } + \underbrace{\sum^{C^n}_{c}{ \Lambda_c }}
+    \end{array}
 
 Lost of load must be bounded
 
 .. math::
-    \Pi_{Lol\ bound}:
+    \begin{array}{rcl}
+    \Pi_{Lol\ bound} &:&
     \left\{ \begin{array}{cl}
     \forall n \in N \\
     \forall c \in C^n
-    \end{array} \right.
-    , 0 \le \Lambda_c \le \overline{\underline{\Gamma_c}}
+    \end{array} \right. &,& 0 \le \Lambda_c \le \overline{\underline{\Gamma_c}}
+    \end{array}
