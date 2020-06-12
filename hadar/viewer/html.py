@@ -83,7 +83,7 @@ class HTMLPlotting(ABCPlotting):
         :param node: select node to plot.
         :param scn: scenario index to plot.
         :param prod_kind: select which prod to stack : available ('avail') or 'used'
-        :param cons_kind: select which cons to stacl : 'asked' or 'given'
+        :param cons_kind: select which cons to stack : 'asked' or 'given'
         :return: plotly figure or jupyter widget to plot
         """
         fig = go.Figure()
@@ -210,5 +210,77 @@ class HTMLPlotting(ABCPlotting):
                           geo=dict(projection_type='equirectangular', showland=True, showcountries=True,
                                    resolution=50, landcolor='rgb(200, 200, 200)', countrycolor='rgb(0, 0, 0)',
                                    fitbounds='locations'))
+
+        return fig
+
+    def consumptions(self, node: str, name: str, kind: str = 'given'):
+        """
+        Plot all timelines consumption scenario.
+
+        :param node: selected node name
+        :param name: select consumption name
+        :param kind: kind of data 'asked' or 'given'
+        :return:
+        """
+        cons = self.agg.agg_cons(self.agg.inode[node], self.agg.iname[name], self.agg.iscn, self.agg.itime)[kind]
+        scenarios = cons.index.get_level_values('scn').unique()
+        alpha = max(10, 255 / scenarios.size)
+        color = 'rgba(100, 100, 100, %d)' % alpha
+
+        fig = go.Figure()
+        for scn in scenarios:
+            fig.add_trace(go.Scatter(x=self.time_index, y=cons.loc[scn], mode='lines', hoverinfo='name',
+                                     name='scn %0d' % scn, line=dict(color=color)))
+
+        fig.update_layout(title_text='Consumptions %s for %s on node %s' % (kind, name, node),
+                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time", showlegend=False)
+
+        return fig
+
+    def productions(self, node: str, name: str, kind: str = 'used'):
+        """
+         Plot all timelines production scenario.
+
+         :param node: selected node name
+         :param name: select production name
+         :param kind: kind of data available ('avail') or 'used'
+         :return:
+         """
+        prod = self.agg.agg_prod(self.agg.inode[node], self.agg.iname[name], self.agg.iscn, self.agg.itime)[kind]
+        scenarios = prod.index.get_level_values('scn').unique()
+        alpha = max(10, 255 / scenarios.size)
+        color = 'rgba(100, 100, 100, %d)' % alpha
+
+        fig = go.Figure()
+        for scn in scenarios:
+            fig.add_trace(go.Scatter(x=self.time_index, y=prod.loc[scn], mode='lines', hoverinfo='name',
+                                     name='scn %0d' % scn, line=dict(color=color)))
+
+        fig.update_layout(title_text='Productions %s for %s on node %s' % (kind, name, node),
+                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time", showlegend=False)
+
+        return fig
+
+    def links(self, src: str, dest: str, kind: str = 'used'):
+        """
+         Plot all timelines links scenario.
+
+         :param src: selected source node name
+         :param dest: select destination node name
+         :param kind: kind of data available ('avail') or 'used'
+         :return:
+         """
+        links = self.agg.agg_link(self.agg.isrc[src], self.agg.idest[dest], self.agg.iscn, self.agg.itime)[kind]
+        scenarios = links.index.get_level_values('scn').unique()
+        alpha = max(10, 255 / scenarios.size)
+        color = 'rgba(100, 100, 100, %d)' % alpha
+
+        fig = go.Figure()
+        for scn in scenarios:
+            fig.add_trace(go.Scatter(x=self.time_index, y=links.loc[scn], mode='lines', hoverinfo='name',
+                                     name='scn %0d' % scn, line=dict(color=color)))
+
+        fig.update_layout(title_text='Link %s from %s to %s' % (kind, src, dest),
+                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time", showlegend=False)
 
         return fig

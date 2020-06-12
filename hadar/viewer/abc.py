@@ -20,3 +20,15 @@ class ABCPlotting(ABC):
     @abstractmethod
     def exchanges_map(self, t: int, limit: int):
         pass
+
+    @abstractmethod
+    def consumptions(self, node: str, name: str, kind: str = 'given'):
+        pass
+
+    @abstractmethod
+    def productions(self, node: str, name: str, kind: str = 'used'):
+        pass
+
+    @abstractmethod
+    def links(self, src: str, dest: str, kind: str = 'used'):
+        pass

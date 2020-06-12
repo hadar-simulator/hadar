@@ -19,15 +19,15 @@ from hadar.viewer.html import HTMLPlotting
 
 class TestHTMLPlotting(unittest.TestCase):
     def setUp(self) -> None:
-        self.study = Study(['a', 'b'], horizon=3) \
-            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[20, 10, 2], name='load')) \
-            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[30, 15, 3], name='car')) \
-            .add_on_node('a', data=Production(cost=10, quantity=[60, 30, 5], name='prod')) \
+        self.study = Study(['a', 'b'], horizon=3, nb_scn=2) \
+            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[[20, 10, 2], [10, 5, 3]], name='load')) \
+            .add_on_node('a', data=Consumption(cost=10 ** 6, quantity=[[30, 15, 3], [15, 7, 2]], name='car')) \
+            .add_on_node('a', data=Production(cost=10, quantity=[[60, 30, 5], [30, 15, 3]], name='prod')) \
         \
-            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[40, 20, 2], name='load')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[10, 5, 1], name='prod')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[20, 10, 2], name='nuclear')) \
-            .add_link(src='a', dest='b', quantity=[10, 10, 10], cost=2)
+            .add_on_node('b', data=Consumption(cost=10 ** 6, quantity=[[40, 20, 2], [20, 10, 1]], name='load')) \
+            .add_on_node('b', data=Production(cost=20, quantity=[[10, 5, 1], [5, 3, 1]], name='prod')) \
+            .add_on_node('b', data=Production(cost=30, quantity=[[20, 10, 2], [10, 5, 1]], name='nuclear')) \
+            .add_link(src='a', dest='b', quantity=[[10, 10, 10], [5, 5, 5]], cost=2)
 
         optimizer = LPOptimizer()
         self.result = optimizer.solve(study=self.study)
@@ -45,6 +45,16 @@ class TestHTMLPlotting(unittest.TestCase):
     def test_map_exchanges(self):
         fig = self.plot.exchanges_map(t=0, scn=0)
         self.assert_fig_hash('9aa34f28665ea9e6766b271ffbc677d3cda6810b', fig)
+
+    def test_plot_timeline(self):
+        fig = self.plot.consumptions(node='a', name='load')
+        self.assert_fig_hash('7787e0487f8f4012dc8b8f0cf979ffbb09fffb63', fig)
+
+        fig = self.plot.productions(node='b', name='nuclear')
+        self.assert_fig_hash('44e414ef08a43add5ef68b5c533b47145fab0ba2', fig)
+
+        fig = self.plot.links(src='a', dest='b')
+        self.assert_fig_hash('6375e591679d12907f440a8c23eb850a037d9cd8', fig)
 
     def assert_fig_hash(self, expected: str, fig: go.Figure):
         h = hashlib.sha1()
