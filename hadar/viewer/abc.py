@@ -32,3 +32,15 @@ class ABCPlotting(ABC):
     @abstractmethod
     def links(self, src: str, dest: str, kind: str = 'used'):
         pass
+
+    @abstractmethod
+    def monotone_consumption(self, node: str, name: str, t: int, scn: int, kind: str = 'given'):
+        pass
+
+    @abstractmethod
+    def monotone_production(self, node: str, name: str, t: int = None, scn: int = None, kind: str = 'used'):
+        pass
+
+    @abstractmethod
+    def monotone_link(self, src: str, dest: str, t: int = None, scn: int = None, kind: str = 'used'):
+        pass

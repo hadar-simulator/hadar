@@ -213,6 +213,21 @@ class HTMLPlotting(ABCPlotting):
 
         return fig
 
+    def _timeline(self, df: pd.DataFrame, title: str):
+        scenarios = df.index.get_level_values('scn').unique()
+        alpha = max(10, 255 / scenarios.size)
+        color = 'rgba(100, 100, 100, %d)' % alpha
+
+        fig = go.Figure()
+        for scn in scenarios:
+            fig.add_trace(go.Scatter(x=self.time_index, y=df.loc[scn], mode='lines', hoverinfo='name',
+                                     name='scn %0d' % scn, line=dict(color=color)))
+
+        fig.update_layout(title_text=title,
+                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time", showlegend=False)
+
+        return fig
+
     def consumptions(self, node: str, name: str, kind: str = 'given'):
         """
         Plot all timelines consumption scenario.
@@ -223,19 +238,8 @@ class HTMLPlotting(ABCPlotting):
         :return:
         """
         cons = self.agg.agg_cons(self.agg.inode[node], self.agg.iname[name], self.agg.iscn, self.agg.itime)[kind]
-        scenarios = cons.index.get_level_values('scn').unique()
-        alpha = max(10, 255 / scenarios.size)
-        color = 'rgba(100, 100, 100, %d)' % alpha
-
-        fig = go.Figure()
-        for scn in scenarios:
-            fig.add_trace(go.Scatter(x=self.time_index, y=cons.loc[scn], mode='lines', hoverinfo='name',
-                                     name='scn %0d' % scn, line=dict(color=color)))
-
-        fig.update_layout(title_text='Consumptions %s for %s on node %s' % (kind, name, node),
-                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time", showlegend=False)
-
-        return fig
+        title = 'Consumptions %s for %s on node %s' % (kind, name, node)
+        return self._timeline(cons, title)
 
     def productions(self, node: str, name: str, kind: str = 'used'):
         """
@@ -247,19 +251,9 @@ class HTMLPlotting(ABCPlotting):
          :return:
          """
         prod = self.agg.agg_prod(self.agg.inode[node], self.agg.iname[name], self.agg.iscn, self.agg.itime)[kind]
-        scenarios = prod.index.get_level_values('scn').unique()
-        alpha = max(10, 255 / scenarios.size)
-        color = 'rgba(100, 100, 100, %d)' % alpha
+        title = 'Productions %s for %s on node %s' % (kind, name, node)
+        return self._timeline(prod, title)
 
-        fig = go.Figure()
-        for scn in scenarios:
-            fig.add_trace(go.Scatter(x=self.time_index, y=prod.loc[scn], mode='lines', hoverinfo='name',
-                                     name='scn %0d' % scn, line=dict(color=color)))
-
-        fig.update_layout(title_text='Productions %s for %s on node %s' % (kind, name, node),
-                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time", showlegend=False)
-
-        return fig
 
     def links(self, src: str, dest: str, kind: str = 'used'):
         """
@@ -271,16 +265,92 @@ class HTMLPlotting(ABCPlotting):
          :return:
          """
         links = self.agg.agg_link(self.agg.isrc[src], self.agg.idest[dest], self.agg.iscn, self.agg.itime)[kind]
-        scenarios = links.index.get_level_values('scn').unique()
-        alpha = max(10, 255 / scenarios.size)
-        color = 'rgba(100, 100, 100, %d)' % alpha
+        title = 'Link %s from %s to %s' % (kind, src, dest)
+        return self._timeline(links, title)
+
+
+    def _monotone(self, y: np.ndarray, title: str):
+        y.sort()
+        x = np.linspace(0, 100, y.size)
 
         fig = go.Figure()
-        for scn in scenarios:
-            fig.add_trace(go.Scatter(x=self.time_index, y=links.loc[scn], mode='lines', hoverinfo='name',
-                                     name='scn %0d' % scn, line=dict(color=color)))
-
-        fig.update_layout(title_text='Link %s from %s to %s' % (kind, src, dest),
-                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time", showlegend=False)
+        fig.add_trace(go.Scatter(x=x, y=y, mode='markers'))
+        fig.update_layout(title_text=title,
+                          yaxis_title="Quantity %s" % self.unit, xaxis_title="%", showlegend=False)
 
         return fig
+
+    def monotone_consumption(self, node: str, name: str, t: int = None, scn: int = None, kind: str = 'given'):
+        """
+        Plot ascending monotone of consumption.
+
+        :param node: selected node
+        :param name: selected consumption name
+        :param t: select t index (only if scn is not used)
+        :param scn: select scn index (only if t is not used)
+        :param kind: kind of consumption 'asked' or 'given'
+        :return:
+        """
+        if t is not None and scn is not None:
+            raise ValueError('you have to specify time or scenario index but not both')
+
+        if t is not None:
+            y = self.agg.agg_cons(self.agg.inode[node], self.agg.iname[name],
+                                  self.agg.itime[t], self.agg.iscn)[kind].values
+            title = 'Monotone consumption of %s on node %s at t=%0d' % (name, node, t)
+        elif scn is not None:
+            y = self.agg.agg_cons(self.agg.inode[node], self.agg.iname[name],
+                                  self.agg.iscn[scn], self.agg.itime)[kind].values
+            title = 'Monotone consumption of %s on node %s at t=%0d' % (name, node, scn)
+
+        return self._monotone(y, title)
+
+    def monotone_production(self, node: str, name: str, t: int = None, scn: int = None, kind: str = 'used'):
+        """
+        Plot ascending monotone of production
+
+        :param node: selected node name
+        :param name: selected production name
+        :param t: select t index (only if scn is not used)
+        :param scn: select scn index (only if t is not used)
+        :param kind: kind of production available ('avail') of 'used
+        :return:
+        """
+        if t is not None and scn is not None:
+            raise ValueError('you have to specify time or scenario index but not both')
+
+        if t is not None:
+            y = self.agg.agg_prod(self.agg.inode[node], self.agg.iname[name],
+                                  self.agg.itime[t], self.agg.iscn)[kind].values
+            title = 'Monotone production of %s on node %s at t=%0d' % (name, node, t)
+        elif scn is not None:
+            y = self.agg.agg_prod(self.agg.inode[node], self.agg.iname[name],
+                                  self.agg.iscn[scn], self.agg.itime)[kind].values
+            title = 'Monotone production of %s on node %s at t=%0d' % (name, node, scn)
+
+        return self._monotone(y, title)
+
+    def monotone_link(self, src: str, dest: str, t: int = None, scn: int = None, kind: str = 'used'):
+        """
+        Plot ascending monotone of production
+
+        :param src: selected source node name
+        :param dest: selected destination node name
+        :param t: select t index (only if scn is not used)
+        :param scn: select scn index (only if t is not used)
+        :param kind: kind of link available ('avail') of 'used
+        :return:
+        """
+        if t is not None and scn is not None:
+            raise ValueError('you have to specify time or scenario index but not both')
+
+        if t is not None:
+            y = self.agg.agg_link(self.agg.isrc[src], self.agg.idest[dest],
+                                  self.agg.itime[t], self.agg.iscn)[kind].values
+            title = 'Monotone link from %s to %s at t=%0d' % (src, dest, t)
+        elif scn is not None:
+            y = self.agg.agg_link(self.agg.isrc[src], self.agg.idest[dest],
+                                  self.agg.iscn[scn], self.agg.itime)[kind].values
+            title = 'Monotone link from %s to %s at t=%0d' % (src, dest, scn)
+
+        return self._monotone(y, title)

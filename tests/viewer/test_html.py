@@ -56,6 +56,16 @@ class TestHTMLPlotting(unittest.TestCase):
         fig = self.plot.links(src='a', dest='b')
         self.assert_fig_hash('6375e591679d12907f440a8c23eb850a037d9cd8', fig)
 
+    def test_plot_monotone(self):
+        fig = self.plot.monotone_consumption(node='a', name='load', scn=0)
+        self.assert_fig_hash('753619bf85b387f3b0f304688bb578efe39db3e9', fig)
+
+        fig = self.plot.monotone_production(node='b', name='nuclear', t=0)
+        self.assert_fig_hash('0a99228bf1a0743b604e9082b0ba7db86f3993f3', fig)
+
+        fig = self.plot.monotone_link(src='a', dest='b', scn=0)
+        self.assert_fig_hash('2e2410dad5800c9658846c40421dbe83c9e5f3f9', fig)
+
     def assert_fig_hash(self, expected: str, fig: go.Figure):
         h = hashlib.sha1()
         h.update(TestHTMLPlotting.get_html(fig))
