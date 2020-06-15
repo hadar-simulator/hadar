@@ -44,3 +44,7 @@ class ABCPlotting(ABC):
     @abstractmethod
     def monotone_link(self, src: str, dest: str, t: int = None, scn: int = None, kind: str = 'used'):
         pass
+
+    @abstractmethod
+    def rac_heatmap(self):
+        pass

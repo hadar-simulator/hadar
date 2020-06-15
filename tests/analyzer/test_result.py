@@ -183,3 +183,7 @@ class TestAnalyzer(unittest.TestCase):
         agg = ResultAnalyzer(study=self.study, result=self.result)
         np.testing.assert_array_equal([[200360, 20036, 20036], [20036, 200360, 200360]], agg.get_cost(node='a'))
         np.testing.assert_array_equal([[100600, 10060, 10060], [10060, 100600, 100600]], agg.get_cost(node='b'))
+
+    def test_rac(self):
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        np.testing.assert_array_equal([[0, 0, 0], [0, 0, 0]], agg.get_rac())

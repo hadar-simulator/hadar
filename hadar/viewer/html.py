@@ -354,3 +354,18 @@ class HTMLPlotting(ABCPlotting):
             title = 'Monotone link from %s to %s at t=%0d' % (src, dest, scn)
 
         return self._monotone(y, title)
+
+    def rac_heatmap(self):
+        rac = self.agg.get_rac()
+        pct = (rac >= 0).sum() / rac.size * 100
+
+        fig = go.Figure(data=go.Heatmap(
+            z=rac,
+            x=self.time_index,
+            y=np.arange(self.agg.nb_scn),
+            colorscale='RdBu', zmid=0))
+
+        fig.update_layout(title_text="RAC Matrix %0d %% passed" % pct,
+                          yaxis_title="scenarios", xaxis_title="time", showlegend=False)
+
+        return fig

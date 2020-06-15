@@ -66,6 +66,10 @@ class TestHTMLPlotting(unittest.TestCase):
         fig = self.plot.monotone_link(src='a', dest='b', scn=0)
         self.assert_fig_hash('2e2410dad5800c9658846c40421dbe83c9e5f3f9', fig)
 
+    def test_rac_heatmap(self):
+        fig = self.plot.rac_heatmap()
+        self.assert_fig_hash('1fa715af27e4ab85b033cff41f5edff72f4bca88', fig)
+
     def assert_fig_hash(self, expected: str, fig: go.Figure):
         h = hashlib.sha1()
         h.update(TestHTMLPlotting.get_html(fig))
