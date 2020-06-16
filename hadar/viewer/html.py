@@ -5,7 +5,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -13,15 +13,19 @@ import plotly.graph_objects as go
 from matplotlib.cm import coolwarm
 
 from hadar.analyzer.result import ResultAnalyzer, NodeIndex, SrcIndex, TimeIndex, DestIndex, NameIndex
-from hadar.viewer.abc import ABCPlotting, ConsumptionElement, ElementPlotting, ProductionElement, LinkElement
+from hadar.viewer.abc import ABCPlotting, ConsumptionElement, ABCElementPlotting, ProductionElement, LinkElement, \
+    NodeElement
 
 __all__ = ['HTMLPlotting']
 
 
-class HTMLElementPlotting(ElementPlotting):
+class HTMLElementPlotting(ABCElementPlotting):
     def __init__(self, unit: str, time_index):
         self.unit = unit
         self.time_index = time_index
+
+        self.cmap_cons = ['brown', 'blue', 'darkgoldenrod', 'darkmagenta', 'darkorange', 'cadetblue', 'forestgreen',
+                          'indigo', 'olive', 'darkred']
 
     def timeline(self, df: pd.DataFrame, title: str):
         scenarios = df.index.get_level_values('scn').unique()
@@ -69,7 +73,34 @@ class HTMLElementPlotting(ElementPlotting):
                                  name='passed', mode='markers', marker=dict(color='green', size=10)))
         fig.add_trace(go.Scatter(x=green, y=_gaussian(red, m, o), hovertemplate='%{x:.2f} ' + self.unit,
                                  name='failed', mode='markers', marker=dict(color='red', size=10)))
+        fig.update_layout(title_text=title, yaxis=dict(visible=False),
+                          yaxis_title='', xaxis_title="Quantity %s" % self.unit, showlegend=False)
 
+        return fig
+
+    def stack(self, areas: List[Tuple[str, np.ndarray]], lines: List[Tuple[str, np.ndarray]], title: str):
+        fig = go.Figure()
+
+        # Stack areas
+        stack = np.zeros_like(self.time_index, dtype=float)
+        for i, (name, data) in enumerate(areas):
+            stack += data
+            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=name, mode='none',
+                                     fill='tozeroy' if i == 0 else 'tonexty'))
+
+        # Stack lines.
+        # Bottom line have to be top frontward. So we firstly stack lines then plot in reverse set.
+        stack = np.zeros_like(self.time_index, dtype=float)
+        stacked_lines = []
+        for i, (name, data) in enumerate(lines):
+            stack += data
+            stacked_lines.append((name, stack.copy()))
+
+        for i, (name, data) in enumerate(stacked_lines[::-1]):
+            fig.add_trace(go.Scatter(x=self.time_index, y=data, line_color=self.cmap_cons[i % 10],
+                                     name=name, line=dict(width=2)))
+
+        fig.update_layout(title_text=title, yaxis_title="Quantity %s" % self.unit, xaxis_title="time")
         return fig
 
 
@@ -132,61 +163,8 @@ class HTMLPlotting(ABCPlotting):
             pl_colorscale.append([k * h, 'rgb' + str((C[0], C[1], C[2]))])
         return pl_colorscale
 
-    def stack(self, node: str, scn: int = 0, prod_kind: str = 'used', cons_kind: str = 'asked'):
-        """
-        Plot with production stacked with area and consumptions stacked by dashed lines.
-
-        :param node: select node to plot.
-        :param scn: scenario index to plot.
-        :param prod_kind: select which prod to stack : available ('avail') or 'used'
-        :param cons_kind: select which cons to stack : 'asked' or 'given'
-        :return: plotly figure or jupyter widget to plot
-        """
-        fig = go.Figure()
-        c, p, b = self.agg.get_elements_inside(node=node)
-        stack = np.zeros(self.agg.horizon)
-
-        # stack production with area
-        if p > 0:
-            prod = self.agg.agg_prod(self.agg.iscn[scn], self.agg.inode[node], self.agg.iname, self.agg.itime) \
-                .sort_values('cost', ascending=True)
-            for i, name in enumerate(prod.index.get_level_values('name').unique()):
-                stack += prod.loc[name][prod_kind].sort_index().values
-                fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=name, mode='none',
-                                         fill='tozeroy' if i == 0 else 'tonexty'))
-
-        # add import in production stack
-        balance = self.agg.get_balance(node=node)[scn]
-        im = -np.clip(balance, None, 0)
-        if not (im == 0).all():
-            stack += im
-            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name='import', mode='none', fill='tonexty'))
-
-        # Reset stack
-        stack = np.zeros_like(stack)
-        cons_lines = []
-        # Stack consumptions with line
-        if c > 0:
-            cons = self.agg.agg_cons(self.agg.iscn[scn], self.agg.inode[node], self.agg.iname, self.agg.itime) \
-                .sort_values('cost', ascending=False)
-            for i, name in enumerate(cons.index.get_level_values('name').unique()):
-                stack += cons.loc[name][cons_kind].sort_index().values
-                cons_lines.append([name, stack.copy()])
-
-        # Add export in consumption stack
-        exp = np.clip(balance, 0, None)
-        if not (exp == 0).all():
-            stack += exp
-            cons_lines.append(['export', stack.copy()])
-
-        # Plot line in the reverse sens to avoid misunderstood during graphics analyze
-        for i, (name, stack) in enumerate(cons_lines[::-1]):
-            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), line_color=self.cmap_cons[i % 10],
-                                     name=name, line=dict(width=2)))
-
-        fig.update_layout(title_text='Stack for node %s' % node,
-                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time")
-        return fig
+    def node(self, node: str):
+        return NodeElement(plotting=HTMLElementPlotting(unit=self.unit, time_index=self.time_index), agg=self.agg, node=node)
 
     def _plot_links(self, fig: go.Figure, start: str, end: str, color: str, qt: float):
         """

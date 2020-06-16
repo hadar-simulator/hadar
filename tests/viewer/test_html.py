@@ -39,7 +39,8 @@ class TestHTMLPlotting(unittest.TestCase):
         self.hash = hashlib.sha3_256()
 
     def test_stack(self):
-        fig = self.plot.stack(node='a', scn=0)
+        fig = self.plot.node('a').stack(scn=0)
+        fig.show()
         self.assert_fig_hash('d9f9f004b98ca62be934d69d4fd0c1a302512242', fig)
 
     def test_map_exchanges(self):
@@ -72,10 +73,13 @@ class TestHTMLPlotting(unittest.TestCase):
 
     def test_gaussian(self):
         fig = self.plot.consumption(node='a', name='load').gaussian(scn=0)
-        self.assert_fig_hash('389ae83ae6bac5d6215712a9666bda4b80a4f8cf', fig)
+        self.assert_fig_hash('ac67d36ff0aaff356144ccb78f665947e8b13adb', fig)
 
         fig = self.plot.production(node='b', name='nuclear').gaussian(t=0)
-        fig.show()
+        self.assert_fig_hash('2094b8141fbbdfd6841a782ceef2196bf76b2a8c', fig)
+
+        fig = self.plot.links(src='a', dest='b').gaussian(scn=0)
+        self.assert_fig_hash('3420c78029bafebbadedeb39d906269810acfd88', fig)
 
     def assert_fig_hash(self, expected: str, fig: go.Figure):
         h = hashlib.sha1()
