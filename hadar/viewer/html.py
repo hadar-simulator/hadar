@@ -14,7 +14,7 @@ from matplotlib.cm import coolwarm
 
 from hadar.analyzer.result import ResultAnalyzer, NodeIndex, SrcIndex, TimeIndex, DestIndex, NameIndex
 from hadar.viewer.abc import ABCPlotting, ConsumptionElement, ABCElementPlotting, ProductionElement, LinkElement, \
-    NodeElement
+    NodeElement, NetworkElement
 
 __all__ = ['HTMLPlotting']
 
@@ -101,6 +101,17 @@ class HTMLElementPlotting(ABCElementPlotting):
                                      name=name, line=dict(width=2)))
 
         fig.update_layout(title_text=title, yaxis_title="Quantity %s" % self.unit, xaxis_title="time")
+        return fig
+
+    def matrix(self, data: np.ndarray, title):
+        fig = go.Figure(data=go.Heatmap(
+            z=data,
+            x=self.time_index,
+            y=np.arange(data.shape[0]),
+            colorscale='RdBu', zmid=0))
+
+        fig.update_layout(title_text=title, yaxis_title="scenarios", xaxis_title="time", showlegend=False)
+
         return fig
 
 
@@ -271,7 +282,7 @@ class HTMLPlotting(ABCPlotting):
         return ProductionElement(plotting=HTMLElementPlotting(self.unit, self.time_index), agg=self.agg,
                                  node=node, name=name, kind=kind)
 
-    def links(self, src: str, dest: str, kind: str = 'used'):
+    def link(self, src: str, dest: str, kind: str = 'used'):
         """
          Plot all timelines links scenario.
 
@@ -283,17 +294,5 @@ class HTMLPlotting(ABCPlotting):
         return LinkElement(plotting=HTMLElementPlotting(self.unit, self.time_index), agg=self.agg,
                            src=src, dest=dest, kind=kind)
 
-    def rac_heatmap(self):
-        rac = self.agg.get_rac()
-        pct = (rac >= 0).sum() / rac.size * 100
-
-        fig = go.Figure(data=go.Heatmap(
-            z=rac,
-            x=self.time_index,
-            y=np.arange(self.agg.nb_scn),
-            colorscale='RdBu', zmid=0))
-
-        fig.update_layout(title_text="RAC Matrix %0d %% passed" % pct,
-                          yaxis_title="scenarios", xaxis_title="time", showlegend=False)
-
-        return fig
+    def network(self):
+        return NetworkElement(plotting=HTMLElementPlotting(self.unit, self.time_index), agg=self.agg)

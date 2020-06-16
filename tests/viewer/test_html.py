@@ -54,7 +54,7 @@ class TestHTMLPlotting(unittest.TestCase):
         fig = self.plot.production(node='b', name='nuclear').timeline()
         self.assert_fig_hash('e9d05c4f002acaebbc39eb813d53994a6a34a1fa', fig)
 
-        fig = self.plot.links(src='a', dest='b').timeline()
+        fig = self.plot.link(src='a', dest='b').timeline()
         self.assert_fig_hash('6375e591679d12907f440a8c23eb850a037d9cd8', fig)
 
     def test_plot_monotone(self):
@@ -64,11 +64,11 @@ class TestHTMLPlotting(unittest.TestCase):
         fig = self.plot.production(node='b', name='nuclear').monotone(t=0)
         self.assert_fig_hash('0a99228bf1a0743b604e9082b0ba7db86f3993f3', fig)
 
-        fig = self.plot.links(src='a', dest='b').monotone(scn=0)
+        fig = self.plot.link(src='a', dest='b').monotone(scn=0)
         self.assert_fig_hash('2e2410dad5800c9658846c40421dbe83c9e5f3f9', fig)
 
     def test_rac_heatmap(self):
-        fig = self.plot.rac_heatmap()
+        fig = self.plot.network().rac_matrix()
         self.assert_fig_hash('1fa715af27e4ab85b033cff41f5edff72f4bca88', fig)
 
     def test_gaussian(self):
@@ -78,7 +78,7 @@ class TestHTMLPlotting(unittest.TestCase):
         fig = self.plot.production(node='b', name='nuclear').gaussian(t=0)
         self.assert_fig_hash('2094b8141fbbdfd6841a782ceef2196bf76b2a8c', fig)
 
-        fig = self.plot.links(src='a', dest='b').gaussian(scn=0)
+        fig = self.plot.link(src='a', dest='b').gaussian(scn=0)
         self.assert_fig_hash('3420c78029bafebbadedeb39d906269810acfd88', fig)
 
     def assert_fig_hash(self, expected: str, fig: go.Figure):

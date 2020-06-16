@@ -30,6 +30,10 @@ class ABCElementPlotting(ABC):
     def stack(self, areas: List[Tuple[str, np.ndarray]], lines: List[Tuple[str, np.ndarray]], title: str):
         pass
 
+    @abstractmethod
+    def matrix(self, data: np.ndarray, title):
+        pass
+
 
 class Element(ABC):
     def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer):
@@ -223,6 +227,14 @@ class NodeElement(Element):
         return self.plotting.stack(areas, lines, title)
 
 
+class NetworkElement(Element):
+    def rac_matrix(self):
+        rac = self.agg.get_rac()
+        pct = (rac >= 0).sum() / rac.size * 100
+        title = "RAC Matrix %0d %% passed" % pct
+
+        return self.plotting.matrix(data=rac, title=title)
+
 class ABCPlotting(ABC):
     """
     Abstract method to plot optimizer result.
@@ -245,9 +257,9 @@ class ABCPlotting(ABC):
         pass
 
     @abstractmethod
-    def links(self, src: str, dest: str, kind: str = 'used') -> LinkElement:
+    def link(self, src: str, dest: str, kind: str = 'used') -> LinkElement:
         pass
 
-    # abstractmethod
-    def adequacy(self):
+    @abstractmethod
+    def network(self):
         pass
