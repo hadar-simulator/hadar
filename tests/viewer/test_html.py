@@ -40,12 +40,11 @@ class TestHTMLPlotting(unittest.TestCase):
 
     def test_stack(self):
         fig = self.plot.node('a').stack(scn=0)
-        fig.show()
         self.assert_fig_hash('d9f9f004b98ca62be934d69d4fd0c1a302512242', fig)
 
     def test_map_exchanges(self):
-        fig = self.plot.exchanges_map(t=0, scn=0)
-        self.assert_fig_hash('9aa34f28665ea9e6766b271ffbc677d3cda6810b', fig)
+        fig = self.plot.network().map(t=0, scn=0)
+        self.assert_fig_hash('df17e8ce15f81e4e48758241d08508f872dd4f0b', fig)
 
     def test_plot_timeline(self):
         fig = self.plot.consumption(node='a', name='load').timeline()

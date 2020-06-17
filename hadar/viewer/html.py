@@ -7,25 +7,46 @@
 
 from typing import Dict, List, Tuple
 
+import folium
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from matplotlib.cm import coolwarm
 
 from hadar.analyzer.result import ResultAnalyzer, NodeIndex, SrcIndex, TimeIndex, DestIndex, NameIndex
-from hadar.viewer.abc import ABCPlotting, ConsumptionElement, ABCElementPlotting, ProductionElement, LinkElement, \
+from hadar.viewer.abc import Plotting, ConsumptionElement, ABCElementPlotting, ProductionElement, LinkElement, \
     NodeElement, NetworkElement
 
 __all__ = ['HTMLPlotting']
 
 
 class HTMLElementPlotting(ABCElementPlotting):
-    def __init__(self, unit: str, time_index):
+    def __init__(self, unit: str, time_index, node_coord: Dict[str, List[float]] = None):
         self.unit = unit
         self.time_index = time_index
+        self.coord = node_coord
+
+        self.cmap = coolwarm
+        self.cmap_plotly = HTMLElementPlotting.matplotlib_to_plotly(self.cmap, 255)
 
         self.cmap_cons = ['brown', 'blue', 'darkgoldenrod', 'darkmagenta', 'darkorange', 'cadetblue', 'forestgreen',
                           'indigo', 'olive', 'darkred']
+
+    @classmethod
+    def matplotlib_to_plotly(cls, cmap, res: int):
+        """
+        Convert matplotlib color scale to plotly color scale.
+
+        :param cmap: matplotlib color scale function
+        :param res: resolution to use
+        :return: list of string use by plotly
+        """
+        h = 1.0 / (res - 1)
+        pl_colorscale = []
+        for k in range(res):
+            C = (np.array(cmap(k * h)[:3]) * 255).astype(np.uint8)
+            pl_colorscale.append([k * h, 'rgb' + str((C[0], C[1], C[2]))])
+        return pl_colorscale
 
     def timeline(self, df: pd.DataFrame, title: str):
         scenarios = df.index.get_level_values('scn').unique()
@@ -114,70 +135,44 @@ class HTMLElementPlotting(ABCElementPlotting):
 
         return fig
 
+    def map_exchange(self, nodes, lines, limit, title):
+        if self.coord is None:
+            raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
 
-class HTMLPlotting(ABCPlotting):
-    """
-    Plotting implementation interactive html graphics. (Use plotly)
-    """
+        fig = go.Figure()
+        # Add node circle
+        keys = nodes.keys()
+        node_qt = [nodes[k] for k in keys]
+        node_coords = np.array([self.coord[n] for n in keys])
+        center = np.mean(node_coords, axis=0)
 
-    def __init__(self, agg: ResultAnalyzer, unit_symbol: str = '',
-                 time_start=None, time_end=None,
-                 cmap=coolwarm,
-                 node_coord: Dict[str, List[float]] = None,
-                 map_element_size: int = 1):
-        """
-        Create instance.
+        # To scale objects and select zoom with use a size parameter which are the max
+        # distance between center to node.
+        size = np.max(np.sum(np.power(node_coords - center, 2), axis=1))
 
-        :param agg: ResultAggragator instence to use
-        :param unit_symbol: symbol on quantity unit used. ex. MW, litter, Go, ...
-        :param time_start: time to use as the start of study horizon
-        :param time_end: time to use as the end of study horizon
-        :param cmap: matplotlib color map to use (coolwarm as default)
-        :param node_coord: nodes coordinates to use for map plotting
-        :param map_element_size: size on element draw on map. default as 1.
-        """
+        # Plot arrows
+        for (src, dest), qt in lines.items():
+            color = 'rgb' + str(self.cmap(abs(qt) / 2 / limit + 0.5)[:-1])
+            self._plot_links(fig, src, dest, color, qt, size)
 
-        self.agg = agg
-        self.unit = '(%s)' % unit_symbol if unit_symbol != '' else ''
-        self.coord = node_coord
-        self.size = map_element_size
+        # Plot nodes
+        fig.add_trace(go.Scattermapbox(
+            mode="markers",
+            lon=node_coords[:, 0],
+            lat=node_coords[:, 1],
+            hoverinfo='text', text=node_qt,
+            marker=dict(size=20, colorscale=self.cmap_plotly, cmin=-limit, color=node_qt,
+                        cmax=limit, colorbar_title="Net Position %s" % self.unit)))
 
-        # Create time_index
-        time = [time_start is None, time_end is None]
-        if time == [True, False] or time == [False, True]:
-            raise ValueError('You have to give both time_start and time_end')
-        elif time == [False, False]:
-            self.time_index = pd.date_range(start=time_start, end=time_end, periods=self.agg.horizon)
-        else:
-            self.time_index = np.arange(self.agg.horizon)
+        fig.update_layout(showlegend=False,
+                          title_text=title,
+                          mapbox=dict(
+                              style="open-street-map",
+                              center={'lon': center[0], 'lat': center[1]},
+                              zoom=1 / size / 0.07))
+        return fig
 
-        # Create colors scale
-        self.cmap = cmap
-        self.cmap_plotly = HTMLPlotting.matplotlib_to_plotly(cmap, 255)
-
-        self.cmap_cons = ['brown', 'blue', 'darkgoldenrod', 'darkmagenta', 'darkorange', 'cadetblue', 'forestgreen',
-                          'indigo', 'olive', 'darkred']
-
-    @classmethod
-    def matplotlib_to_plotly(cls, cmap, res: int):
-        """
-        Convert matplotlib color scale to plotly color scale.
-
-        :param cmap: matplotlib color scale function
-        :param res: resolution to use
-        :return: list of string use by plotly
-        """
-        h = 1.0 / (res - 1)
-        pl_colorscale = []
-        for k in range(res):
-            C = (np.array(cmap(k * h)[:3]) * 255).astype(np.uint8)
-            pl_colorscale.append([k * h, 'rgb' + str((C[0], C[1], C[2]))])
-        return pl_colorscale
-
-    def node(self, node: str):
-        return NodeElement(plotting=HTMLElementPlotting(unit=self.unit, time_index=self.time_index), agg=self.agg, node=node)
-
-    def _plot_links(self, fig: go.Figure, start: str, end: str, color: str, qt: float):
+    def _plot_links(self, fig: go.Figure, start: str, end: str, color: str, qt: float, size: float):
         """
         Plot line with arrow to a figure.
 
@@ -192,107 +187,45 @@ class HTMLPlotting(ABCPlotting):
         E = np.array([self.coord[end][0], self.coord[end][1]])
 
         # plot line
-        fig.add_trace(go.Scattergeo(lat=[S[1], E[1]], hoverinfo='skip',
-                                    lon=[S[0], E[0]], mode='lines',
-                                    line=dict(width=4 * self.size, color=color)))
+        fig.add_trace(go.Scattermapbox(lat=[S[1], E[1]], hoverinfo='skip',
+                                       lon=[S[0], E[0]], mode='lines',
+                                       line=dict(width=2 * size, color=color)))
         # vector flow direction
         v = E - S
         n = np.linalg.norm(v)
         # Get orthogonal vector
         w = np.array([v[1], -v[0]])
         # Compute triangle points
-        A = E - v * 0.5
-        B = A - v / n * self.size * 0.5 - w / n * self.size * 0.25
-        C = A - v / n * self.size * 0.5 + w / n * self.size * 0.25
+        A = E - v * 0.1
+        B = A - v / n * size / 4 - w / n * size / 8
+        C = A - v / n * size / 4 + w / n * size / 8
 
         # plot arrow
-        fig.add_trace(go.Scattergeo(lat=[B[1], A[1], C[1]], hoverinfo='text',
-                                    lon=[B[0], A[0], C[0]], text=str(qt), mode='lines',
-                                    line=dict(width=4 * self.size, color=color)))
+        fig.add_trace(go.Scattermapbox(lat=[B[1], A[1], C[1]], hoverinfo='text',
+                                       lon=[B[0], A[0], C[0]], text=str(qt), mode='lines',
+                                       line=dict(width=2 * size, color=color)))
 
-    def exchanges_map(self, t: int, scn: int = 0, limit: int = None):
+
+class HTMLPlotting(Plotting):
+    """
+    Plotting implementation interactive html graphics. (Use plotly)
+    """
+
+    def __init__(self, agg: ResultAnalyzer, unit_symbol: str = '',
+                 time_start=None, time_end=None,
+                 node_coord: Dict[str, List[float]] = None):
         """
-        Plot a map with node (color are balance) and arrow between nodes (color for quantity).
+        Create instance.
 
-        :param t: timestep to plot
-        :param scn: scenario index to plot
-        :param limit: limite to use as min/max for color scale. If not provided we use min/max from dataset.
-        :return: plotly figure or jupyter widget to plot
+        :param agg: ResultAggragator instence to use
+        :param unit_symbol: symbol on quantity unit used. ex. MW, litter, Go, ...
+        :param time_start: time to use as the start of study horizon
+        :param time_end: time to use as the end of study horizon
+        :param cmap: matplotlib color map to use (coolwarm as default)
+        :param node_coord: nodes coordinates to use for map plotting
+        :param map_element_size: size on element draw on map. default as 1.
         """
-        if self.coord is None:
-            raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
+        Plotting.__init__(self, agg, unit_symbol, time_start, time_end, node_coord)
+        self.plotting = HTMLElementPlotting(self.unit, self.time_index, self.coord)
 
-        balances = [self.agg.get_balance(node=node)[scn, t] for node in self.agg.nodes]
-        if limit is None:
-            limit = max(max(balances), -min(balances))
 
-        fig = go.Figure()
-
-        # plot links
-        links = self.agg.agg_link(self.agg.iscn[scn], self.agg.isrc, self.agg.idest, self.agg.itime)
-        for src in links.index.get_level_values('src').unique():
-            for dest in links.loc[src].index.get_level_values('dest').unique():
-                exchange = links.loc[src, dest, t]['used']  # forward
-                exchange -= links.loc[dest, src, t]['used'] if (dest, src, t) in links.index else 0  # backward
-
-                color = 'rgb' + str(self.cmap(abs(exchange) / 2 / limit + 0.5)[:-1])
-                if exchange > 0:
-                    self._plot_links(fig=fig, start=src, end=dest, color=color, qt=exchange)
-                else:
-                    self._plot_links(fig=fig, start=dest, end=src, color=color, qt=-exchange)
-
-        # plot nodes
-        text = ['%s: %i' % (n, b) for n, b in zip(self.agg.nodes, balances)]
-        lon = [self.coord[node][0] for node in self.agg.nodes]
-        lat = [self.coord[node][1] for node in self.agg.nodes]
-
-        fig.add_trace(go.Scattergeo(lon=lon, lat=lat, hoverinfo='text', text=text, mode='markers',
-                                    marker=dict(size=15 * self.size,
-                                                colorscale=self.cmap_plotly, cmin=-limit, color=balances,
-                                                cmax=limit, colorbar_title="Net Position %s" % self.unit)))
-        # Config plot
-        fig.update_layout(title_text='Exchanges Map', showlegend=False, height=600,
-                          geo=dict(projection_type='equirectangular', showland=True, showcountries=True,
-                                   resolution=50, landcolor='rgb(200, 200, 200)', countrycolor='rgb(0, 0, 0)',
-                                   fitbounds='locations'))
-
-        return fig
-
-    def consumption(self, node: str, name: str, kind: str = 'given') -> ConsumptionElement:
-        """
-        Plot all timelines consumption scenario.
-
-        :param node: selected node name
-        :param name: select consumption name
-        :param kind: kind of data 'asked' or 'given'
-        :return:
-        """
-        return ConsumptionElement(plotting=HTMLElementPlotting(self.unit, self.time_index), agg=self.agg,
-                                  node=node, name=name, kind=kind)
-
-    def production(self, node: str, name: str, kind: str = 'used') -> ProductionElement:
-        """
-         Plot all timelines production scenario.
-
-         :param node: selected node name
-         :param name: select production name
-         :param kind: kind of data available ('avail') or 'used'
-         :return:
-         """
-        return ProductionElement(plotting=HTMLElementPlotting(self.unit, self.time_index), agg=self.agg,
-                                 node=node, name=name, kind=kind)
-
-    def link(self, src: str, dest: str, kind: str = 'used'):
-        """
-         Plot all timelines links scenario.
-
-         :param src: selected source node name
-         :param dest: select destination node name
-         :param kind: kind of data available ('avail') or 'used'
-         :return:
-         """
-        return LinkElement(plotting=HTMLElementPlotting(self.unit, self.time_index), agg=self.agg,
-                           src=src, dest=dest, kind=kind)
-
-    def network(self):
-        return NetworkElement(plotting=HTMLElementPlotting(self.unit, self.time_index), agg=self.agg)

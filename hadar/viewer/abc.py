@@ -4,7 +4,7 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import numpy as np
 import pandas as pd
@@ -32,6 +32,9 @@ class ABCElementPlotting(ABC):
 
     @abstractmethod
     def matrix(self, data: np.ndarray, title):
+        pass
+
+    def map_exchange(self, nodes, lines, limit, title):
         pass
 
 
@@ -235,31 +238,97 @@ class NetworkElement(Element):
 
         return self.plotting.matrix(data=rac, title=title)
 
-class ABCPlotting(ABC):
+    def map(self, scn: int, t: int, limit: int = None):
+        nodes = {node: self.agg.get_balance(node=node)[scn, t] for node in self.agg.nodes}
+
+        if limit is None:
+            limit = max(max(nodes.values()), -min(nodes.values()))
+
+        lines = {}
+        # Compute lines
+        links = self.agg.agg_link(self.agg.iscn[scn], self.agg.itime[t], self.agg.isrc, self.agg.idest)
+        for src in links.index.get_level_values('src').unique():
+            for dest in links.loc[src].index.get_level_values('dest').unique():
+                exchange = links.loc[src, dest]['used']  # forward
+                exchange -= links.loc[dest, src]['used'] if (dest, src) in links.index else 0  # backward
+
+                if exchange >= 0:
+                    lines[(src, dest)] = exchange
+                else:
+                    lines[(dest, src)] = -exchange
+
+        title = 'Exchange map at t=%0d scn=%0d' % (t, scn)
+        return self.plotting.map_exchange(nodes, lines, limit, title)
+
+
+class Plotting(ABC):
     """
     Abstract method to plot optimizer result.
     """
 
-    @abstractmethod
-    def node(self, node: str) -> NodeElement:
-        pass
+    def __init__(self, agg: ResultAnalyzer,
+                 unit_symbol: str = '',
+                 time_start=None, time_end=None,
+                 node_coord: Dict[str, List[float]] = None):
+        """
+        Create instance.
 
-    @abstractmethod
-    def exchanges_map(self, t: int, limit: int):
-        pass
+        :param agg: ResultAggragator instence to use
+        :param unit_symbol: symbol on quantity unit used. ex. MW, litter, Go, ...
+        :param time_start: time to use as the start of study horizon
+        :param time_end: time to use as the end of study horizon
+        :param node_coord: nodes coordinates to use for map plotting
+        :param map_element_size: size on element draw on map. default as 1.
+        """
+        self.plotting = None
+        self.agg = agg
+        self.unit = '(%s)' % unit_symbol if unit_symbol != '' else ''
+        self.coord = node_coord
 
-    @abstractmethod
+        # Create time_index
+        time = [time_start is None, time_end is None]
+        if time == [True, False] or time == [False, True]:
+            raise ValueError('You have to give both time_start and time_end')
+        elif time == [False, False]:
+            self.time_index = pd.date_range(start=time_start, end=time_end, periods=self.agg.horizon)
+        else:
+            self.time_index = np.arange(self.agg.horizon)
+
+    def node(self, node: str):
+        return NodeElement(plotting=self.plotting, agg=self.agg, node=node)
+
     def consumption(self, node: str, name: str, kind: str = 'given') -> ConsumptionElement:
-        pass
+        """
+        Plot all timelines consumption scenario.
 
-    @abstractmethod
+        :param node: selected node name
+        :param name: select consumption name
+        :param kind: kind of data 'asked' or 'given'
+        :return:
+        """
+        return ConsumptionElement(plotting=self.plotting, agg=self.agg, node=node, name=name, kind=kind)
+
     def production(self, node: str, name: str, kind: str = 'used') -> ProductionElement:
-        pass
+        """
+         Plot all timelines production scenario.
 
-    @abstractmethod
-    def link(self, src: str, dest: str, kind: str = 'used') -> LinkElement:
-        pass
+         :param node: selected node name
+         :param name: select production name
+         :param kind: kind of data available ('avail') or 'used'
+         :return:
+         """
+        return ProductionElement(plotting=self.plotting, agg=self.agg, node=node, name=name, kind=kind)
 
-    @abstractmethod
+    def link(self, src: str, dest: str, kind: str = 'used'):
+        """
+         Plot all timelines links scenario.
+
+         :param src: selected source node name
+         :param dest: select destination node name
+         :param kind: kind of data available ('avail') or 'used'
+         :return:
+         """
+        return LinkElement(plotting=self.plotting, agg=self.agg, src=src, dest=dest, kind=kind)
+
     def network(self):
-        pass
+        return NetworkElement(plotting=self.plotting, agg=self.agg)
