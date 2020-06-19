@@ -65,6 +65,7 @@ class HTMLElementPlotting(ABCElementPlotting):
 
     def monotone(self, y: np.ndarray, title: str):
         y.sort()
+        y = y[::-1]
         x = np.linspace(0, 100, y.size)
 
         fig = go.Figure()
@@ -92,7 +93,7 @@ class HTMLElementPlotting(ABCElementPlotting):
         fig.add_trace(go.Scatter(x=x, y=_gaussian(x, m, o), mode='lines', hoverinfo='none', line=dict(color='grey')))
         fig.add_trace(go.Scatter(x=green, y=_gaussian(green, m, o), hovertemplate='%{x:.2f} ' + self.unit,
                                  name='passed', mode='markers', marker=dict(color='green', size=10)))
-        fig.add_trace(go.Scatter(x=green, y=_gaussian(red, m, o), hovertemplate='%{x:.2f} ' + self.unit,
+        fig.add_trace(go.Scatter(x=red, y=_gaussian(red, m, o), hovertemplate='%{x:.2f} ' + self.unit,
                                  name='failed', mode='markers', marker=dict(color='red', size=10)))
         fig.update_layout(title_text=title, yaxis=dict(visible=False),
                           yaxis_title='', xaxis_title="Quantity %s" % self.unit, showlegend=False)
@@ -125,17 +126,25 @@ class HTMLElementPlotting(ABCElementPlotting):
         return fig
 
     def matrix(self, data: np.ndarray, title):
+        def sdt(x):
+            x[x > 0] /= np.max(x[x > 0])
+            x[x < 0] /= -np.min(x[x < 0])
+            return x
+
         fig = go.Figure(data=go.Heatmap(
-            z=data,
+            z=sdt(data.copy()),
             x=self.time_index,
             y=np.arange(data.shape[0]),
-            colorscale='RdBu', zmid=0))
+            hoverinfo='text',
+            text=data,
+            colorscale='RdBu', zmid=0,
+            showscale=False))
 
         fig.update_layout(title_text=title, yaxis_title="scenarios", xaxis_title="time", showlegend=False)
 
         return fig
 
-    def map_exchange(self, nodes, lines, limit, title):
+    def map_exchange(self, nodes, lines, limit, title, size):
         if self.coord is None:
             raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
 
@@ -145,10 +154,6 @@ class HTMLElementPlotting(ABCElementPlotting):
         node_qt = [nodes[k] for k in keys]
         node_coords = np.array([self.coord[n] for n in keys])
         center = np.mean(node_coords, axis=0)
-
-        # To scale objects and select zoom with use a size parameter which are the max
-        # distance between center to node.
-        size = np.max(np.sum(np.power(node_coords - center, 2), axis=1))
 
         # Plot arrows
         for (src, dest), qt in lines.items():

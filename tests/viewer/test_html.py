@@ -4,7 +4,7 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-
+import base64
 import hashlib
 import unittest
 
@@ -58,17 +58,17 @@ class TestHTMLPlotting(unittest.TestCase):
 
     def test_plot_monotone(self):
         fig = self.plot.consumption(node='a', name='load').monotone(scn=0)
-        self.assert_fig_hash('753619bf85b387f3b0f304688bb578efe39db3e9', fig)
+        self.assert_fig_hash('1ffa51a52b066aab8cabb817c11fd1272549eb9d', fig)
 
         fig = self.plot.production(node='b', name='nuclear').monotone(t=0)
-        self.assert_fig_hash('0a99228bf1a0743b604e9082b0ba7db86f3993f3', fig)
+        self.assert_fig_hash('e059878aac45330810578482df8c3d19261f7f75', fig)
 
         fig = self.plot.link(src='a', dest='b').monotone(scn=0)
-        self.assert_fig_hash('2e2410dad5800c9658846c40421dbe83c9e5f3f9', fig)
+        self.assert_fig_hash('1d5dba9e2189c741e5daa36d69ff1a879f169964', fig)
 
     def test_rac_heatmap(self):
         fig = self.plot.network().rac_matrix()
-        self.assert_fig_hash('1fa715af27e4ab85b033cff41f5edff72f4bca88', fig)
+        self.assert_fig_hash('2b87a4e781e9eeb532f5d2b091c474bb0de625fd', fig)
 
     def test_gaussian(self):
         fig = self.plot.consumption(node='a', name='load').gaussian(scn=0)
@@ -81,9 +81,10 @@ class TestHTMLPlotting(unittest.TestCase):
         self.assert_fig_hash('3420c78029bafebbadedeb39d906269810acfd88', fig)
 
     def assert_fig_hash(self, expected: str, fig: go.Figure):
-        h = hashlib.sha1()
-        h.update(TestHTMLPlotting.get_html(fig))
-        self.assertEqual(expected, h.hexdigest())
+        actual = hashlib.sha1(TestHTMLPlotting.get_html(fig)).hexdigest()
+        if expected != actual:
+            fig.show()
+        self.assertEqual(expected, actual)
 
     @staticmethod
     def get_html(fig: go.Figure) -> bytes:

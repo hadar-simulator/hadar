@@ -34,7 +34,7 @@ class ABCElementPlotting(ABC):
     def matrix(self, data: np.ndarray, title):
         pass
 
-    def map_exchange(self, nodes, lines, limit, title):
+    def map_exchange(self, nodes, lines, limit, title, zoom):
         pass
 
 
@@ -72,7 +72,7 @@ class ConsumptionElement(Element):
         elif scn is not None:
             y = self.agg.agg_cons(self.agg.inode[self.node], self.agg.iname[self.name],
                                   self.agg.iscn[scn], self.agg.itime)[self.kind].values
-            title = 'Monotone consumption of %s on node %s at t=%0d' % (self.name, self.node, scn)
+            title = 'Monotone consumption of %s on node %s at scn=%0d' % (self.name, self.node, scn)
 
         return self.plotting.monotone(y, title)
 
@@ -116,7 +116,7 @@ class ProductionElement(Element):
         elif scn is not None:
             y = self.agg.agg_prod(self.agg.inode[self.node], self.agg.iname[self.name],
                                   self.agg.iscn[scn], self.agg.itime)[self.kind].values
-            title = 'Monotone production of %s on node %s at t=%0d' % (self.name, self.node, scn)
+            title = 'Monotone production of %s on node %s at scn=%0d' % (self.name, self.node, scn)
 
         return self.plotting.monotone(y, title)
 
@@ -160,7 +160,7 @@ class LinkElement(Element):
         elif scn is not None:
             y = self.agg.agg_link(self.agg.isrc[self.src], self.agg.idest[self.dest],
                                   self.agg.iscn[scn], self.agg.itime)[self.kind].values
-            title = 'Monotone link from %s to %s at t=%0d' % (self.src, self.dest, scn)
+            title = 'Monotone link from %s to %s at scn=%0d' % (self.src, self.dest, scn)
 
         return self.plotting.monotone(y, title)
 
@@ -238,7 +238,7 @@ class NetworkElement(Element):
 
         return self.plotting.matrix(data=rac, title=title)
 
-    def map(self, scn: int, t: int, limit: int = None):
+    def map(self, t: int, zoom: int, scn: int = 0, limit: int = None):
         nodes = {node: self.agg.get_balance(node=node)[scn, t] for node in self.agg.nodes}
 
         if limit is None:
@@ -258,7 +258,7 @@ class NetworkElement(Element):
                     lines[(dest, src)] = -exchange
 
         title = 'Exchange map at t=%0d scn=%0d' % (t, scn)
-        return self.plotting.map_exchange(nodes, lines, limit, title)
+        return self.plotting.map_exchange(nodes, lines, limit, title, zoom)
 
 
 class Plotting(ABC):
