@@ -145,8 +145,6 @@ class HTMLElementPlotting(ABCElementPlotting):
         return fig
 
     def map_exchange(self, nodes, lines, limit, title, size):
-        # TODO Fix arrow auto sizing. Change carte color or arrow color for visibility
-        # TODO Use fill='self' to fill triangle
         if self.coord is None:
             raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
 
@@ -174,7 +172,7 @@ class HTMLElementPlotting(ABCElementPlotting):
         fig.update_layout(showlegend=False,
                           title_text=title,
                           mapbox=dict(
-                              style="open-street-map",
+                              style="carto-positron",
                               center={'lon': center[0], 'lat': center[1]},
                               zoom=1 / size / 0.07))
         return fig
@@ -204,12 +202,12 @@ class HTMLElementPlotting(ABCElementPlotting):
         w = np.array([v[1], -v[0]])
         # Compute triangle points
         A = E - v * 0.1
-        B = A - v / n * size / 4 - w / n * size / 8
-        C = A - v / n * size / 4 + w / n * size / 8
+        B = A - v / 10 - w / 10
+        C = A - v / 10 + w / 10
 
         # plot arrow
-        fig.add_trace(go.Scattermapbox(lat=[B[1], A[1], C[1]], hoverinfo='text',
-                                       lon=[B[0], A[0], C[0]], text=str(qt), mode='lines',
+        fig.add_trace(go.Scattermapbox(lat=[B[1], A[1], C[1], B[1], None], hoverinfo='text', fill='toself',
+                                       lon=[B[0], A[0], C[0], B[0], None], text=str(qt), mode='lines',
                                        line=dict(width=2 * size, color=color)))
 
 

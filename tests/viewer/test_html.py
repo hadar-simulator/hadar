@@ -43,18 +43,19 @@ class TestHTMLPlotting(unittest.TestCase):
         self.assert_fig_hash('d9f9f004b98ca62be934d69d4fd0c1a302512242', fig)
 
     def test_map_exchanges(self):
-        fig = self.plot.network().map(t=0, scn=0)
-        self.assert_fig_hash('df17e8ce15f81e4e48758241d08508f872dd4f0b', fig)
+        fig = self.plot.network().map(t=0, scn=0, zoom=1.6)
+        # Used this line to plot map: plot(fig)
+        self.assert_fig_hash('49d81d1457b2ac78e1fc6ae4c1fc6215b8a0bbe4', fig)
 
     def test_plot_timeline(self):
         fig = self.plot.consumption(node='a', name='load').timeline()
-        self.assert_fig_hash('7787e0487f8f4012dc8b8f0cf979ffbb09fffb63', fig)
+        self.assert_fig_hash('ba776202b252c9df5c81ca869b2e2d85e56e5589', fig)
 
         fig = self.plot.production(node='b', name='nuclear').timeline()
-        self.assert_fig_hash('e9d05c4f002acaebbc39eb813d53994a6a34a1fa', fig)
+        self.assert_fig_hash('33baf5d01fda12b6a2d025abf8421905fc24abe1', fig)
 
         fig = self.plot.link(src='a', dest='b').timeline()
-        self.assert_fig_hash('6375e591679d12907f440a8c23eb850a037d9cd8', fig)
+        self.assert_fig_hash('0c87d1283db5250858b14e2240d30f9059459e65', fig)
 
     def test_plot_monotone(self):
         fig = self.plot.consumption(node='a', name='load').monotone(scn=0)
@@ -72,13 +73,13 @@ class TestHTMLPlotting(unittest.TestCase):
 
     def test_gaussian(self):
         fig = self.plot.consumption(node='a', name='load').gaussian(scn=0)
-        self.assert_fig_hash('ac67d36ff0aaff356144ccb78f665947e8b13adb', fig)
+        self.assert_fig_hash('4f3676a65cde6c268233679e1d0e6207df62764d', fig)
 
         fig = self.plot.production(node='b', name='nuclear').gaussian(t=0)
-        self.assert_fig_hash('2094b8141fbbdfd6841a782ceef2196bf76b2a8c', fig)
+        self.assert_fig_hash('45ffe15df1d72829ebe2283c9c4b65ee8465c978', fig)
 
         fig = self.plot.link(src='a', dest='b').gaussian(scn=0)
-        self.assert_fig_hash('3420c78029bafebbadedeb39d906269810acfd88', fig)
+        self.assert_fig_hash('52620565ce8ea670b18707cccf30594b5c3d58ea', fig)
 
     def assert_fig_hash(self, expected: str, fig: go.Figure):
         actual = hashlib.sha1(TestHTMLPlotting.get_html(fig)).hexdigest()
