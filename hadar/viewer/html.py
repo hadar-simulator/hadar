@@ -50,8 +50,8 @@ class HTMLElementPlotting(ABCElementPlotting):
 
     def timeline(self, df: pd.DataFrame, title: str):
         scenarios = df.index.get_level_values('scn').unique()
-        alpha = max(10, 255 / scenarios.size)
-        color = 'rgba(100, 100, 100, %d)' % alpha
+        alpha = max(0.01, 1 / scenarios.size)
+        color = 'rgba(0, 0, 0, %.2f)' % alpha
 
         fig = go.Figure()
         for scn in scenarios:
@@ -145,6 +145,8 @@ class HTMLElementPlotting(ABCElementPlotting):
         return fig
 
     def map_exchange(self, nodes, lines, limit, title, size):
+        # TODO Fix arrow auto sizing. Change carte color or arrow color for visibility
+        # TODO Use fill='self' to fill triangle
         if self.coord is None:
             raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
 
