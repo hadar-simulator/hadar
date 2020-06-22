@@ -16,7 +16,7 @@ from pandas import MultiIndex
 from hadar.optimizer.input import DTO
 
 __all__ = ['RestrictedPlug', 'FreePlug', 'Stage', 'FocusStage', 'Drop', 'Rename', 'Fault', 'RepeatScenario',
-           'ToShuffler', 'Pipeline']
+           'ToShuffler', 'Pipeline', 'Clip']
 
 TO_SHUFFLER = 'to_shuffler'
 

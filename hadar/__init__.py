@@ -9,7 +9,7 @@ import logging
 import os
 import sys
 
-from .workflow.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario, ToShuffler
+from .workflow.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario, ToShuffler, Clip
 from .workflow.shuffler import Shuffler
 from .optimizer.input import Consumption, Link, Production, InputNode, Study
 from .optimizer.output import OutputProduction, OutputNode, OutputLink, OutputConsumption, Result
