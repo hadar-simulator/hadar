@@ -7,11 +7,10 @@
 
 import unittest
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from hadar.analyzer.result import Index, TimeIndex, ResultAnalyzer, NodeIndex, NameIndex, SrcIndex, DestIndex, \
-    IntIndex
+from hadar.analyzer.result import Index, ResultAnalyzer, IntIndex
 from hadar.optimizer.input import Production, Consumption, Study
 from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result
 

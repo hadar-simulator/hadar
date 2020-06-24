@@ -6,9 +6,9 @@
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 
 import unittest
-import pandas as pd
+
 import numpy as np
-from pandas import MultiIndex
+import pandas as pd
 
 from hadar.workflow.pipeline import Rename, RepeatScenario, Fault, Clip, ToShuffler
 from hadar.workflow.shuffler import Shuffler

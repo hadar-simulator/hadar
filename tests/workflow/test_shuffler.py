@@ -10,8 +10,8 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from hadar.workflow.pipeline import ToShuffler
 from hadar.workflow.pipeline import Pipeline, TO_SHUFFLER
+from hadar.workflow.pipeline import ToShuffler
 from hadar.workflow.shuffler import Timeline, TimelinePipeline, Shuffler
 
 

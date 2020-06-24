@@ -6,8 +6,9 @@
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 
 import unittest
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from pandas import MultiIndex
 
 from hadar.workflow.pipeline import Stage, FreePlug, RestrictedPlug, FocusStage, Clip, Rename, Drop, Fault, \
