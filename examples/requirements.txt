@@ -1,4 +1,6 @@
 numpy
 pandas
 hadar
+plotly
 jupyter
+click
