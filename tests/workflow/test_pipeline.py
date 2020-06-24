@@ -35,8 +35,8 @@ class Divide(FocusStage):
         Stage.__init__(self, RestrictedPlug(inputs=['a', 'b'], outputs=['d', 'r']))
 
     def _process_scenarios(self, n_scn: int, scenario: pd.DataFrame) -> pd.DataFrame:
-        scenario['d'] = (scenario['a'] / scenario['b']).apply(np.floor)
-        scenario['r'] = scenario['a'] - scenario['b'] * scenario['d']
+        scenario.loc[:, 'd'] = (scenario['a'] / scenario['b']).apply(np.floor)
+        scenario.loc[:, 'r'] = scenario['a'] - scenario['b'] * scenario['d']
         return scenario.drop(['a', 'b'], axis=1)
 
 
@@ -45,7 +45,7 @@ class Inverse(FocusStage):
         FocusStage.__init__(self, RestrictedPlug(inputs=['d'], outputs=['d', '-d']))
 
     def _process_scenarios(self, n_scn: int, scenario: pd.DataFrame) -> pd.DataFrame:
-        scenario['-d'] = -scenario['d']
+        scenario.loc[:, '-d'] = -scenario['d']
         return scenario.copy()
 
 

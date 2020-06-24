@@ -363,7 +363,7 @@ class FocusStage(Stage, ABC):
 
         output = pd.DataFrame(data=np.zeros((n_time, n_type * n_scn)), columns=index)
         for scn in timeline.columns.get_level_values(0).unique():
-            output[scn] = self._process_scenarios(scn, timeline[scn])
+            output[scn] = self._process_scenarios(scn, timeline[scn].copy())
         return output
 
 
