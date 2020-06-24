@@ -74,8 +74,8 @@ class TestHTMLPlotting(unittest.TestCase):
         fig = self.plot.consumption(node='a', name='load').gaussian(scn=0)
         self.assert_fig_hash('4f3676a65cde6c268233679e1d0e6207df62764d', fig)
 
-        fig = self.plot.production(node='b', name='nuclear').gaussian(t=0)
-        self.assert_fig_hash('45ffe15df1d72829ebe2283c9c4b65ee8465c978', fig)
+        fig = self.plot.production(node='b', name='nuclear').gaussian(scn=0)
+        self.assert_fig_hash('4792794d46e7599fde4552cdd59d5db58562740a', fig)
 
         fig = self.plot.link(src='a', dest='b').gaussian(scn=0)
         self.assert_fig_hash('52620565ce8ea670b18707cccf30594b5c3d58ea', fig)
