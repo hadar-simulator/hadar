@@ -5,7 +5,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -13,49 +13,20 @@ import plotly.graph_objects as go
 from matplotlib.cm import coolwarm
 
 from hadar.analyzer.result import ResultAnalyzer, NodeIndex, SrcIndex, TimeIndex, DestIndex, NameIndex
-from hadar.viewer.abc import ABCPlotting
-
+from hadar.viewer.abc import Plotting, ConsumptionElement, ABCElementPlotting, ProductionElement, LinkElement, \
+    NodeElement, NetworkElement
 
 __all__ = ['HTMLPlotting']
 
-class HTMLPlotting(ABCPlotting):
-    """
-    Plotting implementation interactive html graphics. (Use plotly)
-    """
-    def __init__(self, agg: ResultAnalyzer, unit_symbol: str = '',
-                 time_start=None, time_end=None,
-                 cmap=coolwarm,
-                 node_coord: Dict[str, List[float]] = None,
-                 map_element_size: int = 1):
-        """
-        Create instance.
 
-        :param agg: ResultAggragator instence to use
-        :param unit_symbol: symbol on quantity unit used. ex. MW, litter, Go, ...
-        :param time_start: time to use as the start of study horizon
-        :param time_end: time to use as the end of study horizon
-        :param cmap: matplotlib color map to use (coolwarm as default)
-        :param node_coord: nodes coordinates to use for map plotting
-        :param map_element_size: size on element draw on map. default as 1.
-        """
-
-        self.agg = agg
-        self.unit = '(%s)' % unit_symbol if unit_symbol != '' else ''
+class HTMLElementPlotting(ABCElementPlotting):
+    def __init__(self, unit: str, time_index, node_coord: Dict[str, List[float]] = None):
+        self.unit = unit
+        self.time_index = time_index
         self.coord = node_coord
-        self.size = map_element_size
 
-        # Create time_index
-        time = [time_start is None, time_end is None]
-        if time == [True, False] or time == [False, True]:
-            raise ValueError('You have to give both time_start and time_end')
-        elif time == [False, False]:
-            self.time_index = pd.date_range(start=time_start, end=time_end, periods=self.agg.horizon)
-        else:
-            self.time_index = np.arange(self.agg.horizon)
-
-        # Create colors scale
-        self.cmap = cmap
-        self.cmap_plotly = HTMLPlotting.matplotlib_to_plotly(cmap, 255)
+        self.cmap = coolwarm
+        self.cmap_plotly = HTMLElementPlotting.matplotlib_to_plotly(self.cmap, 255)
 
         self.cmap_cons = ['brown', 'blue', 'darkgoldenrod', 'darkmagenta', 'darkorange', 'cadetblue', 'forestgreen',
                           'indigo', 'olive', 'darkred']
@@ -76,63 +47,136 @@ class HTMLPlotting(ABCPlotting):
             pl_colorscale.append([k * h, 'rgb' + str((C[0], C[1], C[2]))])
         return pl_colorscale
 
-    def stack(self, node: str, scn: int = 0, prod_kind: str = 'used', cons_kind: str = 'asked'):
-        """
-        Plot with production stacked with area and consumptions stacked by dashed lines.
+    def timeline(self, df: pd.DataFrame, title: str):
+        scenarios = df.index.get_level_values('scn').unique()
+        alpha = max(0.01, 1 / scenarios.size)
+        color = 'rgba(0, 0, 0, %.2f)' % alpha
 
-        :param node: select node to plot.
-        :param scn: scenario index to plot.
-        :param prod_kind: select which prod to stack : available ('avail') or 'used'
-        :param cons_kind: select which cons to stacl : 'asked' or 'given'
-        :return: plotly figure or jupyter widget to plot
-        """
         fig = go.Figure()
-        c, p, b = self.agg.get_elements_inside(node=node)
-        stack = np.zeros(self.agg.horizon)
+        for scn in scenarios:
+            fig.add_trace(go.Scatter(x=self.time_index, y=df.loc[scn], mode='lines', hoverinfo='name',
+                                     name='scn %0d' % scn, line=dict(color=color)))
 
-        # stack production with area
-        if p > 0:
-            prod = self.agg.agg_prod(self.agg.iscn[scn], self.agg.inode[node], self.agg.iname, self.agg.itime)\
-                .sort_values('cost', ascending=True)
-            for i, name in enumerate(prod.index.get_level_values('name').unique()):
-                stack += prod.loc[name][prod_kind].sort_index().values
-                fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=name, mode='none',
-                                         fill='tozeroy' if i == 0 else 'tonexty'))
+        fig.update_layout(title_text=title,
+                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time", showlegend=False)
 
-        # add import in production stack
-        balance = self.agg.get_balance(node=node)[scn]
-        im = -np.clip(balance, None, 0)
-        if not (im == 0).all():
-            stack += im
-            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name='import', mode='none', fill='tonexty'))
-
-        # Reset stack
-        stack = np.zeros_like(stack)
-        cons_lines = []
-        # Stack consumptions with line
-        if c > 0:
-            cons = self.agg.agg_cons(self.agg.iscn[scn], self.agg.inode[node], self.agg.iname, self.agg.itime)\
-                .sort_values('cost', ascending=False)
-            for i, name in enumerate(cons.index.get_level_values('name').unique()):
-                stack += cons.loc[name][cons_kind].sort_index().values
-                cons_lines.append([name, stack.copy()])
-
-        # Add export in consumption stack
-        exp = np.clip(balance, 0, None)
-        if not (exp == 0).all():
-            stack += exp
-            cons_lines.append(['export', stack.copy()])
-
-        # Plot line in the reverse sens to avoid misunderstood during graphics analyze
-        for i, (name, stack) in enumerate(cons_lines[::-1]):
-            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), line_color=self.cmap_cons[i % 10],
-                                     name= name, line=dict(width=2)))
-
-        fig.update_layout(title_text='Stack for node %s' % node,
-                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time")
         return fig
 
-    def _plot_links(self, fig: go.Figure, start: str, end: str, color: str, qt: float):
+    def monotone(self, y: np.ndarray, title: str):
+        y.sort()
+        y = y[::-1]
+        x = np.linspace(0, 100, y.size)
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=y, mode='markers'))
+        fig.update_layout(title_text=title,
+                          yaxis_title="Quantity %s" % self.unit, xaxis_title="%", showlegend=False)
+
+        return fig
+
+    def gaussian(self, rac: np.ndarray, qt: np.ndarray, title: str):
+        #    1                    /  x - m \ 2
+        # --------- * exp -0.5 * | -------- |
+        # o * √2*Pi               \    o   /
+        def _gaussian(x, m, o):
+            return np.exp(-0.5 * np.power((x - m) / o, 2)) / o / 1.772454
+
+        x = np.linspace(np.min(qt) * 0, np.max(qt) * 1.2, 100)
+        m = np.mean(qt)
+        o = np.std(qt)
+
+        green = qt[rac >= 0]
+        red = qt[rac < 0]
+
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x, y=_gaussian(x, m, o), mode='lines', hoverinfo='none', line=dict(color='grey')))
+        fig.add_trace(go.Scatter(x=green, y=_gaussian(green, m, o), hovertemplate='%{x:.2f} ' + self.unit,
+                                 name='passed', mode='markers', marker=dict(color='green', size=10)))
+        fig.add_trace(go.Scatter(x=red, y=_gaussian(red, m, o), hovertemplate='%{x:.2f} ' + self.unit,
+                                 name='failed', mode='markers', marker=dict(color='red', size=10)))
+        fig.update_layout(title_text=title, yaxis=dict(visible=False),
+                          yaxis_title='', xaxis_title="Quantity %s" % self.unit, showlegend=False)
+
+        return fig
+
+    def stack(self, areas: List[Tuple[str, np.ndarray]], lines: List[Tuple[str, np.ndarray]], title: str):
+        fig = go.Figure()
+
+        # Stack areas
+        stack = np.zeros_like(self.time_index, dtype=float)
+        for i, (name, data) in enumerate(areas):
+            stack += data
+            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=name, mode='none',
+                                     fill='tozeroy' if i == 0 else 'tonexty'))
+
+        # Stack lines.
+        # Bottom line have to be top frontward. So we firstly stack lines then plot in reverse set.
+        stack = np.zeros_like(self.time_index, dtype=float)
+        stacked_lines = []
+        for i, (name, data) in enumerate(lines):
+            stack += data
+            stacked_lines.append((name, stack.copy()))
+
+        for i, (name, data) in enumerate(stacked_lines[::-1]):
+            fig.add_trace(go.Scatter(x=self.time_index, y=data, line_color=self.cmap_cons[i % 10],
+                                     name=name, line=dict(width=2)))
+
+        fig.update_layout(title_text=title, yaxis_title="Quantity %s" % self.unit, xaxis_title="time")
+        return fig
+
+    def matrix(self, data: np.ndarray, title):
+        def sdt(x):
+            x[x > 0] /= np.max(x[x > 0])
+            x[x < 0] /= -np.min(x[x < 0])
+            return x
+
+        fig = go.Figure(data=go.Heatmap(
+            z=sdt(data.copy()),
+            x=self.time_index,
+            y=np.arange(data.shape[0]),
+            hoverinfo='text',
+            text=data,
+            colorscale='RdBu', zmid=0,
+            showscale=False))
+
+        fig.update_layout(title_text=title, yaxis_title="scenarios", xaxis_title="time", showlegend=False)
+
+        return fig
+
+    def map_exchange(self, nodes, lines, limit, title, size):
+        if self.coord is None:
+            raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
+
+        fig = go.Figure()
+        # Add node circle
+        keys = nodes.keys()
+        node_qt = [nodes[k] for k in keys]
+        node_coords = np.array([self.coord[n] for n in keys])
+        center = np.mean(node_coords, axis=0)
+
+        # Plot arrows
+        for (src, dest), qt in lines.items():
+            color = 'rgb' + str(self.cmap(abs(qt) / 2 / limit + 0.5)[:-1])
+            self._plot_links(fig, src, dest, color, qt, size)
+
+        # Plot nodes
+        fig.add_trace(go.Scattermapbox(
+            mode="markers",
+            lon=node_coords[:, 0],
+            lat=node_coords[:, 1],
+            hoverinfo='text', text=node_qt,
+            marker=dict(size=20, colorscale=self.cmap_plotly, cmin=-limit, color=node_qt,
+                        cmax=limit, colorbar_title="Net Position %s" % self.unit)))
+
+        fig.update_layout(showlegend=False,
+                          title_text=title,
+                          mapbox=dict(
+                              style="carto-positron",
+                              center={'lon': center[0], 'lat': center[1]},
+                              zoom=1 / size / 0.07))
+        return fig
+
+    def _plot_links(self, fig: go.Figure, start: str, end: str, color: str, qt: float, size: float):
         """
         Plot line with arrow to a figure.
 
@@ -147,68 +191,45 @@ class HTMLPlotting(ABCPlotting):
         E = np.array([self.coord[end][0], self.coord[end][1]])
 
         # plot line
-        fig.add_trace(go.Scattergeo(lat=[S[1], E[1]], hoverinfo='skip',
-                                    lon=[S[0], E[0]], mode='lines',
-                                    line=dict(width=4 * self.size, color=color)))
+        fig.add_trace(go.Scattermapbox(lat=[S[1], E[1]], hoverinfo='skip',
+                                       lon=[S[0], E[0]], mode='lines',
+                                       line=dict(width=2 * size, color=color)))
         # vector flow direction
         v = E - S
         n = np.linalg.norm(v)
         # Get orthogonal vector
         w = np.array([v[1], -v[0]])
         # Compute triangle points
-        A = E - v * 0.5
-        B = A - v / n * self.size * 0.5 - w / n * self.size * 0.25
-        C = A - v / n * self.size * 0.5 + w / n * self.size * 0.25
+        A = E - v * 0.1
+        B = A - v / 10 - w / 10
+        C = A - v / 10 + w / 10
 
         # plot arrow
-        fig.add_trace(go.Scattergeo(lat=[B[1], A[1], C[1]], hoverinfo='text',
-                                    lon=[B[0], A[0], C[0]], text=str(qt), mode='lines',
-                                    line=dict(width=4 * self.size, color=color)))
+        fig.add_trace(go.Scattermapbox(lat=[B[1], A[1], C[1], B[1], None], hoverinfo='text', fill='toself',
+                                       lon=[B[0], A[0], C[0], B[0], None], text=str(qt), mode='lines',
+                                       line=dict(width=2 * size, color=color)))
 
-    def exchanges_map(self, t: int, scn: int = 0, limit: int = None):
+
+class HTMLPlotting(Plotting):
+    """
+    Plotting implementation interactive html graphics. (Use plotly)
+    """
+
+    def __init__(self, agg: ResultAnalyzer, unit_symbol: str = '',
+                 time_start=None, time_end=None,
+                 node_coord: Dict[str, List[float]] = None):
         """
-        Plot a map with node (color are balance) and arrow between nodes (color for quantity).
+        Create instance.
 
-        :param t: timestep to plot
-        :param scn: scenario index to plot
-        :param limit: limite to use as min/max for color scale. If not provided we use min/max from dataset.
-        :return: plotly figure or jupyter widget to plot
+        :param agg: ResultAggragator instence to use
+        :param unit_symbol: symbol on quantity unit used. ex. MW, litter, Go, ...
+        :param time_start: time to use as the start of study horizon
+        :param time_end: time to use as the end of study horizon
+        :param cmap: matplotlib color map to use (coolwarm as default)
+        :param node_coord: nodes coordinates to use for map plotting
+        :param map_element_size: size on element draw on map. default as 1.
         """
-        if self.coord is None:
-            raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
+        Plotting.__init__(self, agg, unit_symbol, time_start, time_end, node_coord)
+        self.plotting = HTMLElementPlotting(self.unit, self.time_index, self.coord)
 
-        balances = [self.agg.get_balance(node=node)[scn, t] for node in self.agg.nodes]
-        if limit is None:
-            limit = max(max(balances), -min(balances))
 
-        fig = go.Figure()
-
-        # plot links
-        links = self.agg.agg_link(self.agg.iscn[scn], self.agg.isrc, self.agg.idest, self.agg.itime)
-        for src in links.index.get_level_values('src').unique():
-            for dest in links.loc[src].index.get_level_values('dest').unique():
-                exchange = links.loc[src, dest, t]['used']  # forward
-                exchange -= links.loc[dest, src, t]['used'] if (dest, src, t) in links.index else 0  # backward
-
-                color = 'rgb' + str(self.cmap(abs(exchange) / 2 / limit + 0.5)[:-1])
-                if exchange > 0:
-                    self._plot_links(fig=fig, start=src, end=dest, color=color, qt=exchange)
-                else:
-                    self._plot_links(fig=fig, start=dest, end=src, color=color, qt=-exchange)
-
-        # plot nodes
-        text = ['%s: %i' % (n, b) for n, b in zip(self.agg.nodes, balances)]
-        lon = [self.coord[node][0] for node in self.agg.nodes]
-        lat = [self.coord[node][1] for node in self.agg.nodes]
-
-        fig.add_trace(go.Scattergeo(lon=lon, lat=lat, hoverinfo='text', text=text, mode='markers',
-                                    marker=dict(size=15 * self.size,
-                                                colorscale=self.cmap_plotly, cmin=-limit, color=balances,
-                                                cmax=limit, colorbar_title="Net Position %s" % self.unit)))
-        # Config plot
-        fig.update_layout(title_text='Exchanges Map', showlegend=False, height=600,
-                          geo=dict(projection_type='equirectangular', showland=True, showcountries=True,
-                                   resolution=50, landcolor='rgb(200, 200, 200)', countrycolor='rgb(0, 0, 0)',
-                                   fitbounds='locations'))
-
-        return fig

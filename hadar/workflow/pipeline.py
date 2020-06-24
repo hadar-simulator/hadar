@@ -4,7 +4,7 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-
+import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from typing import List, Tuple, Union, Dict
@@ -16,7 +16,7 @@ from pandas import MultiIndex
 from hadar.optimizer.input import DTO
 
 __all__ = ['RestrictedPlug', 'FreePlug', 'Stage', 'FocusStage', 'Drop', 'Rename', 'Fault', 'RepeatScenario',
-           'ToShuffler', 'Pipeline']
+           'ToShuffler', 'Pipeline', 'Clip']
 
 TO_SHUFFLER = 'to_shuffler'
 
@@ -260,6 +260,10 @@ class Stage(ABC):
         """
         timeline = Stage.standardize_column(timeline)
 
+        # If compute run inside multiprocessing like in Shuffler. randomness are not independence.
+        # We need to reseed with urandom
+        np.random.seed(int.from_bytes(os.urandom(4), byteorder='little'))
+
         names = Stage.get_names(timeline)
         if not self.plug.computable(names):
             raise ValueError("Stage accept %s in input, but receive %s" % (self.plug.inputs, names))
@@ -359,7 +363,7 @@ class FocusStage(Stage, ABC):
 
         output = pd.DataFrame(data=np.zeros((n_time, n_type * n_scn)), columns=index)
         for scn in timeline.columns.get_level_values(0).unique():
-            output[scn] = self._process_scenarios(scn, timeline[scn])
+            output[scn] = self._process_scenarios(scn, timeline[scn].copy())
         return output
 
 
@@ -463,14 +467,14 @@ class Fault(FocusStage):
         self.occur_freq = occur_freq
         self.downtime_min = downtime_min
         self.downtime_max = downtime_max
-        self.seed = np.random.randint(0, 100000000) if seed is None else seed
+        self.seed = seed
 
     def _process_scenarios(self, n_scn: int, scenario: pd.DataFrame) -> pd.DataFrame:
-        np.random.seed(self.seed)
+        if self.seed:
+            np.random.seed(self.seed)
 
         horizon = scenario.shape[0]
         nb_faults = np.random.choice([0, 1], size=horizon, p=[1 - self.occur_freq, self.occur_freq]).sum()
-
         loss_qt = np.zeros(horizon)
         faults_begin = np.random.randint(low=0, high=horizon, size=nb_faults)
         faults_duration = np.random.randint(low=self.downtime_min, high=self.downtime_max, size=nb_faults)

@@ -6,7 +6,9 @@
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 
 import unittest
+
 import numpy as np
+
 from hadar.optimizer.input import Study, Consumption, Production, Link
 
 

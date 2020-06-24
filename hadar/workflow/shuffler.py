@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from numpy.random.mtrand import randint
 
-from hadar.workflow.pipeline import Pipeline, TO_SHUFFLER
+from hadar.workflow.pipeline import Pipeline, TO_SHUFFLER, Stage
 
 __all__ = ['Shuffler', 'Timeline']
 
@@ -127,6 +127,7 @@ class Shuffler:
         :param pipeline: pipeline to generate data
         :return: self
         """
+        data = Stage.standardize_column(data)
         pipeline.assert_computable(data)
         pipeline.assert_to_shuffler()
 

@@ -34,8 +34,9 @@ jobs:
       run: |
         git lfs pull
         export PYTHONPATH=$(pwd)
+        pip install click jupyter
         cd examples
-        python3 check.py
+        python3 utils.py --src=./ --check=./
 
     - name: Release test.pypi.org
       run: |

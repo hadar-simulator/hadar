@@ -2,6 +2,5 @@ pandas
 numpy
 ortools
 plotly
-jupyter
 matplotlib
 requests

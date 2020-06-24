@@ -57,7 +57,7 @@ class Index(Generic[T]):
             return df[self.column].notnull()
         return df[self.column].isin(self.index)
 
-    def is_alone(self):
+    def is_alone(self) -> bool:
         """
         Ask if index filter element is alone.
 
@@ -373,6 +373,31 @@ class ResultAnalyzer:
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         return cost
+
+    def get_rac(self) -> np.ndarray:
+        prod_used = self.production\
+            .drop(['avail', 'cost'], axis=1)\
+            .pivot_table(index='scn', columns='t', aggfunc=np.sum)\
+            .values
+
+        prod_avail = self.production\
+            .drop(['used', 'cost'], axis=1)\
+            .pivot_table(index='scn', columns='t', aggfunc=np.sum)\
+            .values
+
+        cons_asked = self.consumption\
+            .drop(['given', 'cost'], axis=1)\
+            .pivot_table(index='scn', columns='t', aggfunc=np.sum)\
+            .values
+
+        cons_given = self.consumption\
+            .drop(['asked', 'cost'], axis=1)\
+            .pivot_table(index='scn', columns='t', aggfunc=np.sum)\
+            .values
+
+        rac = (prod_avail - prod_used) - (cons_asked - cons_given)
+
+        return rac
 
     @property
     def horizon(self) -> int:

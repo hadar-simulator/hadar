@@ -9,16 +9,15 @@ import logging
 import os
 import sys
 
-from .workflow.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario, ToShuffler
+from .workflow.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario, ToShuffler, Clip
 from .workflow.shuffler import Shuffler
 from .optimizer.input import Consumption, Link, Production, InputNode, Study
 from .optimizer.output import OutputProduction, OutputNode, OutputLink, OutputConsumption, Result
 from .optimizer.optimizer import LPOptimizer, RemoteOptimizer
 from .viewer.html import HTMLPlotting
-from .viewer.jupyter import JupyterPlotting
 from .analyzer.result import ResultAnalyzer
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 level = os.getenv('HADAR_LOG', 'WARNING')
 
