@@ -43,8 +43,9 @@ jobs:
       run: |
         git lfs pull
         pip install -i https://test.pypi.org/simple/ hadar
+        pip install jupyter click
         cd examples
-        python3 check.py
+        python3 utils.py --src=./ --check=./
 
     - name: Release pypi.org
       run: |
