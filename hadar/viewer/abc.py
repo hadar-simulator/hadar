@@ -229,6 +229,36 @@ class NodeElement(Element):
 
         return self.plotting.stack(areas, lines, title)
 
+    def consumption(self, name: str, kind: str = 'given') -> ConsumptionElement:
+        """
+        Plot all timelines consumption scenario.
+
+        :param name: select consumption name
+        :param kind: kind of data 'asked' or 'given'
+        :return:
+        """
+        return ConsumptionElement(plotting=self.plotting, agg=self.agg, node=self.node, name=name, kind=kind)
+
+    def production(self, name: str, kind: str = 'used') -> ProductionElement:
+        """
+         Plot all timelines production scenario.
+
+         :param name: select production name
+         :param kind: kind of data available ('avail') or 'used'
+         :return:
+         """
+        return ProductionElement(plotting=self.plotting, agg=self.agg, node=self.node, name=name, kind=kind)
+
+    def link(self, dest: str, kind: str = 'used'):
+        """
+         Plot all timelines links scenario.
+
+         :param dest: select destination node name
+         :param kind: kind of data available ('avail') or 'used'
+         :return:
+         """
+        return LinkElement(plotting=self.plotting, agg=self.agg, src=self.node, dest=dest, kind=kind)
+
 
 class NetworkElement(Element):
     def rac_matrix(self):
@@ -259,6 +289,9 @@ class NetworkElement(Element):
 
         title = 'Exchange map at t=%0d scn=%0d' % (t, scn)
         return self.plotting.map_exchange(nodes, lines, limit, title, zoom)
+
+    def node(self, node: str):
+        return NodeElement(plotting=self.plotting, agg=self.agg, node=node)
 
 
 class Plotting(ABC):
@@ -293,42 +326,6 @@ class Plotting(ABC):
             self.time_index = pd.date_range(start=time_start, end=time_end, periods=self.agg.horizon)
         else:
             self.time_index = np.arange(self.agg.horizon)
-
-    def node(self, node: str):
-        return NodeElement(plotting=self.plotting, agg=self.agg, node=node)
-
-    def consumption(self, node: str, name: str, kind: str = 'given') -> ConsumptionElement:
-        """
-        Plot all timelines consumption scenario.
-
-        :param node: selected node name
-        :param name: select consumption name
-        :param kind: kind of data 'asked' or 'given'
-        :return:
-        """
-        return ConsumptionElement(plotting=self.plotting, agg=self.agg, node=node, name=name, kind=kind)
-
-    def production(self, node: str, name: str, kind: str = 'used') -> ProductionElement:
-        """
-         Plot all timelines production scenario.
-
-         :param node: selected node name
-         :param name: select production name
-         :param kind: kind of data available ('avail') or 'used'
-         :return:
-         """
-        return ProductionElement(plotting=self.plotting, agg=self.agg, node=node, name=name, kind=kind)
-
-    def link(self, src: str, dest: str, kind: str = 'used'):
-        """
-         Plot all timelines links scenario.
-
-         :param src: selected source node name
-         :param dest: select destination node name
-         :param kind: kind of data available ('avail') or 'used'
-         :return:
-         """
-        return LinkElement(plotting=self.plotting, agg=self.agg, src=src, dest=dest, kind=kind)
 
     def network(self):
         return NetworkElement(plotting=self.plotting, agg=self.agg)
