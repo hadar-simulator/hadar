@@ -31,7 +31,7 @@ class TestPipeline(unittest.TestCase):
                Clip(lower=80)
 
         # Test
-        o = pipe.compute(i)
+        o = pipe(i)
 
         # Verify io interfaces
         self.assertEqual(['data'], pipe.plug.inputs)

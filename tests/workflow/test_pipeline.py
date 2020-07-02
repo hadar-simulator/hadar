@@ -136,7 +136,7 @@ class TestPipeline(unittest.TestCase):
         exp = pd.DataFrame({(0, 'a'): [4, 8, 12]})
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         pd.testing.assert_frame_equal(exp, o)
 
     def test_add(self):
@@ -149,7 +149,7 @@ class TestPipeline(unittest.TestCase):
         exp = pd.DataFrame({(0, 'd'): [1, 1, 1], (0, 'r'): [0, 0, 0]}, dtype=float)
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         self.assertEqual(3, len(pipe.stages))
         self.assertIsInstance(pipe.plug, RestrictedPlug)
         pd.testing.assert_frame_equal(exp, o)
@@ -163,7 +163,7 @@ class TestPipeline(unittest.TestCase):
         exp = pd.DataFrame({(0, 'a'): [2, 4, 6], (0, 'b'): [8, 9, 9]})
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         pd.testing.assert_frame_equal(exp, o)
         self.assertEqual([], pipe.plug.inputs)
         self.assertEqual([], pipe.plug.outputs)
@@ -177,7 +177,7 @@ class TestPipeline(unittest.TestCase):
         exp = pd.DataFrame({(0, 'd'): [2, 4, 5], (0, 'r'): [4, 0, 4]}, dtype='float')
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         pd.testing.assert_frame_equal(exp, o)
         self.assertEqual(['a', 'b'], pipe.plug.inputs)
         self.assertEqual(['d', 'r'], pipe.plug.outputs)
@@ -191,7 +191,7 @@ class TestPipeline(unittest.TestCase):
         exp = pd.DataFrame({(0, 'd'): [4, 8, 10], (0, 'r'): [4, 0, 4]}, dtype='float')
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         pd.testing.assert_frame_equal(exp, o)
         self.assertEqual(['a', 'b'], pipe.plug.inputs)
         self.assertEqual(['d', 'r'], pipe.plug.outputs)
@@ -205,7 +205,7 @@ class TestPipeline(unittest.TestCase):
         exp = pd.DataFrame({(0, 'd'): [2, 4, 5], (0, '-d'): [-2, -4, -5], (0, 'r'): [2, 0, 2]}, dtype='float')
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         pd.testing.assert_frame_equal(exp, o)
         self.assertEqual({'a', 'b'}, set(pipe.plug.inputs))
         self.assertEqual({'d', '-d', 'r'}, set(pipe.plug.outputs))
@@ -227,14 +227,14 @@ class TestStage(unittest.TestCase):
                             (1, 'a'): [20, 40, 60], (1, 'b'): [80, 100, 120]})
 
         # Test & Verify
-        o = stage.compute(i)
+        o = stage(i)
         pd.testing.assert_frame_equal(exp, o)
 
     def test_wrong_compute(self):
         i = pd.DataFrame({'a': [1, 2, 3], 'b': [4, 5, 6]})
         pipe = Inverse()
 
-        self.assertRaises(ValueError, lambda: pipe.compute(i))
+        self.assertRaises(ValueError, lambda: pipe(i))
 
     def test_standardize_column(self):
         i = pd.DataFrame({'a': [1, 2, 3]})
@@ -270,7 +270,7 @@ class TestFocusPipeline(unittest.TestCase):
                             (1, 'd'): [4, 2, 2], (1, 'r'): [0, 10, 0]}, dtype='float')
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         pd.testing.assert_frame_equal(exp, o)
 
 
@@ -285,7 +285,7 @@ class TestClip(unittest.TestCase):
         exp = pd.DataFrame({(0, 'a'): [12, 50, 50, 12], (0, 'b'): [50, 23, 50, 10]})
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         pd.testing.assert_frame_equal(exp, o)
 
 
@@ -300,7 +300,7 @@ class TestRename(unittest.TestCase):
         exp = pd.DataFrame({(0, 'alpha'): [12, 54, 87, 12], (0, 'b'): [98, 23, 65, 4]})
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         pd.testing.assert_frame_equal(exp, o)
 
 
@@ -315,7 +315,7 @@ class TestDrop(unittest.TestCase):
         exp = pd.DataFrame({(0, 'a'): [12, 54, 87, 12]})
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         pd.testing.assert_frame_equal(exp, o)
 
 
@@ -332,7 +332,7 @@ class TestFault(unittest.TestCase):
         exp_total_loss = exp_time_down * pipe.loss
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
 
         time_down = o.where(o < power).dropna().size
         self.assertAlmostEqual(exp_time_down, time_down, delta=exp_time_down*0.1)
@@ -357,8 +357,8 @@ class TestRepeat(unittest.TestCase):
                              (3, 'a'): [12, 54, 87, 12], (3, 'b'): [98, 23, 65, 4]})
 
         # Test & Verify
-        o = pipe.compute(i)
+        o = pipe(i)
         pd.testing.assert_frame_equal(exp1, o)
 
-        o = pipe.compute(o)
+        o = pipe(o)
         pd.testing.assert_frame_equal(exp2, o)

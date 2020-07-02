@@ -182,7 +182,7 @@ class Pipeline:
         self.stages.append(other)
         return self
 
-    def compute(self, timeline):
+    def __call__(self, timeline):
         """
         Launch all stages computation.
 
@@ -194,7 +194,7 @@ class Pipeline:
         self.assert_computable(timeline)
 
         for stage in self.stages:
-            timeline = stage.compute(timeline.copy())
+            timeline = stage(timeline.copy())
 
         return timeline
 
@@ -251,7 +251,7 @@ class Stage(ABC):
         """
         pass
 
-    def compute(self, timeline: pd.DataFrame) -> pd.DataFrame:
+    def __call__(self, timeline: pd.DataFrame) -> pd.DataFrame:
         """
         Launch Stage computation.
 

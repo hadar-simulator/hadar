@@ -27,7 +27,7 @@ class MockPipeline(Pipeline):
         self.return_value = return_value
         self.input = None
 
-    def compute(self, timeline):
+    def __call__(self, timeline):
         self.input = timeline
         return self.return_value
 
