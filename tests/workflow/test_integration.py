@@ -26,7 +26,7 @@ class TestPipeline(unittest.TestCase):
         i = pd.DataFrame(data={'data': np.ones(1000) * 100})
 
         pipe = RepeatScenario(n=500) + \
-               Rename(rename={'data': 'quantity'}) + \
+               Rename(data='quantity') + \
                Fault(loss=10, occur_freq=0.1, downtime_min=5, downtime_max=10) +\
                Clip(lower=80)
 

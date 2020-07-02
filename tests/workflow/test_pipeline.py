@@ -294,7 +294,7 @@ class TestRename(unittest.TestCase):
         # Input
         i = pd.DataFrame({'a': [12, 54, 87, 12], 'b': [98, 23, 65, 4]})
 
-        pipe = Rename({'a': 'alpha'})
+        pipe = Rename(a='alpha')
 
         # Expected
         exp = pd.DataFrame({(0, 'alpha'): [12, 54, 87, 12], (0, 'b'): [98, 23, 65, 4]})
