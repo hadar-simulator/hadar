@@ -57,8 +57,7 @@ class ConsumptionElement(Element):
         self.kind = kind
 
     def timeline(self):
-        cons = self.agg.consumptions(self.agg.inode[self.node], self.agg.iname[self.name],
-                                     self.agg.iscn, self.agg.itime)[self.kind]
+        cons = self.agg.network().node(self.node).consumption(self.name).scn().time()[self.kind]
         title = 'Consumptions %s for %s on node %s' % (self.kind, self.name, self.node)
         return self.plotting.timeline(cons, title)
 
@@ -66,12 +65,10 @@ class ConsumptionElement(Element):
         Element.not_both(t, scn)
 
         if t is not None:
-            y = self.agg.consumptions(self.agg.inode[self.node], self.agg.iname[self.name],
-                                      self.agg.itime[t], self.agg.iscn)[self.kind].values
+            y = self.agg.network().node(self.node).consumption(self.name).time(t).scn()[self.kind].values
             title = 'Monotone consumption of %s on node %s at t=%0d' % (self.name, self.node, t)
         elif scn is not None:
-            y = self.agg.consumptions(self.agg.inode[self.node], self.agg.iname[self.name],
-                                      self.agg.iscn[scn], self.agg.itime)[self.kind].values
+            y = self.agg.network().node(self.node).consumption(self.name).scn(scn).time()[self.kind].values
             title = 'Monotone consumption of %s on node %s at scn=%0d' % (self.name, self.node, scn)
 
         return self.plotting.monotone(y, title)
@@ -80,13 +77,11 @@ class ConsumptionElement(Element):
         Element.not_both(t, scn)
 
         if t is None:
-            cons = self.agg.consumptions(self.agg.inode[self.node], self.agg.iname[self.name],
-                                         self.agg.iscn[scn], self.agg.itime)[self.kind].values
+            cons = self.agg.network().node(self.node).consumption(self.name).scn(scn).time()[self.kind].values
             rac = self.agg.get_rac()[scn, :]
             title = 'Gaussian consumption of %s on node %s at scn=%0d' % (self.name, self.node, scn)
         elif scn is None:
-            cons = self.agg.consumptions(self.agg.inode[self.node], self.agg.iname[self.name],
-                                         self.agg.itime[t], self.agg.iscn)[self.kind].values
+            cons = self.agg.network().node(self.node).consumption(self.name).time(t).scn()[self.kind].values
             rac = self.agg.get_rac()[:, t]
             title = 'Gaussian consumption of %s on node %s at t=%0d' % (self.name, self.node, t)
 
@@ -101,8 +96,7 @@ class ProductionElement(Element):
         self.kind = kind
 
     def timeline(self):
-        prod = self.agg.agg_prod(self.agg.inode[self.node], self.agg.iname[self.name],
-                                 self.agg.iscn, self.agg.itime)[self.kind]
+        prod = self.agg.network().node(self.node).production(self.name).scn().time()[self.kind]
         title = 'Production %s for %s on node %s' % (self.kind, self.name, self.node)
         return self.plotting.timeline(prod, title)
 
@@ -110,12 +104,10 @@ class ProductionElement(Element):
         Element.not_both(t, scn)
 
         if t is not None:
-            y = self.agg.agg_prod(self.agg.inode[self.node], self.agg.iname[self.name],
-                                  self.agg.itime[t], self.agg.iscn)[self.kind].values
+            y = self.agg.network().node(self.node).production(self.name).time(t).scn()[self.kind].values
             title = 'Monotone production of %s on node %s at t=%0d' % (self.name, self.node, t)
         elif scn is not None:
-            y = self.agg.agg_prod(self.agg.inode[self.node], self.agg.iname[self.name],
-                                  self.agg.iscn[scn], self.agg.itime)[self.kind].values
+            y = self.agg.network().node(self.node).production(self.name).scn(scn).time()[self.kind].values
             title = 'Monotone production of %s on node %s at scn=%0d' % (self.name, self.node, scn)
 
         return self.plotting.monotone(y, title)
@@ -124,13 +116,11 @@ class ProductionElement(Element):
         Element.not_both(t, scn)
 
         if t is None:
-            prod = self.agg.agg_prod(self.agg.inode[self.node], self.agg.iname[self.name],
-                                     self.agg.iscn[scn], self.agg.itime)[self.kind].values
+            prod = self.agg.network().node(self.node).production(self.name).scn(scn).time()[self.kind].values
             rac = self.agg.get_rac()[scn, :]
             title = 'Gaussian production of %s on node %s at scn=%0d' % (self.name, self.node, scn)
         elif scn is None:
-            prod = self.agg.agg_prod(self.agg.inode[self.node], self.agg.iname[self.name],
-                                     self.agg.itime[t], self.agg.iscn)[self.kind].values
+            prod = self.agg.network().node(self.node).production(self.name).time(t).scn()[self.kind].values
             rac = self.agg.get_rac()[:, t]
             title = 'Gaussian production of %s on node %s at t=%0d' % (self.name, self.node, t)
 
@@ -145,8 +135,7 @@ class LinkElement(Element):
         self.kind = kind
 
     def timeline(self):
-        links = self.agg.agg_link(self.agg.isrc[self.src], self.agg.idest[self.dest], self.agg.iscn,
-                                  self.agg.itime)[self.kind]
+        links = self.agg.network().node(self.src).link(self.dest).scn().time()[self.kind]
         title = 'Link %s from %s to %s' % (self.kind, self.src, self.dest)
         return self.plotting.timeline(links, title)
 
@@ -154,12 +143,10 @@ class LinkElement(Element):
         Element.not_both(t, scn)
 
         if t is not None:
-            y = self.agg.agg_link(self.agg.isrc[self.src], self.agg.idest[self.dest],
-                                  self.agg.itime[t], self.agg.iscn)[self.kind].values
+            y = self.agg.network().node(self.src).link(self.dest).time(t).scn()[self.kind].values
             title = 'Monotone link from %s to %s at t=%0d' % (self.src, self.dest, t)
         elif scn is not None:
-            y = self.agg.agg_link(self.agg.isrc[self.src], self.agg.idest[self.dest],
-                                  self.agg.iscn[scn], self.agg.itime)[self.kind].values
+            y = self.agg.network().node(self.src).link(self.dest).scn(scn).time()[self.kind].values
             title = 'Monotone link from %s to %s at scn=%0d' % (self.src, self.dest, scn)
 
         return self.plotting.monotone(y, title)
@@ -168,13 +155,11 @@ class LinkElement(Element):
         Element.not_both(t, scn)
 
         if t is None:
-            prod = self.agg.agg_link(self.agg.isrc[self.src], self.agg.idest[self.dest],
-                                     self.agg.iscn[scn], self.agg.itime)[self.kind].values
+            prod = self.agg.network().node(self.src).link(self.dest).scn(scn).time()[self.kind].values
             rac = self.agg.get_rac()[scn, :]
             title = 'Gaussian link from %s to %s at t=%0d' % (self.src, self.dest, scn)
         elif scn is None:
-            prod = self.agg.agg_prod(self.agg.isrc[self.src], self.agg.idest[self.dest],
-                                     self.agg.itime[t], self.agg.iscn)[self.kind].values
+            prod = self.agg.network().node(self.src).link(self.dest).time(t).scn()[self.kind].values
             rac = self.agg.get_rac()[:, t]
             title = 'Gaussian link from %s to %s at t=%0d' % (self.src, self.dest, t)
 
@@ -201,8 +186,7 @@ class NodeElement(Element):
         areas = []
         # stack production with area
         if p > 0:
-            prod = self.agg.agg_prod(self.agg.iscn[scn], self.agg.inode[self.node], self.agg.iname, self.agg.itime) \
-                .sort_values('cost', ascending=True)
+            prod = self.agg.network().scn(scn).node(self.node).production().time().sort_values('cost', ascending=False)
             for i, name in enumerate(prod.index.get_level_values('name').unique()):
                 areas.append((name, prod.loc[name][prod_kind].sort_index().values))
 
@@ -215,8 +199,7 @@ class NodeElement(Element):
         lines = []
         # Stack consumptions with line
         if c > 0:
-            cons = self.agg.consumptions(self.agg.iscn[scn], self.agg.inode[self.node], self.agg.iname, self.agg.itime) \
-                .sort_values('cost', ascending=False)
+            cons = self.agg.network().scn(scn).node(self.node).consumption().time().sort_values('cost', ascending=False)
             for i, name in enumerate(cons.index.get_level_values('name').unique()):
                 lines.append((name, cons.loc[name][cons_kind].sort_index().values))
 
@@ -276,8 +259,8 @@ class NetworkElement(Element):
 
         lines = {}
         # Compute lines
-        links = self.agg.agg_link(self.agg.iscn[scn], self.agg.itime[t], self.agg.isrc, self.agg.idest)
-        for src in links.index.get_level_values('src').unique():
+        links = self.agg.network().scn(scn).time(t).node().link()
+        for src in links.index.get_level_values('node').unique():
             for dest in links.loc[src].index.get_level_values('dest').unique():
                 exchange = links.loc[src, dest]['used']  # forward
                 exchange -= links.loc[dest, src]['used'] if (dest, src) in links.index else 0  # backward

@@ -400,6 +400,14 @@ class ResultAnalyzer:
         """
         return self.study.nb_scn
 
+    @property
+    def nodes(self) -> List[str]:
+        """
+        Shortcut to get list of node names
+
+        :return: nodes name
+        """
+        return self.result.nodes.keys()
 
 class FluentAPISelector:
     """
