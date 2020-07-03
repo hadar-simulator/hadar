@@ -57,8 +57,8 @@ class ConsumptionElement(Element):
         self.kind = kind
 
     def timeline(self):
-        cons = self.agg.agg_cons(self.agg.inode[self.node], self.agg.iname[self.name],
-                                 self.agg.iscn, self.agg.itime)[self.kind]
+        cons = self.agg.consumptions(self.agg.inode[self.node], self.agg.iname[self.name],
+                                     self.agg.iscn, self.agg.itime)[self.kind]
         title = 'Consumptions %s for %s on node %s' % (self.kind, self.name, self.node)
         return self.plotting.timeline(cons, title)
 
@@ -66,12 +66,12 @@ class ConsumptionElement(Element):
         Element.not_both(t, scn)
 
         if t is not None:
-            y = self.agg.agg_cons(self.agg.inode[self.node], self.agg.iname[self.name],
-                                  self.agg.itime[t], self.agg.iscn)[self.kind].values
+            y = self.agg.consumptions(self.agg.inode[self.node], self.agg.iname[self.name],
+                                      self.agg.itime[t], self.agg.iscn)[self.kind].values
             title = 'Monotone consumption of %s on node %s at t=%0d' % (self.name, self.node, t)
         elif scn is not None:
-            y = self.agg.agg_cons(self.agg.inode[self.node], self.agg.iname[self.name],
-                                  self.agg.iscn[scn], self.agg.itime)[self.kind].values
+            y = self.agg.consumptions(self.agg.inode[self.node], self.agg.iname[self.name],
+                                      self.agg.iscn[scn], self.agg.itime)[self.kind].values
             title = 'Monotone consumption of %s on node %s at scn=%0d' % (self.name, self.node, scn)
 
         return self.plotting.monotone(y, title)
@@ -80,13 +80,13 @@ class ConsumptionElement(Element):
         Element.not_both(t, scn)
 
         if t is None:
-            cons = self.agg.agg_cons(self.agg.inode[self.node], self.agg.iname[self.name],
-                                     self.agg.iscn[scn], self.agg.itime)[self.kind].values
+            cons = self.agg.consumptions(self.agg.inode[self.node], self.agg.iname[self.name],
+                                         self.agg.iscn[scn], self.agg.itime)[self.kind].values
             rac = self.agg.get_rac()[scn, :]
             title = 'Gaussian consumption of %s on node %s at scn=%0d' % (self.name, self.node, scn)
         elif scn is None:
-            cons = self.agg.agg_cons(self.agg.inode[self.node], self.agg.iname[self.name],
-                                     self.agg.itime[t], self.agg.iscn)[self.kind].values
+            cons = self.agg.consumptions(self.agg.inode[self.node], self.agg.iname[self.name],
+                                         self.agg.itime[t], self.agg.iscn)[self.kind].values
             rac = self.agg.get_rac()[:, t]
             title = 'Gaussian consumption of %s on node %s at t=%0d' % (self.name, self.node, t)
 
@@ -215,7 +215,7 @@ class NodeElement(Element):
         lines = []
         # Stack consumptions with line
         if c > 0:
-            cons = self.agg.agg_cons(self.agg.iscn[scn], self.agg.inode[self.node], self.agg.iname, self.agg.itime) \
+            cons = self.agg.consumptions(self.agg.iscn[scn], self.agg.inode[self.node], self.agg.iname, self.agg.itime) \
                 .sort_values('cost', ascending=False)
             for i, name in enumerate(cons.index.get_level_values('name').unique()):
                 lines.append((name, cons.loc[name][cons_kind].sort_index().values))

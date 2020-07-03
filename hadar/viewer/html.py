@@ -12,7 +12,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from matplotlib.cm import coolwarm
 
-from hadar.analyzer.result import ResultAnalyzer, NodeIndex, SrcIndex, TimeIndex, DestIndex, NameIndex
+from hadar.analyzer.result import ResultAnalyzer
 from hadar.viewer.abc import Plotting, ConsumptionElement, ABCElementPlotting, ProductionElement, LinkElement, \
     NodeElement, NetworkElement
 

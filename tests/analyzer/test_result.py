@@ -21,23 +21,23 @@ class TestIndex(unittest.TestCase):
         self.assertEqual(True, Index(column='i').all)
 
     def test_on_element(self):
-        i = Index(column='i')['fr']
+        i = Index(column='i', index='fr')
         self.assertEqual(False, i.all)
         self.assertEqual(('fr',), i.index)
 
     def test_list_1(self):
-        i = Index(column='i')['fr', 'be']
+        i = Index(column='i', index=['fr', 'be'])
         self.assertEqual(False, i.all)
         self.assertEqual(('fr', 'be'), i.index)
 
     def test_list_2(self):
         l = ['fr', 'be']
-        i = Index(column='i')[l]
+        i = Index(column='i', index=l)
         self.assertEqual(False, i.all)
         self.assertEqual(('fr', 'be'), i.index)
 
     def test_filter(self):
-        i = Index(column='i')['fr', 'be']
+        i = Index(column='i', index=['fr', 'be'])
         df = pd.DataFrame(data={'i': ['it', 'fr', 'fr', 'be', 'de', 'it', 'be'],
                                 'a': [0, 1, 2, 3, 4, 5, 6]})
 
@@ -49,12 +49,12 @@ class TestIndex(unittest.TestCase):
 class TestIntIndex(unittest.TestCase):
 
     def test_range(self):
-        i = IntIndex('i')[2:6]
+        i = IntIndex('i', index=slice(2, 6))
         self.assertEqual(False, i.all)
         self.assertEqual((2, 3, 4, 5), i.index)
 
     def test_list(self):
-        i = IntIndex('i')[2, 6]
+        i = IntIndex('i', index=[2, 6])
         self.assertEqual(False, i.all)
         self.assertEqual((2, 6), i.index)
 
@@ -119,12 +119,12 @@ class TestAnalyzer(unittest.TestCase):
         exp = pd.DataFrame(data={'cost': [2] * 12,
                                  'avail': [110, 11, 11, 11, 110, 110, 120, 12, 12, 12, 120, 120],
                                  'used': [10, 1, 1, 1, 10, 10, 20, 2, 2, 2, 20, 20],
-                                 'src': ['a'] * 12,
+                                 'node': ['a'] * 12,
                                  'dest': ['b'] * 6 + ['c'] * 6,
                                  't':   [0, 1, 2] * 4,
                                  'scn': [0, 0, 0, 1, 1, 1] * 2}, dtype=float)
 
-        link = ResultAnalyzer.link(self.study, self.result)
+        link = ResultAnalyzer._build_link(self.study, self.result)
 
         pd.testing.assert_frame_equal(exp, link)
 
@@ -136,7 +136,7 @@ class TestAnalyzer(unittest.TestCase):
                                       'given': [20, 2, 2]}, dtype=float, index=index)
 
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        cons = agg.agg_cons(agg.iscn[0], agg.inode['a'], agg.iname['load'], agg.itime)
+        cons = agg.network().scn(0).node('a').consumption('load').time()
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
@@ -150,7 +150,7 @@ class TestAnalyzer(unittest.TestCase):
                                       'used': [30, 3, 3, 10, 1, 1]}, dtype=float, index=index)
 
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        cons = agg.agg_prod(agg.iscn[0], agg.inode['a', 'b'], agg.iname['prod'], agg.itime)
+        cons = agg.network().scn(0).node(['a', 'b']).production('prod').time()
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
@@ -164,7 +164,7 @@ class TestAnalyzer(unittest.TestCase):
                                       'used': [10, 1, 1, 20, 2, 2]}, dtype=float, index=index)
 
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        cons = agg.agg_link(agg.iscn[0], agg.isrc['a'], agg.idest['b', 'c'], agg.itime)
+        cons = agg.network().scn(0).node('a').link(['b', 'c']).time()
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
