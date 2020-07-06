@@ -38,7 +38,7 @@ class ABCElementPlotting(ABC):
         pass
 
 
-class Element(ABC):
+class FluentAPISelector(ABC):
     def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer):
         self.plotting = plotting
         self.agg = agg
@@ -49,9 +49,9 @@ class Element(ABC):
             raise ValueError('you have to specify time or scenario index but not both')
 
 
-class ConsumptionElement(Element):
+class ConsumptionFluentAPISelector(FluentAPISelector):
     def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, name: str, node: str, kind: str):
-        Element.__init__(self, plotting, agg)
+        FluentAPISelector.__init__(self, plotting, agg)
         self.name = name
         self.node = node
         self.kind = kind
@@ -62,7 +62,7 @@ class ConsumptionElement(Element):
         return self.plotting.timeline(cons, title)
 
     def monotone(self, t: int = None, scn: int = None):
-        Element.not_both(t, scn)
+        FluentAPISelector.not_both(t, scn)
 
         if t is not None:
             y = self.agg.network().node(self.node).consumption(self.name).time(t).scn()[self.kind].values
@@ -74,7 +74,7 @@ class ConsumptionElement(Element):
         return self.plotting.monotone(y, title)
 
     def gaussian(self, t: int = None, scn: int = None):
-        Element.not_both(t, scn)
+        FluentAPISelector.not_both(t, scn)
 
         if t is None:
             cons = self.agg.network().node(self.node).consumption(self.name).scn(scn).time()[self.kind].values
@@ -88,9 +88,9 @@ class ConsumptionElement(Element):
         return self.plotting.gaussian(rac=rac, qt=cons, title=title)
 
 
-class ProductionElement(Element):
+class ProductionFluentAPISelector(FluentAPISelector):
     def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, name: str, node: str, kind: str):
-        Element.__init__(self, plotting, agg)
+        FluentAPISelector.__init__(self, plotting, agg)
         self.name = name
         self.node = node
         self.kind = kind
@@ -101,7 +101,7 @@ class ProductionElement(Element):
         return self.plotting.timeline(prod, title)
 
     def monotone(self, t: int = None, scn: int = None):
-        Element.not_both(t, scn)
+        FluentAPISelector.not_both(t, scn)
 
         if t is not None:
             y = self.agg.network().node(self.node).production(self.name).time(t).scn()[self.kind].values
@@ -113,7 +113,7 @@ class ProductionElement(Element):
         return self.plotting.monotone(y, title)
 
     def gaussian(self, t: int = None, scn: int = None):
-        Element.not_both(t, scn)
+        FluentAPISelector.not_both(t, scn)
 
         if t is None:
             prod = self.agg.network().node(self.node).production(self.name).scn(scn).time()[self.kind].values
@@ -127,9 +127,9 @@ class ProductionElement(Element):
         return self.plotting.gaussian(rac=rac, qt=prod, title=title)
 
 
-class LinkElement(Element):
+class LinkFluentAPISelector(FluentAPISelector):
     def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, src: str, dest: str, kind: str):
-        Element.__init__(self, plotting, agg)
+        FluentAPISelector.__init__(self, plotting, agg)
         self.src = src
         self.dest = dest
         self.kind = kind
@@ -140,7 +140,7 @@ class LinkElement(Element):
         return self.plotting.timeline(links, title)
 
     def monotone(self, t: int = None, scn: int = None):
-        Element.not_both(t, scn)
+        FluentAPISelector.not_both(t, scn)
 
         if t is not None:
             y = self.agg.network().node(self.src).link(self.dest).time(t).scn()[self.kind].values
@@ -152,7 +152,7 @@ class LinkElement(Element):
         return self.plotting.monotone(y, title)
 
     def gaussian(self, t: int = None, scn: int = None):
-        Element.not_both(t, scn)
+        FluentAPISelector.not_both(t, scn)
 
         if t is None:
             prod = self.agg.network().node(self.src).link(self.dest).scn(scn).time()[self.kind].values
@@ -166,9 +166,9 @@ class LinkElement(Element):
         return self.plotting.gaussian(rac=rac, qt=prod, title=title)
 
 
-class NodeElement(Element):
+class NodeFluentAPISelector(FluentAPISelector):
     def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, node: str):
-        Element.__init__(self, plotting, agg)
+        FluentAPISelector.__init__(self, plotting, agg)
         self.node = node
 
     def stack(self, scn: int = 0, prod_kind: str = 'used', cons_kind: str = 'asked'):
@@ -212,7 +212,7 @@ class NodeElement(Element):
 
         return self.plotting.stack(areas, lines, title)
 
-    def consumption(self, name: str, kind: str = 'given') -> ConsumptionElement:
+    def consumption(self, name: str, kind: str = 'given') -> ConsumptionFluentAPISelector:
         """
         Plot all timelines consumption scenario.
 
@@ -220,9 +220,9 @@ class NodeElement(Element):
         :param kind: kind of data 'asked' or 'given'
         :return:
         """
-        return ConsumptionElement(plotting=self.plotting, agg=self.agg, node=self.node, name=name, kind=kind)
+        return ConsumptionFluentAPISelector(plotting=self.plotting, agg=self.agg, node=self.node, name=name, kind=kind)
 
-    def production(self, name: str, kind: str = 'used') -> ProductionElement:
+    def production(self, name: str, kind: str = 'used') -> ProductionFluentAPISelector:
         """
          Plot all timelines production scenario.
 
@@ -230,7 +230,7 @@ class NodeElement(Element):
          :param kind: kind of data available ('avail') or 'used'
          :return:
          """
-        return ProductionElement(plotting=self.plotting, agg=self.agg, node=self.node, name=name, kind=kind)
+        return ProductionFluentAPISelector(plotting=self.plotting, agg=self.agg, node=self.node, name=name, kind=kind)
 
     def link(self, dest: str, kind: str = 'used'):
         """
@@ -240,10 +240,10 @@ class NodeElement(Element):
          :param kind: kind of data available ('avail') or 'used'
          :return:
          """
-        return LinkElement(plotting=self.plotting, agg=self.agg, src=self.node, dest=dest, kind=kind)
+        return LinkFluentAPISelector(plotting=self.plotting, agg=self.agg, src=self.node, dest=dest, kind=kind)
 
 
-class NetworkElement(Element):
+class NetworkFluentAPISelector(FluentAPISelector):
     def rac_matrix(self):
         rac = self.agg.get_rac()
         pct = (rac >= 0).sum() / rac.size * 100
@@ -274,7 +274,7 @@ class NetworkElement(Element):
         return self.plotting.map_exchange(nodes, lines, limit, title, zoom)
 
     def node(self, node: str):
-        return NodeElement(plotting=self.plotting, agg=self.agg, node=node)
+        return NodeFluentAPISelector(plotting=self.plotting, agg=self.agg, node=node)
 
 
 class Plotting(ABC):
@@ -311,4 +311,4 @@ class Plotting(ABC):
             self.time_index = np.arange(self.agg.horizon)
 
     def network(self):
-        return NetworkElement(plotting=self.plotting, agg=self.agg)
+        return NetworkFluentAPISelector(plotting=self.plotting, agg=self.agg)

@@ -13,8 +13,8 @@ import plotly.graph_objects as go
 from matplotlib.cm import coolwarm
 
 from hadar.analyzer.result import ResultAnalyzer
-from hadar.viewer.abc import Plotting, ConsumptionElement, ABCElementPlotting, ProductionElement, LinkElement, \
-    NodeElement, NetworkElement
+from hadar.viewer.abc import Plotting, ConsumptionFluentAPISelector, ABCElementPlotting, ProductionFluentAPISelector, LinkFluentAPISelector, \
+    NodeFluentAPISelector, NetworkFluentAPISelector
 
 __all__ = ['HTMLPlotting']
 
