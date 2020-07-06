@@ -5,7 +5,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 
-from typing import List, Union
+from typing import List, Union, Dict
 
 import numpy as np
 
@@ -104,44 +104,20 @@ class Study(DTO):
     Main object to facilitate to build a study
     """
 
-    def __init__(self, node_names: List[str], horizon: int, nb_scn: int = 1):
+    def __init__(self, horizon: int, nb_scn: int = 1):
         """
         Instance study.
 
-        :param node_names: list of node names inside network.
         :param horizon: simulation time horizon (i.e. number of time step in simulation)
         :param nb_scn: number of scenarios in study. Default is 1.
         """
-        if len(node_names) > len(set(node_names)):
-            raise ValueError('some nodes are not unique')
 
-        self._nodes = {name: InputNode(consumptions=[], productions=[], links=[]) for name in node_names}
+        self.nodes = dict()
         self.horizon = horizon
         self.nb_scn = nb_scn
 
-
-    @property
-    def nodes(self):
-        return self._nodes
-
-    def add_on_node(self, node: str, data=Union[Production, Consumption, Link]):
-        """
-        Attach a production or consumption into a node.
-
-        :param node: node name to attach
-        :param data: consumption or production to attach
-        :return:
-        """
-        if node not in self._nodes.keys():
-            raise ValueError('Node "{}" is not in available nodes'.format(node))
-
-        if isinstance(data, Production):
-            self._add_production(node, data)
-
-        elif isinstance(data, Consumption):
-            self._add_consumption(node, data)
-
-        return self
+    def network(self):
+        return NetworkFluentAPISelector(study=self)
 
     def add_link(self, src: str, dest: str, cost: int, quantity: Union[List[float], np.ndarray, float]):
         """
@@ -155,33 +131,39 @@ class Study(DTO):
         """
         if cost < 0:
             raise ValueError('link cost must be positive')
-        if dest not in self._nodes.keys():
+        if src not in self.nodes.keys():
+            raise ValueError('link source must be a valid node')
+        if dest not in self.nodes.keys():
             raise ValueError('link destination must be a valid node')
-        if dest in [l.dest for l in self._nodes[src].links]:
+        if dest in [l.dest for l in self.nodes[src].links]:
             raise ValueError('link destination must be unique on a node')
 
         quantity = self._validate_quantity(quantity)
-        self._nodes[src].links.append(Link(dest=dest, quantity=quantity, cost=cost))
+        self.nodes[src].links.append(Link(dest=dest, quantity=quantity, cost=cost))
 
         return self
+
+    def add_node(self, node):
+        if node not in self.nodes.keys():
+            self.nodes[node] = InputNode(consumptions=[], productions=[], links=[])
 
     def _add_production(self, node: str, prod: Production):
         if prod.cost < 0:
             raise ValueError('production cost must be positive')
-        if prod.name in [p.name for p in self._nodes[node].productions]:
+        if prod.name in [p.name for p in self.nodes[node].productions]:
             raise ValueError('production name must be unique on a node')
 
         prod.quantity = self._validate_quantity(prod.quantity)
-        self._nodes[node].productions.append(prod)
+        self.nodes[node].productions.append(prod)
 
     def _add_consumption(self, node: str, cons: Consumption):
         if cons.cost < 0:
             raise ValueError('consumption cost must be positive')
-        if cons.name in [c.name for c in self._nodes[node].consumptions]:
+        if cons.name in [c.name for c in self.nodes[node].consumptions]:
             raise ValueError('consumption name must be unique on a node')
 
         cons.quantity = self._validate_quantity(cons.quantity)
-        self._nodes[node].consumptions.append(cons)
+        self.nodes[node].consumptions.append(cons)
 
     def _validate_quantity(self, quantity: Union[List[float], np.ndarray, float]) -> np.ndarray:
         quantity = np.array(quantity)
@@ -211,5 +193,46 @@ class Study(DTO):
         sc_given = 1 if len(quantity.shape) == 1 else quantity.shape[0]
         raise ValueError('Quantity must be: a number, an array like (horizon, ) or (nb_scn, 1) or (nb_scn, horizon). '
                          'In your case horizon specified is %d and actual is %d. '
-                         'And nb_scn specified %d is whereas actuel is %d' %
+                         'And nb_scn specified %d is whereas actual is %d' %
                          (self.horizon, horizon_given, self.nb_scn, sc_given))
+
+
+class NetworkFluentAPISelector:
+    def __init__(self, study):
+        self.study = study
+        self.selector = dict()
+
+    def node(self, name):
+        self.selector['node'] = name
+        self.study.add_node(name)
+        return NodeFluentAPISelector(self.study, self.selector)
+
+    def link(self, src: str, dest: str, cost: int, quantity: Union[List, np.ndarray, float]):
+        self.study.add_link(src=src, dest=dest, cost=cost, quantity=quantity)
+        return NetworkFluentAPISelector(self.study)
+
+    def build(self):
+        return self.study
+
+
+class NodeFluentAPISelector:
+    def __init__(self, study, selector):
+        self.study = study
+        self.selector = selector
+
+    def consumption(self, name: str, cost: int, quantity: Union[List, np.ndarray, float]):
+        self.study._add_consumption(node=self.selector['node'], cons=Consumption(name=name, cost=cost, quantity=quantity))
+        return self
+
+    def production(self, name: str, cost: int, quantity: Union[List, np.ndarray, float]):
+        self.study._add_production(node=self.selector['node'], prod=Production(name=name, cost=cost, quantity=quantity))
+        return self
+
+    def node(self, name):
+        return NetworkFluentAPISelector(self.study).node(name)
+
+    def link(self, src: str, dest: str, cost: int, quantity: Union[List, np.ndarray, float]):
+        return NetworkFluentAPISelector(self.study).link(src=src, dest=dest, cost=cost, quantity=quantity)
+
+    def build(self):
+        return self.study

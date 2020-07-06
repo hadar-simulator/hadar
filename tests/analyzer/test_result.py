@@ -61,15 +61,20 @@ class TestIntIndex(unittest.TestCase):
 
 class TestAnalyzer(unittest.TestCase):
     def setUp(self) -> None:
-        self.study = Study(['a', 'b', 'c'], horizon=3, nb_scn=2) \
-            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], name='load')) \
-            .add_on_node('a', data=Consumption(cost=10 ** 3, quantity=[[130, 13, 13], [13, 130, 130]], name='car')) \
-            .add_on_node('a', data=Production(cost=10, quantity=[[130, 13, 13], [13, 130, 130]], name='prod')) \
-            .add_on_node('b', data=Consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], name='load')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[[110, 11, 11], [11, 110, 110]], name='prod')) \
-            .add_on_node('b', data=Production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], name='nuclear')) \
-            .add_link(src='a', dest='b', quantity=[[110, 11, 11], [11, 110, 110]], cost=2) \
-            .add_link(src='a', dest='c', quantity=[[120, 12, 12], [12, 120, 120]], cost=2)
+        self.study = Study(horizon=3, nb_scn=2)\
+            .network()\
+                .node('a')\
+                    .consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], name='load')\
+                    .consumption(cost=10 ** 3, quantity=[[130, 13, 13], [13, 130, 130]], name='car')\
+                    .production(cost=10, quantity=[[130, 13, 13], [13, 130, 130]], name='prod')\
+                .node('b')\
+                    .consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], name='load')\
+                    .production(cost=20, quantity=[[110, 11, 11], [11, 110, 110]], name='prod')\
+                    .production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], name='nuclear')\
+                .node('c')\
+                .link(src='a', dest='b', quantity=[[110, 11, 11], [11, 110, 110]], cost=2)\
+                .link(src='a', dest='c', quantity=[[120, 12, 12], [12, 120, 120]], cost=2)\
+            .build()
 
         out = {
             'a': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load'),

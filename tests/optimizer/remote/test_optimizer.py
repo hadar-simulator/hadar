@@ -26,8 +26,8 @@ class MockResponse:
 class RemoteOptimizerTest(unittest.TestCase):
 
     def setUp(self) -> None:
-        self.study = Study(node_names=['a'], horizon=1) \
-            .add_on_node('a', data=Consumption(cost=0, quantity=[0], name='load'))
+        self.study = Study(horizon=1) \
+            .network().node('a').consumption(cost=0, quantity=[0], name='load').build()
 
         self.result = Result(nodes={
             'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
