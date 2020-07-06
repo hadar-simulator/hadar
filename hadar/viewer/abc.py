@@ -277,7 +277,7 @@ class NetworkFluentAPISelector(FluentAPISelector):
         return NodeFluentAPISelector(plotting=self.plotting, agg=self.agg, node=node)
 
 
-class Plotting(ABC):
+class ABCPlotting(ABC):
     """
     Abstract method to plot optimizer result.
     """

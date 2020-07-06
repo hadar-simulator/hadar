@@ -13,7 +13,7 @@ from plotly.offline.offline import plot
 from hadar.analyzer.result import ResultAnalyzer
 from hadar.optimizer.input import Study, Production, Consumption
 from hadar.optimizer.optimizer import LPOptimizer
-from hadar.viewer.html import HTMLPlotting
+from hadar.viewer.html import HTMLABCPlotting
 
 
 class TestHTMLPlotting(unittest.TestCase):
@@ -35,8 +35,8 @@ class TestHTMLPlotting(unittest.TestCase):
         self.result = optimizer.solve(study=self.study)
 
         self.agg = ResultAnalyzer(self.study, self.result)
-        self.plot = HTMLPlotting(agg=self.agg, unit_symbol='MW', time_start='2020-02-01', time_end='2020-02-02',
-                                 node_coord={'a': [2.33, 48.86], 'b': [4.38, 50.83]})
+        self.plot = HTMLABCPlotting(agg=self.agg, unit_symbol='MW', time_start='2020-02-01', time_end='2020-02-02',
+                                    node_coord={'a': [2.33, 48.86], 'b': [4.38, 50.83]})
 
         self.hash = hashlib.sha3_256()
 

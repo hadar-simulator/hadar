@@ -13,10 +13,9 @@ import plotly.graph_objects as go
 from matplotlib.cm import coolwarm
 
 from hadar.analyzer.result import ResultAnalyzer
-from hadar.viewer.abc import Plotting, ConsumptionFluentAPISelector, ABCElementPlotting, ProductionFluentAPISelector, LinkFluentAPISelector, \
-    NodeFluentAPISelector, NetworkFluentAPISelector
+from hadar.viewer.abc import ABCPlotting, ABCElementPlotting
 
-__all__ = ['HTMLPlotting']
+__all__ = ['HTMLABCPlotting']
 
 
 class HTMLElementPlotting(ABCElementPlotting):
@@ -210,7 +209,7 @@ class HTMLElementPlotting(ABCElementPlotting):
                                        line=dict(width=2 * size, color=color)))
 
 
-class HTMLPlotting(Plotting):
+class HTMLABCPlotting(ABCPlotting):
     """
     Plotting implementation interactive html graphics. (Use plotly)
     """
@@ -229,7 +228,7 @@ class HTMLPlotting(Plotting):
         :param node_coord: nodes coordinates to use for map plotting
         :param map_element_size: size on element draw on map. default as 1.
         """
-        Plotting.__init__(self, agg, unit_symbol, time_start, time_end, node_coord)
+        ABCPlotting.__init__(self, agg, unit_symbol, time_start, time_end, node_coord)
         self.plotting = HTMLElementPlotting(self.unit, self.time_index, self.coord)
 
 

@@ -61,25 +61,28 @@ Scikit-learn is the best example of high abstraction level API. For example, if 
 How many people using this feature know that scikit-learn tries to project data into higher space to find a linear regression inside. And to accelerate computation, it uses mathematics a feature called *a kernel trick* because problem respect strict requirements ? Perhaps just few people and it's all the beauty of an high level API, it hidden background gear.
 
 
-Hadar tries to keep this high abstraction features. Look at the *Get Started* example ::
+Hadar tries to keep this high abstraction features. Look at the `Get Started <https://www.hadar-simulator.org/tutorial/?name=Get%20Started>`_ example ::
 
     import hadar as hd
     
-    study = hd.Study(['a', 'b'], horizon=3) \
-      .add_on_node('a', data=hd.Consumption(cost=10 ** 6, quantity=[20, 20, 20], name='load')) \
-      .add_on_node('a', data=hd.Production(cost=10, quantity=[30, 20, 10], name='prod')) \
-      .add_on_node('b', data=hd.Consumption(cost=10 ** 6, quantity=[20, 20, 20], name='load')) \
-      .add_on_node('b', data=hd.Production(cost=20, quantity=[10, 20, 30], name='prod')) \
-      .add_link(src='a', dest='b', quantity=[10, 10, 10], cost=2) \
-      .add_link(src='b', dest='a', quantity=[10, 10, 10], cost=2) \
-    
-    
+    study = hd.Study(horizon=3)\
+        .network()\
+            .node('a')\
+                .consumption(cost=10 ** 6, quantity=[20, 20, 20], name='load')\
+                .production(cost=10, quantity=[30, 20, 10], name='prod')\
+            .node('b')\
+                .consumption(cost=10 ** 6, quantity=[20, 20, 20], name='load')\
+                .production(cost=10, quantity=[10, 20, 30], name='prod')\
+            .link(src='a', dest='b', quantity=[10, 10, 10], cost=2)\
+            .link(src='b', dest='a', quantity=[10, 10, 10], cost=2)\
+        .build()
+
     optim = hd.LPOptimizer()
     res = optim.solve(study)
 
-
 Create a study like you will draw it on a paper. Put your nodes, attach some production, consumption, link and run optimizer.
 
+Optimizer, Analayzer and Viewer parts are build around the same API called inside code *Fluent API Selector*. Each part has its flavours.
 
 Go Next
 -------

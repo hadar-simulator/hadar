@@ -146,22 +146,36 @@ Study
 
 Most important attribute could be :code:`quantity` which represent quantity of power used in network. For link, is a transfert capacity. For production is a generation capacity. For consumption is a forced load to sustain.
 
-User can construct Study step by step thanks to a *fluent API* ::
+Fluent API Selector
+*******************
+
+User can construct Study step by step thanks to a *Fluent API* Selector ::
 
     import hadar as hd
 
-    study = hd.Study(['a', 'b'], horizon=3) \
-      .add_on_node('a', data=hd.Consumption(cost=10 ** 6, quantity=[20, 20, 20], name='load')) \
-      .add_on_node('a', data=hd.Production(cost=10, quantity=[30, 20, 10], name='prod')) \
-      .add_on_node('b', data=hd.Consumption(cost=10 ** 6, quantity=[20, 20, 20], name='load')) \
-      .add_on_node('b', data=hd.Production(cost=20, quantity=[10, 20, 30], name='prod')) \
-      .add_link(src='a', dest='b', quantity=[10, 10, 10], cost=2) \
-      .add_link(src='b', dest='a', quantity=[10, 10, 10], cost=2) \
-
+    study = hd.Study(horizon=3)\
+        .network()\
+            .node('a')\
+                .consumption(cost=10 ** 6, quantity=[20, 20, 20], name='load')\
+                .production(cost=10, quantity=[30, 20, 10], name='prod')\
+            .node('b')\
+                .consumption(cost=10 ** 6, quantity=[20, 20, 20], name='load')\
+                .production(cost=10, quantity=[10, 20, 30], name='prod')\
+            .link(src='a', dest='b', quantity=[10, 10, 10], cost=2)\
+            .link(src='b', dest='a', quantity=[10, 10, 10], cost=2)\
+        .build()
 
     optim = hd.LPOptimizer()
     res = optim.solve(study)
 
+In the case of optimizer, *Fluent API Selector* is represented by :code:`NetworkFluentAPISelector` , and
+:code:`NodeFluentAPISelector` classes. As you assume with above example, optimizer rules for API Selector are :
+
+* API flow begin by :code:`network()` and end by :code:`build()`
+
+* You can only downstream deeper step by step (i.e. :code:`network()` then :code:`node()`, then :code:`consumption()` )
+
+* But you can upstream as you want (i.e. go direcly from :code:`consumption()` to :code:`network()` )
 To help user, quantity field is flexible:
 
 * lists are converted to numpy array
