@@ -9,6 +9,7 @@ import pickle
 import unittest
 from unittest.mock import MagicMock
 
+from hadar import RemoteOptimizer
 from hadar.optimizer.input import Study, Consumption
 from hadar.optimizer.output import Result, OutputConsumption, OutputNode
 from hadar.optimizer.remote.optimizer import _solve_remote_wrap
@@ -23,6 +24,7 @@ class MockResponse:
         self.content = content
         self.status_code = code
 
+
 class RemoteOptimizerTest(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -35,11 +37,11 @@ class RemoteOptimizerTest(unittest.TestCase):
 
     def test_success(self):
         requests = MockRequest()
-        requests.post = MagicMock(return_value=MockResponse(pickle.dumps(self.result)))
+        requests.post = MagicMock(return_value=MockResponse(pickle.dumps({'job': 'myid', 'status': 'QUEUED'})))
 
         _solve_remote_wrap(study=self.study, url='localhost', token='pwd', rqt=requests)
 
-        requests.post.assert_called_with(data=pickle.dumps(self.study), url='localhost', params={'token': 'pwd'})
+        requests.post.assert_called_with(data=pickle.dumps(self.study), url='localhost/study', params={'token': 'pwd'})
 
     def test_404(self):
         requests = MockRequest()
@@ -48,7 +50,7 @@ class RemoteOptimizerTest(unittest.TestCase):
         self.assertRaises(ValueError,
                           lambda: _solve_remote_wrap(study=self.study, url='localhost', token='pwd', rqt=requests))
 
-        requests.post.assert_called_with(data=pickle.dumps(self.study), url='localhost', params={'token': 'pwd'})
+        requests.post.assert_called_with(data=pickle.dumps(self.study), url='localhost/study', params={'token': 'pwd'})
 
     def test_403(self):
         requests = MockRequest()
@@ -57,7 +59,7 @@ class RemoteOptimizerTest(unittest.TestCase):
         self.assertRaises(ValueError,
                           lambda: _solve_remote_wrap(study=self.study, url='localhost', token='pwd', rqt=requests))
 
-        requests.post.assert_called_with(data=pickle.dumps(self.study), url='localhost', params={'token': 'pwd'})
+        requests.post.assert_called_with(data=pickle.dumps(self.study), url='localhost/study', params={'token': 'pwd'})
 
     def test_500(self):
         requests = MockRequest()
@@ -66,4 +68,10 @@ class RemoteOptimizerTest(unittest.TestCase):
         self.assertRaises(IOError,
                           lambda: _solve_remote_wrap(study=self.study, url='localhost', token='pwd', rqt=requests))
 
-        requests.post.assert_called_with(data=pickle.dumps(self.study), url='localhost', params={'token': 'pwd'})
+        requests.post.assert_called_with(data=pickle.dumps(self.study), url='localhost/study', params={'token': 'pwd'})
+
+
+    def no_test_server(self):
+        optim = RemoteOptimizer(url='http://localhost:5002')
+        res = optim.solve(self.study)
+        print(res)

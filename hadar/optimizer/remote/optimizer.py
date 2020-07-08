@@ -7,6 +7,7 @@
 
 import logging
 import pickle
+from time import sleep
 
 import requests
 
@@ -40,7 +41,7 @@ def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) ->
     :return: result received from server
     """
     # Send study
-    resp = rqt.post(url=url, data=pickle.dumps(study), params={'token': token})
+    resp = rqt.post(url='%s/study' % url, data=pickle.dumps(study), params={'token': token})
     if resp.status_code == 404:
         raise ValueError("Can't find server url")
     if resp.status_code == 403:
@@ -48,6 +49,13 @@ def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) ->
     if resp.status_code == 500:
         raise IOError("Error has occurred on remote server")
     # Deserialize
-    result = pickle.loads(resp.content)
-    logging.info("Result received from server")
-    return result
+    resp = pickle.loads(resp.content)
+    id = resp['job']
+
+    while resp['status'] != 'TERMINATED':
+        resp = rqt.get(url='%s/result/%s' % (url, id), params={'token': token})
+        resp = pickle.loads(resp.content)
+        print(resp)
+        sleep(0.5)
+
+    return resp['result']
