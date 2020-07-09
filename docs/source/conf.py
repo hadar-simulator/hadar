@@ -59,4 +59,4 @@ html_static_path = ['_static']
 
 nbsphinx_execute = 'never'
 
-autodoc_mock_imports = ['pandas', 'numpy', 'ortools', 'plotly', 'jupyter', 'matplotlib', 'requests']
+autodoc_mock_imports = ['pandas', 'numpy', 'ortools', 'plotly', 'jupyter', 'matplotlib', 'requests', 'progress']
