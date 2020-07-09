@@ -14,7 +14,7 @@ Hadar `repository <https://hadar-simulator/hadar>`_ is split in many parts.
 * :code:`.github/` github configuration to use Github Action for CI.
 
 Ticketing
-------
+---------
 
 We use all github features to organize development. We implement a Agile methodology and try to recreate Jira behavior in github. Therefore we swap Jira features to Github such as :
 

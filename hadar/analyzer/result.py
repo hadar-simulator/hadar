@@ -13,7 +13,7 @@ import numpy as np
 from hadar.optimizer.output import Result, OutputNode
 from hadar.optimizer.input import Study
 
-__all__ = ['ResultAnalyzer']
+__all__ = ['ResultAnalyzer', 'FluentAPISelector']
 
 
 T = TypeVar('T')

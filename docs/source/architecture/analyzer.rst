@@ -12,7 +12,7 @@ Today, there is only :code:`ResultAnalyzer`, with two features level:
 Before speaking about this features, let's see how data are transformed.
 
 Flatten Data
----------
+------------
 
 As said above, object is nice to encapsulate data and represent it into agnostic form. Objects can be serialized into JSON or something else to be used by another software maybe in another language. But keep object to analyze data is awful.
 
@@ -84,7 +84,7 @@ It's done by :code:`_build_link(study: Study, result: Result) -> pd.Dataframe` m
 
 
 Low level analysis power with a *FluentAPISelector*
-------------------
+---------------------------------------------------
 
 When you observe flat data, there are two kind of data. *Content* like cost, given, asked and *index* describes by node, name, scn, t.
 

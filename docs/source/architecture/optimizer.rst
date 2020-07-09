@@ -176,6 +176,7 @@ In the case of optimizer, *Fluent API Selector* is represented by :code:`Network
 * You can only downstream deeper step by step (i.e. :code:`network()` then :code:`node()`, then :code:`consumption()` )
 
 * But you can upstream as you want (i.e. go direcly from :code:`consumption()` to :code:`network()` )
+
 To help user, quantity field is flexible:
 
 * lists are converted to numpy array

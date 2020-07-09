@@ -1,5 +1,5 @@
 How to Contribute
-================
+=================
 
 
 First off, thank you to considering contributing to Hadar. We believe technology can change the world. But only great community and open source can improve the world.
@@ -24,7 +24,7 @@ You can participate on Hadar from many ways:
 **Issue tracker are only for features, bug or improvment; not for support. If you have some question please go to TODO . Any support issue will be closed.**
 
 Feature / Improvement
---------------------
+---------------------
 
 Little changes can be directly send into a pull request. Like :
 

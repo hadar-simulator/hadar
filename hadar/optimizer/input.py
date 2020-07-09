@@ -10,7 +10,7 @@ from typing import List, Union, Dict
 import numpy as np
 
 
-__all__ = ['Consumption', 'Link', 'Production', 'InputNode', 'Study']
+__all__ = ['Consumption', 'Link', 'Production', 'InputNode', 'Study', 'NetworkFluentAPISelector', 'NodeFluentAPISelector']
 
 
 class DTO:
