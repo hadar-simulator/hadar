@@ -409,6 +409,7 @@ class ResultAnalyzer:
         """
         return self.result.nodes.keys()
 
+
 class FluentAPISelector:
     """
     Fluent Api Selector for Analyzer.

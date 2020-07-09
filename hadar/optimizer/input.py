@@ -117,6 +117,11 @@ class Study(DTO):
         self.nb_scn = nb_scn
 
     def network(self):
+        """
+        Entry point to create study with the fluent api.
+
+        :return:
+        """
         return NetworkFluentAPISelector(study=self)
 
     def add_link(self, src: str, dest: str, cost: int, quantity: Union[List[float], np.ndarray, float]):
@@ -198,41 +203,105 @@ class Study(DTO):
 
 
 class NetworkFluentAPISelector:
+    """
+    Network level of Fluent API Selector.
+    """
     def __init__(self, study):
         self.study = study
         self.selector = dict()
 
     def node(self, name):
+        """
+        Go to node level.
+
+        :param name: node to select when changing level
+        :return: NodeFluentAPISelector initialized
+        """
         self.selector['node'] = name
         self.study.add_node(name)
         return NodeFluentAPISelector(self.study, self.selector)
 
     def link(self, src: str, dest: str, cost: int, quantity: Union[List, np.ndarray, float]):
+        """
+        Add a link on network.
+
+        :param src: node source
+        :param dest: node destination
+        :param cost: unit cost transfer
+        :param quantity: available capacity
+
+        :return: NetworkAPISelector with new link.
+        """
         self.study.add_link(src=src, dest=dest, cost=cost, quantity=quantity)
         return NetworkFluentAPISelector(self.study)
 
     def build(self):
+        """
+        Build study.
+
+        :return: return study
+        """
         return self.study
 
 
 class NodeFluentAPISelector:
+    """
+    Node level of Fluent API Selector
+    """
     def __init__(self, study, selector):
         self.study = study
         self.selector = selector
 
     def consumption(self, name: str, cost: int, quantity: Union[List, np.ndarray, float]):
+        """
+        Add consumption on node.
+
+        :param name: consumption name
+        :param cost: cost of unsuitability
+        :param quantity: consumption to sustain
+        :return: NodeFluentAPISelector with new consumption
+        """
         self.study._add_consumption(node=self.selector['node'], cons=Consumption(name=name, cost=cost, quantity=quantity))
         return self
 
     def production(self, name: str, cost: int, quantity: Union[List, np.ndarray, float]):
+        """
+        Add production on node.
+
+        :param name: production name
+        :param cost: unit cost of use
+        :param quantity: available capacities
+        :return: NodeFluentAPISelector with new production
+        """
         self.study._add_production(node=self.selector['node'], prod=Production(name=name, cost=cost, quantity=quantity))
         return self
 
     def node(self, name):
+        """
+        Go to different node level.
+
+        :param name: new node level
+        :return: NodeFluentAPISelector
+        """
         return NetworkFluentAPISelector(self.study).node(name)
 
     def link(self, src: str, dest: str, cost: int, quantity: Union[List, np.ndarray, float]):
+        """
+        Add a link on network.
+
+        :param src: node source
+        :param dest: node destination
+        :param cost: unit cost transfer
+        :param quantity: available capacity
+
+        :return: NetworkAPISelector with new link.
+        """
         return NetworkFluentAPISelector(self.study).link(src=src, dest=dest, cost=cost, quantity=quantity)
 
     def build(self):
+        """
+        Build study.
+
+        :return: study
+        """
         return self.study

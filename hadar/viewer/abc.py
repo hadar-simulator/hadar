@@ -14,27 +14,77 @@ from hadar.analyzer.result import ResultAnalyzer
 
 
 class ABCElementPlotting(ABC):
+    """
+    Abstract interface to implement to plot graphics
+    """
     @abstractmethod
     def timeline(self, df: pd.DataFrame, title: str):
+        """
+        Plot timeline with all scenarios.
+
+        :param df: dataframe with scenario on columns and time on index
+        :param title: title to plot
+        :return:
+        """
         pass
 
     @abstractmethod
     def monotone(self, y: np.ndarray, title: str):
+        """
+        Plot monotone.
+
+        :param y: value vector
+        :param title: title to plot
+        :return:
+        """
         pass
 
     @abstractmethod
     def gaussian(self, rac: np.ndarray, qt: np.ndarray, title: str):
+        """
+        Plot gaussian.
+
+        :param rac: Remain Available Capacities matrix (to plot green or red point)
+        :param qt: value vector
+        :param title: title to plot
+        :return:
+        """
         pass
 
     @abstractmethod
     def stack(self, areas: List[Tuple[str, np.ndarray]], lines: List[Tuple[str, np.ndarray]], title: str):
+        """
+        Plot stack.
+
+        :param areas: list of timelines to stack with area
+        :param lines: list of timelines to stack with line
+        :param title: title to plot
+        :return:
+        """
         pass
 
     @abstractmethod
     def matrix(self, data: np.ndarray, title):
+        """
+        Plot matrix (heatmap)
+
+        :param data: 2D matrix to plot
+        :param title: title to plot
+        :return:
+        """
         pass
 
     def map_exchange(self, nodes, lines, limit, title, zoom):
+        """
+        Plot map with exchanges as arrow.
+
+        :param nodes: node to set on map
+        :param lines: arrow to se on map
+        :param limit: colorscale limit to use
+        :param title: title to plot
+        :param zoom: zoom to set on map
+        :return:
+        """
         pass
 
 
@@ -50,6 +100,9 @@ class FluentAPISelector(ABC):
 
 
 class ConsumptionFluentAPISelector(FluentAPISelector):
+    """
+    Consumption level of fluent api.
+    """
     def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, name: str, node: str, kind: str):
         FluentAPISelector.__init__(self, plotting, agg)
         self.name = name
@@ -57,11 +110,22 @@ class ConsumptionFluentAPISelector(FluentAPISelector):
         self.kind = kind
 
     def timeline(self):
+        """
+        Plot timeline graphics.
+        :return:
+        """
         cons = self.agg.network().node(self.node).consumption(self.name).scn().time()[self.kind]
         title = 'Consumptions %s for %s on node %s' % (self.kind, self.name, self.node)
         return self.plotting.timeline(cons, title)
 
     def monotone(self, t: int = None, scn: int = None):
+        """
+        Plot monotone graphics.
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
         FluentAPISelector.not_both(t, scn)
 
         if t is not None:
@@ -74,6 +138,13 @@ class ConsumptionFluentAPISelector(FluentAPISelector):
         return self.plotting.monotone(y, title)
 
     def gaussian(self, t: int = None, scn: int = None):
+        """
+        Plot gaussian graphics
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
         FluentAPISelector.not_both(t, scn)
 
         if t is None:
@@ -89,6 +160,9 @@ class ConsumptionFluentAPISelector(FluentAPISelector):
 
 
 class ProductionFluentAPISelector(FluentAPISelector):
+    """
+    Production level of fluent api
+    """
     def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, name: str, node: str, kind: str):
         FluentAPISelector.__init__(self, plotting, agg)
         self.name = name
@@ -96,11 +170,22 @@ class ProductionFluentAPISelector(FluentAPISelector):
         self.kind = kind
 
     def timeline(self):
+        """
+        Plot timeline graphics.
+        :return:
+        """
         prod = self.agg.network().node(self.node).production(self.name).scn().time()[self.kind]
         title = 'Production %s for %s on node %s' % (self.kind, self.name, self.node)
         return self.plotting.timeline(prod, title)
 
     def monotone(self, t: int = None, scn: int = None):
+        """
+        Plot monotone graphics.
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
         FluentAPISelector.not_both(t, scn)
 
         if t is not None:
@@ -113,6 +198,13 @@ class ProductionFluentAPISelector(FluentAPISelector):
         return self.plotting.monotone(y, title)
 
     def gaussian(self, t: int = None, scn: int = None):
+        """
+        Plot gaussian graphics
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
         FluentAPISelector.not_both(t, scn)
 
         if t is None:
@@ -128,6 +220,9 @@ class ProductionFluentAPISelector(FluentAPISelector):
 
 
 class LinkFluentAPISelector(FluentAPISelector):
+    """
+    Link level of fluent api
+    """
     def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, src: str, dest: str, kind: str):
         FluentAPISelector.__init__(self, plotting, agg)
         self.src = src
@@ -135,11 +230,22 @@ class LinkFluentAPISelector(FluentAPISelector):
         self.kind = kind
 
     def timeline(self):
+        """
+        Plot timeline graphics.
+        :return:
+        """
         links = self.agg.network().node(self.src).link(self.dest).scn().time()[self.kind]
         title = 'Link %s from %s to %s' % (self.kind, self.src, self.dest)
         return self.plotting.timeline(links, title)
 
     def monotone(self, t: int = None, scn: int = None):
+        """
+        Plot monotone graphics.
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
         FluentAPISelector.not_both(t, scn)
 
         if t is not None:
@@ -152,6 +258,13 @@ class LinkFluentAPISelector(FluentAPISelector):
         return self.plotting.monotone(y, title)
 
     def gaussian(self, t: int = None, scn: int = None):
+        """
+        Plot gaussian graphics
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
         FluentAPISelector.not_both(t, scn)
 
         if t is None:
@@ -167,6 +280,9 @@ class LinkFluentAPISelector(FluentAPISelector):
 
 
 class NodeFluentAPISelector(FluentAPISelector):
+    """
+    Node level of fluent api
+    """
     def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, node: str):
         FluentAPISelector.__init__(self, plotting, agg)
         self.node = node
@@ -214,7 +330,7 @@ class NodeFluentAPISelector(FluentAPISelector):
 
     def consumption(self, name: str, kind: str = 'given') -> ConsumptionFluentAPISelector:
         """
-        Plot all timelines consumption scenario.
+        Go to consumption level of fluent API
 
         :param name: select consumption name
         :param kind: kind of data 'asked' or 'given'
@@ -224,7 +340,7 @@ class NodeFluentAPISelector(FluentAPISelector):
 
     def production(self, name: str, kind: str = 'used') -> ProductionFluentAPISelector:
         """
-         Plot all timelines production scenario.
+         Go to production level of fluent API
 
          :param name: select production name
          :param kind: kind of data available ('avail') or 'used'
@@ -234,7 +350,7 @@ class NodeFluentAPISelector(FluentAPISelector):
 
     def link(self, dest: str, kind: str = 'used'):
         """
-         Plot all timelines links scenario.
+         got to link level of fluent API
 
          :param dest: select destination node name
          :param kind: kind of data available ('avail') or 'used'
@@ -244,7 +360,16 @@ class NodeFluentAPISelector(FluentAPISelector):
 
 
 class NetworkFluentAPISelector(FluentAPISelector):
+    """
+    Network level of fluent API
+    """
+
     def rac_matrix(self):
+        """
+        plot RAC matrix graphics
+
+        :return:
+        """
         rac = self.agg.get_rac()
         pct = (rac >= 0).sum() / rac.size * 100
         title = "RAC Matrix %0d %% passed" % pct
@@ -252,6 +377,15 @@ class NetworkFluentAPISelector(FluentAPISelector):
         return self.plotting.matrix(data=rac, title=title)
 
     def map(self, t: int, zoom: int, scn: int = 0, limit: int = None):
+        """
+        Plot map exchange graphics
+
+        :param t: t index to focus
+        :param zoom: zoom to set
+        :param scn: scn index to focus
+        :param limit: color scale limite to use
+        :return:
+        """
         nodes = {node: self.agg.get_balance(node=node)[scn, t] for node in self.agg.nodes}
 
         if limit is None:
@@ -274,6 +408,11 @@ class NetworkFluentAPISelector(FluentAPISelector):
         return self.plotting.map_exchange(nodes, lines, limit, title, zoom)
 
     def node(self, node: str):
+        """
+        Go to node level fo fluent API
+        :param node: node name
+        :return: NodeFluentAPISelector
+        """
         return NodeFluentAPISelector(plotting=self.plotting, agg=self.agg, node=node)
 
 
@@ -311,4 +450,9 @@ class ABCPlotting(ABC):
             self.time_index = np.arange(self.agg.horizon)
 
     def network(self):
+        """
+        Entry point to use fluent API.
+
+        :return: NetworkFluentAPISelector
+        """
         return NetworkFluentAPISelector(plotting=self.plotting, agg=self.agg)
