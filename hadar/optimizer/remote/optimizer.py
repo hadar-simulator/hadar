@@ -26,6 +26,15 @@ class ServerError(Exception):
         super().__init__(mes)
 
 
+def check_code(code):
+    if code == 404:
+        raise ValueError("Can't find server url")
+    if code == 403:
+        raise ValueError("Wrong token given")
+    if code == 500:
+        raise IOError("Error has occurred on remote server")
+
+
 def solve_remote(study: Study, url: str, token: str = 'none') -> Result:
     """
     Send study to remote server.
@@ -50,13 +59,8 @@ def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) ->
     """
     # Send study
     resp = rqt.post(url='%s/study' % url, data=pickle.dumps(study), params={'token': token})
+    check_code(resp.status_code)
 
-    if resp.status_code == 404:
-        raise ValueError("Can't find server url")
-    if resp.status_code == 403:
-        raise ValueError("Wrong token given")
-    if resp.status_code == 500:
-        raise IOError("Error has occurred on remote server")
     # Deserialize
     resp = pickle.loads(resp.content)
     id = resp['job']
@@ -68,6 +72,7 @@ def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) ->
 
     while resp['status'] in ['QUEUED', 'COMPUTING']:
         resp = rqt.get(url='%s/result/%s' % (url, id), params={'token': token})
+        check_code(resp.status_code)
         resp = pickle.loads(resp.content)
 
         if resp['status'] == 'QUEUED':
@@ -76,7 +81,7 @@ def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) ->
         if resp['status'] == 'COMPUTING':
             if spinner is None:
                 bar.finish()
-                spinner = Spinner('COMPUTING')
+                spinner = Spinner('COMPUTING           ')
             spinner.next()
 
         sleep(0.5)
