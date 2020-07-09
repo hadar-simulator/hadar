@@ -14,7 +14,7 @@ from .workflow.shuffler import Shuffler
 from .optimizer.input import Consumption, Link, Production, InputNode, Study
 from .optimizer.output import OutputProduction, OutputNode, OutputLink, OutputConsumption, Result
 from .optimizer.optimizer import LPOptimizer, RemoteOptimizer
-from .viewer.html import HTMLABCPlotting
+from .viewer.html import HTMLPlotting
 from .analyzer.result import ResultAnalyzer
 
 __version__ = '0.3.1'

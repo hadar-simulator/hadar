@@ -15,7 +15,7 @@ from matplotlib.cm import coolwarm
 from hadar.analyzer.result import ResultAnalyzer
 from hadar.viewer.abc import ABCPlotting, ABCElementPlotting
 
-__all__ = ['HTMLABCPlotting']
+__all__ = ['HTMLPlotting']
 
 
 class HTMLElementPlotting(ABCElementPlotting):
@@ -209,7 +209,7 @@ class HTMLElementPlotting(ABCElementPlotting):
                                        line=dict(width=2 * size, color=color)))
 
 
-class HTMLABCPlotting(ABCPlotting):
+class HTMLPlotting(ABCPlotting):
     """
     Plotting implementation interactive html graphics. (Use plotly)
     """

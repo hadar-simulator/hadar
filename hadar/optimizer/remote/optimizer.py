@@ -7,6 +7,7 @@
 
 import logging
 import pickle
+import sys
 from time import sleep
 
 import requests
@@ -18,6 +19,11 @@ from hadar.optimizer.output import Result
 
 
 logger = logging.getLogger(__name__)
+
+
+class ServerError(Exception):
+    def __init__(self, mes: str):
+        super().__init__(mes)
 
 
 def solve_remote(study: Study, url: str, token: str = 'none') -> Result:
@@ -55,27 +61,27 @@ def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) ->
     resp = pickle.loads(resp.content)
     id = resp['job']
 
-    previous_progress = resp['progress']
-    bar = Bar('QUEUED', max=previous_progress)
+    Bar.check_tty = Spinner.check_tty = False
+    Bar.file = Spinner.file = sys.stdout
+    bar = Bar('QUEUED', max=resp['progress'])
     spinner = None
 
     while resp['status'] in ['QUEUED', 'COMPUTING']:
         resp = rqt.get(url='%s/result/%s' % (url, id), params={'token': token})
         resp = pickle.loads(resp.content)
 
-        if resp['status'] == 'QUEUED' and previous_progress != resp['progress']:
-            bar.next()
-            previous_progress = resp['progress']
+        if resp['status'] == 'QUEUED':
+            bar.goto(resp['progress'])
 
         if resp['status'] == 'COMPUTING':
-            if spinner:
-                spinner.next()
-            else:
+            if spinner is None:
+                bar.finish()
                 spinner = Spinner('COMPUTING')
+            spinner.next()
 
         sleep(0.5)
 
     if resp['status'] == 'ERROR':
-        raise Exception('Error from server: %s' % resp['message'])
+        raise ServerError(resp['message'])
 
     return resp['result']

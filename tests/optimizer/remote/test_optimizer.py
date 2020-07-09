@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 from hadar import RemoteOptimizer
 from hadar.optimizer.input import Study, Consumption
 from hadar.optimizer.output import Result, OutputConsumption, OutputNode
-from hadar.optimizer.remote.optimizer import _solve_remote_wrap
+from hadar.optimizer.remote.optimizer import _solve_remote_wrap, ServerError
 
 
 class MockResponse:
@@ -73,6 +73,22 @@ class RemoteOptimizerTest(unittest.TestCase):
 
         res = _solve_remote_wrap(study=self.study, url='host', token='pwd', rqt=requests)
         self.assertEqual('myresult', res)
+
+    def test_job_error(self):
+        requests = MockRequest(unit=self,
+                               post=[dict(url='/study', params={'token': 'pwd'}, data=self.study,
+                                          res=MockResponse({'job': 'myid', 'status': 'QUEUED', 'progress': 1}))
+                                     ],
+                               get=[dict(url='/result/myid', params={'token': 'pwd'},
+                                         res=MockResponse({'status': 'QUEUED', 'progress': 1})),
+                                    dict(url='/result/myid', params={'token': 'pwd'},
+                                         res=MockResponse({'status': 'COMPUTING', 'progress': 0})),
+                                    dict(url='/result/myid', params={'token': 'pwd'},
+                                         res=MockResponse({'status': 'ERROR', 'message': 'HUGE ERROR'}))
+                                    ])
+
+        self.assertRaises(ServerError,
+                          lambda: _solve_remote_wrap(study=self.study, url='host', token='pwd', rqt=requests))
 
     def test_404(self):
         requests = MockRequest(unit=self,
