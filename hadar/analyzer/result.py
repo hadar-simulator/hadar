@@ -247,8 +247,8 @@ class ResultAnalyzer:
         :return: pivot table
         """
         names = [i.column for i in indexes]
-        filter = reduce(lambda a, b: a & b, (i.filter(df) for i in indexes))
-        pt = pd.pivot_table(data=df[filter], index=names, aggfunc=lambda x: x.iloc[0])
+        filtered = reduce(lambda a, b: a & b, (i.filter(df) for i in indexes))
+        pt = pd.pivot_table(data=df[filtered], index=names, aggfunc=lambda x: x.iloc[0])
 
         return ResultAnalyzer._remove_useless_index_level(df=pt, indexes=indexes)
 
@@ -274,7 +274,7 @@ class ResultAnalyzer:
         if not ResultAnalyzer.check_index(indexes, type):
             raise ValueError('Indexes must contain a {}'.format(type.__class__.__name__))
 
-    def go(self, indexes: List[Index]) -> pd.DataFrame:
+    def start(self, indexes: List[Index]) -> pd.DataFrame:
         """
         Aggregate according to index level and filter.
         """
@@ -333,19 +333,16 @@ class ResultAnalyzer:
         cost = np.zeros((self.nb_scn,  self.horizon))
         c, p, b = self.get_elements_inside(node)
         if c:
-            # cons = self.consumptions(self.inode[node], self.iscn, self.itime, self.iname)
             cons = self.network().node(node).scn().time().consumption()
             cost += ((cons['asked'] - cons['given']) * cons['cost']).groupby(axis=0, level=(0, 1)) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if p:
-            # prod = self.agg_prod(self.inode[node], self.iscn, self.itime, self.iname)
             prod = self.network().node(node).scn().time().production()
             cost += (prod['used'] * prod['cost']).groupby(axis=0, level=(0, 1)) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if b:
-            # link = self.agg_link(self.isrc[node], self.iscn, self.itime, self.idest)
             link = self.network().node(node).scn().time().link()
             cost += (link['used'] * link['cost']).groupby(axis=0, level=(0, 1)) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
@@ -457,6 +454,6 @@ class FluentAPISelector:
         """
         self.indexes.append(index)
         if len(self.indexes) == 4:
-            return self.analyzer.go(self.indexes)
+            return self.analyzer.start(self.indexes)
         else:
             return FluentAPISelector(self.indexes, self.analyzer)
