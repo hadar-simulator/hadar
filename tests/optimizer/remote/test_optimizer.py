@@ -118,7 +118,7 @@ class RemoteOptimizerTest(unittest.TestCase):
         self.assertRaises(IOError,
                           lambda: _solve_remote_wrap(study=self.study, url='host', token='pwd', rqt=requests))
 
-    def test_server(self):
+    def no_test_server(self):
         optim = RemoteOptimizer(url='http://localhost:5000')
         res = optim.solve(self.study)
         print(res)
