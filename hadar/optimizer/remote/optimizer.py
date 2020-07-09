@@ -10,6 +10,8 @@ import pickle
 from time import sleep
 
 import requests
+from progress.bar import Bar
+from progress.spinner import Spinner
 
 from hadar.optimizer.input import Study
 from hadar.optimizer.output import Result
@@ -42,6 +44,7 @@ def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) ->
     """
     # Send study
     resp = rqt.post(url='%s/study' % url, data=pickle.dumps(study), params={'token': token})
+
     if resp.status_code == 404:
         raise ValueError("Can't find server url")
     if resp.status_code == 403:
@@ -52,10 +55,27 @@ def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) ->
     resp = pickle.loads(resp.content)
     id = resp['job']
 
-    while resp['status'] != 'TERMINATED':
+    previous_progress = resp['progress']
+    bar = Bar('QUEUED', max=previous_progress)
+    spinner = None
+
+    while resp['status'] in ['QUEUED', 'COMPUTING']:
         resp = rqt.get(url='%s/result/%s' % (url, id), params={'token': token})
         resp = pickle.loads(resp.content)
-        print(resp)
+
+        if resp['status'] == 'QUEUED' and previous_progress != resp['progress']:
+            bar.next()
+            previous_progress = resp['progress']
+
+        if resp['status'] == 'COMPUTING':
+            if spinner:
+                spinner.next()
+            else:
+                spinner = Spinner('COMPUTING')
+
         sleep(0.5)
+
+    if resp['status'] == 'ERROR':
+        raise Exception('Error from server: %s' % resp['message'])
 
     return resp['result']
