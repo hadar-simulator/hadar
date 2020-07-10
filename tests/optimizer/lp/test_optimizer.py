@@ -76,8 +76,8 @@ class TestAdequacyBuilder(unittest.TestCase):
 class TestSolve(unittest.TestCase):
     def test_solve_batch(self):
         # Input
-        study = Study(node_names=['a'], horizon=1, nb_scn=1) \
-            .add_on_node(node='a', data=Consumption(name='load', cost=10, quantity=[10]))
+        study = Study(horizon=1, nb_scn=1) \
+            .network().node('a').consumption(name='load', cost=10, quantity=10).build()
 
         # Mock
         solver = MockSolver()
@@ -115,8 +115,8 @@ class TestSolve(unittest.TestCase):
 
     def test_solve(self):
         # Input
-        study = Study(node_names=['a'], horizon=1, nb_scn=1) \
-            .add_on_node(node='a', data=Consumption(name='load', cost=10, quantity=[10]))
+        study = Study(horizon=1, nb_scn=1) \
+            .network().node('a').consumption(name='load', cost=10, quantity=10).build()
 
         # Expected
         out_a = OutputNode(consumptions=[OutputConsumption(name='load', cost=10, quantity=[0])],

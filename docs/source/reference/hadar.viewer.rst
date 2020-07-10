@@ -20,14 +20,6 @@ hadar.viewer.html module
    :undoc-members:
    :show-inheritance:
 
-hadar.viewer.jupyter module
----------------------------
-
-.. automodule:: hadar.viewer.jupyter
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 
 Module contents
 ---------------

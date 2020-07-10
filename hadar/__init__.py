@@ -17,7 +17,7 @@ from .optimizer.optimizer import LPOptimizer, RemoteOptimizer
 from .viewer.html import HTMLPlotting
 from .analyzer.result import ResultAnalyzer
 
-__version__ = '0.3.0'
+__version__ = '0.3.1'
 
 level = os.getenv('HADAR_LOG', 'WARNING')
 

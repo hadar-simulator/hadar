@@ -12,7 +12,7 @@ Today, there is only :code:`ResultAnalyzer`, with two features level:
 Before speaking about this features, let's see how data are transformed.
 
 Flatten Data
----------
+------------
 
 As said above, object is nice to encapsulate data and represent it into agnostic form. Objects can be serialized into JSON or something else to be used by another software maybe in another language. But keep object to analyze data is awful.
 
@@ -77,14 +77,14 @@ Link follow the same pattern. Hierarchical structure naming change. There are no
 +------+------+------+------+------+------+------+
 | 10   | 100  | 81   | fr   | uk   | 1    |  1   |
 +------+------+------+------+------+------+------+
-| ...  | ...  | ...  | ...  | ...  | ..   | ...  |
+| ...  | ...  | ...  | ...  | ...  | ..   | ..   |
 +------+------+------+------+------+------+------+
 
 It's done by :code:`_build_link(study: Study, result: Result) -> pd.Dataframe` method.
 
 
-Low level analysis
-------------------
+Low level analysis power with a *FluentAPISelector*
+---------------------------------------------------
 
 When you observe flat data, there are two kind of data. *Content* like cost, given, asked and *index* describes by node, name, scn, t.
 
@@ -114,23 +114,29 @@ If first index like node and scenario has only one element, there are removed.
 This result can be done by this line of code. ::
 
     agg = hd.ResultAnalyzer(study, result)
-    df = agg.agg_prod(agg.inode['fr'], agg.scn[0], agg.itime[50:60], agg.iname)
+    df = agg.network().node('fr').scn(0).time(slice(50, 60)).production()
 
-As you can see, user select index hierarchy by sorting :code:`agg.ixxx` . Then user specify filter by :code:`agg.ixxx[yy]`.
+For analyzer, Fluent API respect these rules:
+
+* API flow begin by :code:`network()`
+
+* API flow must contain strictly one of :code:`node()` , :code:`time()`, :code:`scn()` element
+
+* API flow must contain only one of element inside :code:`link()` , :code:`production()` , :code:`consumption()`
+
+* Except for :code:`network()`, API has no order. Order is free for user to give hierarchy data.
+
+* Therefore above rules, API will always be 5 elements length.
 
 Behind this mechanism, there are :code:`Index` objects. As you can see directly in the code ::
 
-    @property
-    def inode(self) -> NodeIndex:
-        """
-        Get a node index to specify node slice to aggregate consumption or production.
+    ...
+    self.consumption = lambda x=None: self._append(ConsIndex(x))
+    ...
+    self.time = lambda x=None: self._append(TimeIndex(x))
+    ...
 
-        :return: new instance of NodeIndex()
-        """
-        return NodeIndex()
-
-
-Each kind of index has to inherent from this class. :code:`Index` object encapsulate column metadata to use and range of filtered elements to keep (accessible by overriding :code:`__getitem__` method). Then, Hadar has child classes with good parameters : :code:`NameIndex` , :code:`NodeIndex` , :code:`ScnIndex` , :code:`TimeIndex` , :code:`SrcIndex` , :code:`DestIndex` . For example you can find below :code:`NodeIndex` implementation ::
+Each kind of index has to inherent from this class. :code:`Index` object encapsulate column metadata to use and range of filtered elements to keep (accessible by overriding :code:`__getitem__` method). Then, Hadar has child classes with good parameters : :code:`ConsIndex` , :code:`ProdIndex` , :code:`NodeIndex` , :code:`ScnIndex` , :code:`TimeIndex` , :code:`LinkIndex` , :code:`DestIndex` . For example you can find below :code:`NodeIndex` implementation ::
 
     class NodeIndex(Index[str]):
         """Index implementation to filter nodes"""
@@ -139,7 +145,9 @@ Each kind of index has to inherent from this class. :code:`Index` object encapsu
 
 
 .. image:: /_static/architecture/analyzer/ulm-index.png
-Index instantiation are completely hidden for user. It created implicitly when user types :code:`agg.ixxx[yy]`. Then, hadar will
+
+
+Index instantiation are completely hidden for user. Then, hadar will
 
 #. check that mandatory indexes are given with :code:`_assert_index` method.
 

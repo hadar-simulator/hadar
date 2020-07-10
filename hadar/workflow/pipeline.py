@@ -182,7 +182,7 @@ class Pipeline:
         self.stages.append(other)
         return self
 
-    def compute(self, timeline):
+    def __call__(self, timeline):
         """
         Launch all stages computation.
 
@@ -194,7 +194,7 @@ class Pipeline:
         self.assert_computable(timeline)
 
         for stage in self.stages:
-            timeline = stage.compute(timeline.copy())
+            timeline = stage(timeline.copy())
 
         return timeline
 
@@ -251,7 +251,7 @@ class Stage(ABC):
         """
         pass
 
-    def compute(self, timeline: pd.DataFrame) -> pd.DataFrame:
+    def __call__(self, timeline: pd.DataFrame) -> pd.DataFrame:
         """
         Launch Stage computation.
 
@@ -392,14 +392,14 @@ class Rename(Stage):
     Rename column names.
     """
 
-    def __init__(self, rename: Dict[str, str]):
+    def __init__(self, **kwargs):
         """
         Initiate Stage.
 
-        :param rename: dictionary of strings like { old_name: new_name }
+        :param kwargs: dictionary of strings like Rename(old_name='new_name')
         """
-        Stage.__init__(self, plug=RestrictedPlug(inputs=list(rename.keys()), outputs=list(rename.values())))
-        self.rename = rename
+        Stage.__init__(self, plug=RestrictedPlug(inputs=list(kwargs.keys()), outputs=list(kwargs.values())))
+        self.rename = kwargs
 
     def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
         timeline.columns = timeline.columns.map(lambda i: (i[0], self._rename(i[1])))
@@ -424,7 +424,7 @@ class ToShuffler(Rename):
         Instance Stage
         :param result_name: result column name to use for shuffler
         """
-        Rename.__init__(self, {result_name: TO_SHUFFLER})
+        Rename.__init__(self, **{result_name: TO_SHUFFLER})
 
 
 class Drop(Stage):

@@ -91,7 +91,7 @@ Then productions and edges need to be bounded
 
 
 Lack of adequacy
---------------
+----------------
 
 Variables
 *********
@@ -116,7 +116,7 @@ Objective has a new term
     \end{array}
 
 Constraints
-**********
+***********
 
 Kirschhoff law needs an update too. Lost of Load is represented like a *fantom* import of energy to reach adequacy.
 

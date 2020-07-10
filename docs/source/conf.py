@@ -23,7 +23,7 @@ copyright = 'Except where otherwise noted, this content is Copyright (c) 2020, R
 author = 'RTE'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = hadar.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -59,4 +59,4 @@ html_static_path = ['_static']
 
 nbsphinx_execute = 'never'
 
-autodoc_mock_imports = ['pandas', 'numpy', 'ortools', 'plotly', 'jupyter', 'matplotlib', 'requests']
+autodoc_mock_imports = ['pandas', 'numpy', 'ortools', 'plotly', 'jupyter', 'matplotlib', 'requests', 'progress']

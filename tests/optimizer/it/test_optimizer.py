@@ -34,11 +34,14 @@ class TestOptimizer(unittest.TestCase):
         | gas: 5               |
         :return:
         """
-        study = hd.Study(['a'], horizon=3, nb_scn=2) \
-            .add_on_node(node='a', data=hd.Consumption(name='load', cost=10 ** 6, quantity=[[30, 6, 6], [6, 30, 30]])) \
-            .add_on_node(node='a', data=hd.Production(name='nuclear', cost=20, quantity=[[15, 3, 3], [3, 15, 15]])) \
-            .add_on_node(node='a', data=hd.Production(name='solar', cost=10, quantity=[[10, 2, 2], [2, 10, 10]])) \
-            .add_on_node(node='a', data=hd.Production(name='oil', cost=30, quantity=[[10, 2, 2], [2, 10, 10]]))
+        study = hd.Study(horizon=3, nb_scn=2)\
+            .network()\
+                .node('a')\
+                    .consumption(name='load', cost=10 ** 6, quantity=[[30, 6, 6], [6, 30, 30]])\
+                    .production(name='nuclear', cost=20, quantity=[[15, 3, 3], [3, 15, 15]])\
+                    .production(name='solar', cost=10, quantity=[[10, 2, 2], [2, 10, 10]])\
+                    .production(name='oil', cost=30, quantity=[[10, 2, 2], [2, 10, 10]])\
+            .build()
 
         nodes_expected = dict()
         nodes_expected['a'] = hd.OutputNode(
@@ -68,12 +71,16 @@ class TestOptimizer(unittest.TestCase):
         :return:
         """
         # Input
-        study = hd.Study(['a', 'b'], horizon=2) \
-            .add_on_node('a', data=hd.Consumption(cost=10 ** 6, quantity=[20, 200], name='load')) \
-            .add_on_node('a', data=hd.Production(cost=10, quantity=[30, 300], name='prod')) \
-            .add_on_node('b', data=hd.Consumption(cost=10 ** 6, quantity=[20, 200], name='load')) \
-            .add_on_node('b', data=hd.Production(cost=20, quantity=[10, 100], name='prod')) \
-            .add_link(src='a', dest='b', quantity=[10, 100], cost=2)
+        study = hd.Study(horizon=2)\
+            .network()\
+                .node('a')\
+                    .consumption(cost=10 ** 6, quantity=[20, 200], name='load')\
+                    .production(cost=10, quantity=[30, 300], name='prod')\
+                .node('b')\
+                    .consumption(cost=10 ** 6, quantity=[20, 200], name='load')\
+                    .production(cost=20, quantity=[10, 100], name='prod')\
+                .link(src='a', dest='b', quantity=[10, 100], cost=2)\
+            .build()
 
         nodes_expected = {}
         nodes_expected['a'] = hd.OutputNode(
@@ -110,15 +117,20 @@ class TestOptimizer(unittest.TestCase):
                                            | nuclear: 0           |
         :return:
         """
-        study = hd.Study(node_names=['a', 'b', 'c'], horizon=1) \
-            .add_on_node('a', data=hd.Consumption(cost=10 ** 6, quantity=[10], name='load')) \
-            .add_on_node('a', data=hd.Production(cost=10, quantity=[30], name='nuclear')) \
-            .add_on_node('b', data=hd.Consumption(cost=10 ** 6, quantity=[10], name='load')) \
-            .add_on_node('b', data=hd.Production(cost=20, quantity=[10], name='nuclear')) \
-            .add_on_node('c', data=hd.Consumption(cost=10 ** 6, quantity=[10], name='load')) \
-            .add_on_node('c', data=hd.Production(cost=20, quantity=[10], name='nuclear')) \
-            .add_link(src='a', dest='b', quantity=[20], cost=2) \
-            .add_link(src='a', dest='c', quantity=[20], cost=2)
+        study = hd.Study(horizon=1)\
+            .network()\
+                .node('a')\
+                    .consumption(cost=10 ** 6, quantity=10, name='load')\
+                    .production(cost=10, quantity=30, name='nuclear')\
+                .node('b')\
+                    .consumption(cost=10 ** 6, quantity=10, name='load')\
+                    .production(cost=20, quantity=10, name='nuclear')\
+                .node('c')\
+                    .consumption(cost=10 ** 6, quantity=10, name='load')\
+                    .production(cost=20, quantity=10, name='nuclear')\
+                .link(src='a', dest='b', quantity=20, cost=2)\
+                .link(src='a', dest='c', quantity=20, cost=2)\
+            .build()
 
         nodes_expected = {}
         nodes_expected['a'] = hd.OutputNode(
@@ -154,12 +166,14 @@ class TestOptimizer(unittest.TestCase):
 
         :return:
         """
-        study = hd.Study(node_names=['a', 'b', 'c'], horizon=1) \
-            .add_on_node('a', data=hd.Production(cost=10, quantity=[30], name='nuclear')) \
-            .add_on_node('b', data=hd.Consumption(cost=10 ** 6, quantity=[10], name='load')) \
-            .add_on_node('c', data=hd.Consumption(cost=10 ** 6, quantity=[20], name='load')) \
-            .add_link(src='a', dest='b', quantity=[20], cost=2) \
-            .add_link(src='b', dest='c', quantity=[15], cost=2)
+        study = hd.Study(horizon=1)\
+            .network()\
+                .node('a').production(cost=10, quantity=[30], name='nuclear')\
+                .node('b').consumption(cost=10 ** 6, quantity=[10], name='load')\
+                .node('c').consumption(cost=10 ** 6, quantity=[20], name='load')\
+                .link(src='a', dest='b', quantity=[20], cost=2)\
+                .link(src='b', dest='c', quantity=[15], cost=2)\
+            .build()
 
         nodes_expected = {}
         nodes_expected['a'] = hd.OutputNode(productions=[hd.OutputProduction(cost=10, quantity=[[20]], name='nuclear')],
@@ -196,15 +210,20 @@ class TestOptimizer(unittest.TestCase):
 
         :return:
         """
-        study = hd.Study(node_names=['a', 'b', 'c'], horizon=1) \
-            .add_on_node('a', data=hd.Consumption(cost=10 ** 6, quantity=[10], name='load')) \
-            .add_on_node('a', data=hd.Production(cost=10, quantity=[20], name='nuclear')) \
-            .add_on_node('b', data=hd.Consumption(cost=10 ** 6, quantity=[5], name='load')) \
-            .add_on_node('b', data=hd.Production(cost=20, quantity=[15], name='nuclear')) \
-            .add_on_node('c', data=hd.Consumption(cost=10 ** 6, quantity=[20], name='load')) \
-            .add_on_node('c', data=hd.Production(cost=10, quantity=[10], name='nuclear')) \
-            .add_link(src='a', dest='b', quantity=[20], cost=2) \
-            .add_link(src='b', dest='c', quantity=[20], cost=2)
+        study = hd.Study(horizon=1)\
+            .network()\
+                .node('a')\
+                    .consumption(cost=10 ** 6, quantity=10, name='load')\
+                    .production(cost=10, quantity=20, name='nuclear')\
+                .node('b')\
+                    .consumption(cost=10 ** 6, quantity=5, name='load')\
+                    .production(cost=20, quantity=15, name='nuclear')\
+                .node('c')\
+                    .consumption(cost=10 ** 6, quantity=20, name='load')\
+                    .production(cost=10, quantity=10, name='nuclear')\
+                .link(src='a', dest='b', quantity=20, cost=2)\
+                .link(src='b', dest='c', quantity=20, cost=2)\
+            .build()
 
         nodes_expected = {}
         nodes_expected['a'] = hd.OutputNode(
@@ -254,14 +273,19 @@ class TestOptimizer(unittest.TestCase):
 
         :return:
         """
-        study = hd.Study(node_names=['a', 'b', 'c'], horizon=2) \
-            .add_on_node('a', data=hd.Consumption(cost=10 ** 6, quantity=10, name='load')) \
-            .add_on_node('a', data=hd.Production(cost=80, quantity=20, name='gas')) \
-            .add_on_node('b', data=hd.Consumption(cost=10 ** 6, quantity=[15, 25], name='load')) \
-            .add_on_node('c', data=hd.Production(cost=50, quantity=30, name='nuclear')) \
-            .add_link(src='a', dest='b', quantity=20, cost=10) \
-            .add_link(src='c', dest='a', quantity=20, cost=10) \
-            .add_link(src='c', dest='b', quantity=15, cost=10)
+        study = hd.Study(horizon=2)\
+            .network()\
+                .node('a')\
+                    .consumption(cost=10 ** 6, quantity=10, name='load')\
+                    .production(cost=80, quantity=20, name='gas')\
+                .node('b')\
+                    .consumption(cost=10 ** 6, quantity=[15, 25], name='load')\
+                .node('c')\
+                    .production(cost=50, quantity=30, name='nuclear')\
+                .link(src='a', dest='b', quantity=20, cost=10)\
+                .link(src='c', dest='a', quantity=20, cost=10)\
+                .link(src='c', dest='b', quantity=15, cost=10)\
+            .build()
 
 
         nodes_expected = {}

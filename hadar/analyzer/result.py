@@ -4,8 +4,8 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-
-from typing import Union, TypeVar, List, Generic, Type
+from functools import reduce
+from typing import Union, TypeVar, List, Generic, Type, Any, Dict
 
 import pandas as pd
 import numpy as np
@@ -13,7 +13,7 @@ import numpy as np
 from hadar.optimizer.output import Result, OutputNode
 from hadar.optimizer.input import Study
 
-__all__ = ['ResultAnalyzer']
+__all__ = ['ResultAnalyzer', 'FluentAPISelector']
 
 
 T = TypeVar('T')
@@ -23,28 +23,25 @@ class Index(Generic[T]):
     """
     Generic Index to use to select and rank data.
     """
-    def __init__(self, column):
+    def __init__(self, column, index=None):
         """
         Initiate instance.
 
         :param column: column name link to this index
         :param index: list of index or element to filter from data. None by default to say keep all data.
         """
-        self.all = True
         self.column = column
-
-    def __getitem__(self, index):
-        if isinstance(index, list):
-            index = tuple(index)
-        if not isinstance(index, tuple):
-            index = tuple([index])
-
-        if len(index) == 0:
+        if index is None:
             self.all = True
+        elif isinstance(index, list):
+            self.index = tuple(index)
+            self.all = len(index) == 0
+        elif not isinstance(index, tuple):
+            self.index = tuple([index])
+            self.all = False
         else:
             self.index = index
             self.all = False
-        return self
 
     def filter(self, df: pd.DataFrame) -> pd.Series:
         """
@@ -66,33 +63,33 @@ class Index(Generic[T]):
         return not self.all and len(self.index) <= 1
 
 
-class NodeIndex(Index[str]):
-    """Index implementation to filter nodes"""
-    def __init__(self):
-        Index.__init__(self, column='node')
+class ProdIndex(Index[str]):
+    """Index implementation to filter productions"""
+    def __init__(self, index):
+        Index.__init__(self, column='name', index=index)
 
 
-class SrcIndex(Index[str]):
-    """Index implementation to filter src node"""
-    def __init__(self):
-        Index.__init__(self, column='src')
+class ConsIndex(Index[str]):
+    """ Index implementation to filter consumptions"""
+    def __init__(self, index):
+        Index.__init__(self, column='name', index=index)
 
 
-class DestIndex(Index[str]):
+class LinkIndex(Index[str]):
     """Index implementation to filter destination node"""
-    def __init__(self):
-        Index.__init__(self, column='dest')
+    def __init__(self, index):
+        Index.__init__(self, column='dest', index=index)
 
 
-class NameIndex(Index[str]):
+class NodeIndex(Index[str]):
     """Index implementation to filter name of elements"""
-    def __init__(self):
-        Index.__init__(self, column='name')
+    def __init__(self, index):
+        Index.__init__(self, column='node', index=index)
 
 
 class IntIndex(Index[int]):
     """Index implementation to handle int index with slice"""
-    def __init__(self, column: str):
+    def __init__(self, column: str, index):
         """
         Create instance.
 
@@ -100,24 +97,24 @@ class IntIndex(Index[int]):
         :param start: start datetime to filter (to use instead of index)
         :param end: end datetime to filter (to use instead of index)
         """
-        Index.__init__(self, column=column)
-
-    def __getitem__(self, index):
         if isinstance(index, slice):
-            index = tuple(range(index.start, index.stop, index.step if index.step else 1))
-        return Index.__getitem__(self, index)
+            start = 0 if index.start is None else index.start
+            stop = -1 if index.start is None else index.stop
+            step = 1 if index.step is None else index.step
+            index = tuple(range(start, stop, step))
+        Index.__init__(self, column=column, index=index)
 
 
 class TimeIndex(IntIndex):
     """Index implementation to filter by time step"""
-    def __init__(self):
-        IntIndex.__init__(self, column='t')
+    def __init__(self, index):
+        IntIndex.__init__(self, column='t', index=index)
 
 
 class ScnIndex(IntIndex):
     """index implementation to filter by scenario"""
-    def __init__(self):
-        IntIndex.__init__(self, column='scn')
+    def __init__(self, index):
+        IntIndex.__init__(self, column='scn', index=index)
 
 
 class ResultAnalyzer:
@@ -136,7 +133,7 @@ class ResultAnalyzer:
 
         self.consumption = ResultAnalyzer._build_consumption(self.study, self.result)
         self.production = ResultAnalyzer._build_production(self.study, self.result)
-        self.link = ResultAnalyzer.link(self.study, self.result)
+        self.link = ResultAnalyzer._build_link(self.study, self.result)
 
     @staticmethod
     def _build_consumption(study: Study, result: Result):
@@ -197,16 +194,16 @@ class ResultAnalyzer:
         return prod
 
     @staticmethod
-    def link(study: Study, result: Result):
+    def _build_link(study: Study, result: Result):
         """
         Flat all data to build global link dataframe
-        columns: | cost | avail | used | src | dest | t |
+        columns: | cost | avail | used | node | dest | t |
         """
         h = study.horizon
         scn = study.nb_scn
         s = h * scn * sum([len(n.links) for n in result.nodes.values()])
         link = {'cost': np.empty(s), 'avail': np.empty(s), 'used': np.empty(s),
-                  'src': np.empty(s), 'dest': np.empty(s), 't': np.empty(s), 'scn': np.empty(s)}
+                  'node': np.empty(s), 'dest': np.empty(s), 't': np.empty(s), 'scn': np.empty(s)}
         link = pd.DataFrame(data=link)
 
         n_link = 0
@@ -215,7 +212,7 @@ class ResultAnalyzer:
                 slices = link.index[n_link * h * scn: (n_link + 1) * h * scn]
                 link.loc[slices, 'cost'] = c.cost
                 link.loc[slices, 'dest'] = c.dest
-                link.loc[slices, 'src'] = name
+                link.loc[slices, 'node'] = name
                 link.loc[slices, 'avail'] = study.nodes[name].links[i].quantity.flatten()
                 link.loc[slices, 'used'] = c.quantity.flatten()
                 link.loc[slices, 't'] = np.tile(np.arange(h), scn)
@@ -242,88 +239,60 @@ class ResultAnalyzer:
             return df
 
     @staticmethod
-    def _pivot(i0: Index, i1: Index, i2: Index, i3: Index, df: pd.DataFrame) -> pd.DataFrame:
+    def _pivot(indexes, df: pd.DataFrame) -> pd.DataFrame:
         """
         Pivot table by appling filter and index hirarchy asked by indexes.
 
-        :param i0: first level index
-        :param i1: second level index
-        :param i2: third level index
-        :param i3: fourth level index
-        :param df: dataframe to pivot
+        :param names: list of index
         :return: pivot table
         """
-        indexes = [i0.column, i1.column, i2.column, i3.column]
-        pt = pd.pivot_table(data=df[i0.filter(df) & i1.filter(df) & i2.filter(df) & i3.filter(df)],
-                            index=indexes, aggfunc=lambda x: x.iloc[0])
+        names = [i.column for i in indexes]
+        filtered = reduce(lambda a, b: a & b, (i.filter(df) for i in indexes))
+        pt = pd.pivot_table(data=df[filtered], index=names, aggfunc=lambda x: x.iloc[0])
 
-        return ResultAnalyzer._remove_useless_index_level(df=pt, indexes=[i0, i1, i2, i3])
+        return ResultAnalyzer._remove_useless_index_level(df=pt, indexes=indexes)
 
     @staticmethod
-    def _assert_index(i0: Index, i1: Index, i2: Index, i3: Index, type: Type):
+    def check_index(indexes: List[Index], type: Type):
         """
-        Check indexes cohesion. Raise ValueError exception if indexes are wrong.
+        Check indexes cohesion
+        :param indexes: list fo indexes
+        :param type: Index type to check inside list
+        :return: true if at least one type is in list False else
+        """
+        return any(isinstance(i, type) for i in indexes)
 
-        :param i0: first level index
-        :param i1: second level index
-        :param i2: third level index
-        :param i3: fourth level index
-        :param type: type to check inside index
-        :return:
+    @staticmethod
+    def _assert_index(indexes: List[Index], type: Type):
         """
-        if not (isinstance(i0, type) or isinstance(i1, type) or isinstance(i2, type) or isinstance(i3, type)):
+        Check indexes cohesion. Raise Value Error if not
+
+        :param indexes: list fo indexes
+        :param type: Index type to check inside list
+        :return: true if at least one type is in list False else
+        """
+        if not ResultAnalyzer.check_index(indexes, type):
             raise ValueError('Indexes must contain a {}'.format(type.__class__.__name__))
 
-    def agg_cons(self, i0: Index, i1: Index, i2: Index, i3: Index) -> pd.DataFrame:
+    def start(self, indexes: List[Index]) -> pd.DataFrame:
         """
-        Aggregate consumption according to index level and filter.
-
-        :param i0: first level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
-        :param i1: second level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
-        :param i2: third level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
-        :param i3 fourth level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]
-        :return: dataframe with hierarchical and filter index level asked
+        Aggregate according to index level and filter.
         """
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, TimeIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, NodeIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, NameIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, ScnIndex)
+        ResultAnalyzer._assert_index(indexes, TimeIndex)
+        ResultAnalyzer._assert_index(indexes, NodeIndex)
+        ResultAnalyzer._assert_index(indexes, ScnIndex)
 
-        return ResultAnalyzer._pivot(i0, i1, i2, i3, self.consumption)
+        if ResultAnalyzer.check_index(indexes, ConsIndex):
+            return ResultAnalyzer._pivot(indexes, self.consumption)
 
-    def agg_prod(self, i0: Index, i1: Index, i2: Index, i3: Index) -> pd.DataFrame:
-        """
-        Aggregate production according to index level and filter.
+        if ResultAnalyzer.check_index(indexes, ProdIndex):
+            return ResultAnalyzer._pivot(indexes, self.production)
 
-        :param i0: first level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
-        :param i1: second level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
-        :param i2: third level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]]
-        :param i3 fourth level index. Index type must be [NodeIndex, NameIndex, TimeIndex, ScnIndex]
-        :return: dataframe with hierarchical and filter index level asked
-        """
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, TimeIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, NodeIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, NameIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, ScnIndex)
+        if ResultAnalyzer.check_index(indexes, LinkIndex):
+            return ResultAnalyzer._pivot(indexes, self.link)
 
-        return ResultAnalyzer._pivot(i0, i1, i2, i3, self.production)
-
-    def agg_link(self, i0: Index, i1: Index, i2: Index, i3: Index) -> pd.DataFrame:
-        """
-        Aggregate link according to index level and filter.
-
-        :param i0: first level index. Index type must be [DestIndex, SrcIndex, TimeIndex, ScnIndex]
-        :param i1: second level index. Index type must be [DestIndex, SrcIndex, TimeIndex, ScnIndex]
-        :param i2: third level index. Index type must be [DestIndex, SrcIndex, TimeIndex, ScnIndex]
-        :param i3 fourth level index. Index type must be [DestIndex, ScrIndex, TimeIndex, ScnIndex]
-        :return: dataframe with hierarchical and filter index level asked
-        """
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, TimeIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, SrcIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, DestIndex)
-        ResultAnalyzer._assert_index(i0, i1, i2, i3, ScnIndex)
-
-        return ResultAnalyzer._pivot(i0, i1, i2, i3, self.link)
+    def network(self):
+        return FluentAPISelector([], self)
 
     def get_elements_inside(self, node: str):
         """
@@ -349,32 +318,43 @@ class ResultAnalyzer:
         if im.size > 0:
             balance += -im['used'].values.reshape(self.nb_scn, self.horizon)
 
-        exp = pd.pivot_table(self.link[self.link['src'] == node][['used', 'scn', 't']], index=['scn', 't'], aggfunc=np.sum)
+        exp = pd.pivot_table(self.link[self.link['node'] == node][['used', 'scn', 't']], index=['scn', 't'], aggfunc=np.sum)
         if exp.size > 0:
             balance += exp['used'].values.reshape(self.nb_scn, self.horizon)
         return balance
 
     def get_cost(self, node: str) -> np.ndarray:
+        """
+        Compute adequacy cost on a node.
+
+        :param node: node name
+        :return: matrix (scn, time)
+        """
         cost = np.zeros((self.nb_scn,  self.horizon))
         c, p, b = self.get_elements_inside(node)
         if c:
-            cons = self.agg_cons(self.inode[node], self.iscn, self.itime, self.iname)
-            cost += ((cons['asked'] - cons['given'])*cons['cost']).groupby(axis=0, level=(0, 1))\
+            cons = self.network().node(node).scn().time().consumption()
+            cost += ((cons['asked'] - cons['given']) * cons['cost']).groupby(axis=0, level=(0, 1)) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if p:
-            prod = self.agg_prod(self.inode[node], self.iscn, self.itime, self.iname)
-            cost += (prod['used']*prod['cost']).groupby(axis=0, level=(0, 1))\
+            prod = self.network().node(node).scn().time().production()
+            cost += (prod['used'] * prod['cost']).groupby(axis=0, level=(0, 1)) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if b:
-            link = self.agg_link(self.isrc[node], self.iscn, self.itime, self.idest)
-            cost += (link['used']*link['cost']).groupby(axis=0, level=(0, 1))\
+            link = self.network().node(node).scn().time().link()
+            cost += (link['used'] * link['cost']).groupby(axis=0, level=(0, 1)) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         return cost
 
     def get_rac(self) -> np.ndarray:
+        """
+        Compute Remain Availabale Capacities on network.
+
+        :return: matrix (scn, time)
+        """
         prod_used = self.production\
             .drop(['avail', 'cost'], axis=1)\
             .pivot_table(index='scn', columns='t', aggfunc=np.sum)\
@@ -426,56 +406,54 @@ class ResultAnalyzer:
         """
         return self.result.nodes.keys()
 
-    @property
-    def inode(self) -> NodeIndex:
-        """
-        Get a node index to specify node slice to aggregate consumption or production.
 
-        :return: new instance of NodeIndex()
-        """
-        return NodeIndex()
+class FluentAPISelector:
+    """
+    Fluent Api Selector for Analyzer.
 
-    @property
-    def iname(self) -> NameIndex:
-        """
-        Get a name index to specify name slice to aggregate consumption or production.
+    User can join network, node, consumption, production, link, time, scn to create filter and organize hierarchy.
+    Join can me in any order, except:
+    - join begin by network
+    - join is unique only one element of node, time, scn are expected for each query
+    - production, consumption and link are excluded themself, only on of them are expected for each query
+    """
+    def __init__(self, indexes: List[Index], analyzer: ResultAnalyzer):
+        self.indexes = indexes
+        self.analyzer = analyzer
 
-        :return: new instance of NameIndex()
-        """
-        return NameIndex()
+        if not ResultAnalyzer.check_index(indexes, ConsIndex) \
+                and not ResultAnalyzer.check_index(indexes, ProdIndex) \
+                and not ResultAnalyzer.check_index(indexes, LinkIndex):
+            self.consumption = lambda x=None: self._append(ConsIndex(x))
 
-    @property
-    def isrc(self) -> SrcIndex:
-        """
-        Get a source index to specify source slice to aggregate link.
+        if not ResultAnalyzer.check_index(indexes, ProdIndex) \
+                and not ResultAnalyzer.check_index(indexes, ConsIndex) \
+                and not ResultAnalyzer.check_index(indexes, LinkIndex):
+            self.production = lambda x=None: self._append(ProdIndex(x))
 
-        :return: new instance of SrcIndex()
-        """
-        return SrcIndex()
+        if not ResultAnalyzer.check_index(indexes, LinkIndex) \
+                and not ResultAnalyzer.check_index(indexes, ConsIndex) \
+                and not ResultAnalyzer.check_index(indexes, ProdIndex):
+            self.link = lambda x=None: self._append(LinkIndex(x))
 
-    @property
-    def idest(self) -> DestIndex:
-        """
-        Get a destination index to specify destination slice to aggregate link.
+        if not ResultAnalyzer.check_index(indexes, NodeIndex):
+            self.node = lambda x=None: self._append(NodeIndex(x))
 
-        :return: new instance of DestIndex()
-        """
-        return DestIndex()
+        if not ResultAnalyzer.check_index(indexes, TimeIndex):
+            self.time = lambda x=None: self._append(TimeIndex(x))
 
-    @property
-    def itime(self) -> TimeIndex:
-        """
-        Get a time index to specify time slice to aggregate consumption, production or link.
+        if not ResultAnalyzer.check_index(indexes, ScnIndex):
+            self.scn = lambda x=None: self._append(ScnIndex(x))
 
-        :return: new instance of TimeIndex()
+    def _append(self, index: Index):
         """
-        return TimeIndex()
+        Decide what to do between finish query and start analyze or resume query
 
-    @property
-    def iscn(self) -> ScnIndex:
+        :param index:
+        :return:
         """
-        Get a scenario index to specify scenario slice to aggregate consumption, production or link.
-
-        :return: new instance of ScnIndex()
-        """
-        return ScnIndex()
+        self.indexes.append(index)
+        if len(self.indexes) == 4:
+            return self.analyzer.start(self.indexes)
+        else:
+            return FluentAPISelector(self.indexes, self.analyzer)
