@@ -5,6 +5,7 @@ plotly
 jupyter
 matplotlib
 requests
+progress
 sphinx
 sphinx-rtd-theme
 sphinx-autobuild
