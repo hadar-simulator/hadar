@@ -13,7 +13,7 @@ from hadar.optimizer.lp.domain import LPConsumption, LPProduction, LPLink, LPNod
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
 from hadar.optimizer.lp.optimizer import ObjectiveBuilder, AdequacyBuilder, _solve_batch
 from hadar.optimizer.lp.optimizer import solve_lp
-from hadar.optimizer.output import OutputConsumption, OutputNode, Result
+from hadar.optimizer.output import OutputConsumption, OutputNode, Result, OutputNetwork
 from tests.optimizer.lp.ortools_mock import MockConstraint, MockNumVar, MockObjective, MockSolver
 
 
@@ -65,12 +65,12 @@ class TestAdequacyBuilder(unittest.TestCase):
 
         # Test
         builder = AdequacyBuilder(solver=solver)
-        builder.add_node(name='fr', node=fr_node, t=0)
-        builder.add_node(name='be', node=be_node, t=0)
+        builder.add_node(name_network='default', name_node='fr', node=fr_node, t=0)
+        builder.add_node(name_network='default', name_node='be', node=be_node, t=0)
         builder.build()
 
-        self.assertEqual(fr_constraint, builder.constraints[(0, 'fr')])
-        self.assertEqual(be_constraint, builder.constraints[(0, 'be')])
+        self.assertEqual(fr_constraint, builder.constraints[(0, 'default', 'fr')])
+        self.assertEqual(be_constraint, builder.constraints[(0, 'default', 'be')])
 
 
 class TestSolve(unittest.TestCase):
@@ -103,9 +103,9 @@ class TestSolve(unittest.TestCase):
         # Test
         res = _solve_batch((study, 0, solver, objective, adequacy, in_mapper))
 
-        self.assertEqual([{'a': exp_var}], pickle.loads(res))
-        in_mapper.get_var.assert_called_with(node='a', t=0, scn=0)
-        adequacy.add_node.assert_called_with(name='a', t=0, node=var)
+        self.assertEqual([{'default': {'a': exp_var}}], pickle.loads(res))
+        in_mapper.get_var.assert_called_with(network='default', node='a', t=0, scn=0)
+        adequacy.add_node.assert_called_with(name_network='default', name_node='a', t=0, node=var)
         objective.add_node.assert_called_with(node=var)
 
         objective.build.assert_called_with()
@@ -121,7 +121,7 @@ class TestSolve(unittest.TestCase):
         # Expected
         out_a = OutputNode(consumptions=[OutputConsumption(name='load', cost=10, quantity=[0])],
                            productions=[], links=[])
-        exp_result = Result(nodes={'a': out_a})
+        exp_result = Result(networks={'default': OutputNetwork(nodes={'a': out_a})})
 
         in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, '')))
         exp_var = LPNode(consumptions=[in_cons], productions=[], links=[])
@@ -135,4 +135,4 @@ class TestSolve(unittest.TestCase):
         res = solve_lp(study, out_mapper)
 
         self.assertEqual(exp_result, res)
-        out_mapper.set_var.assert_called_with(name='a', t=0, scn=0, vars=exp_var)
+        out_mapper.set_var.assert_called_with(network='default', node='a', t=0, scn=0, vars=exp_var)

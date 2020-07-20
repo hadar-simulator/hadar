@@ -12,7 +12,7 @@ from typing import Union, List, Dict
 from hadar.optimizer.input import InputNode
 
 
-__all__ = ['OutputProduction', 'OutputNode', 'OutputLink', 'OutputConsumption', 'Result']
+__all__ = ['OutputProduction', 'OutputNode', 'OutputLink', 'OutputConsumption', 'OutputNetwork', 'Result']
 
 
 class DTO:
@@ -148,7 +148,7 @@ class Result(DTO):
     """
     Result of study
     """
-    def __init__(self, networks: Dict[str, OutputNode]):
+    def __init__(self, networks: Dict[str, OutputNetwork]):
         """
         Create result
         :param networks: list of networks present in study

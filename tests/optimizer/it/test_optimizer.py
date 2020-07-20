@@ -8,6 +8,7 @@
 import unittest
 
 import hadar as hd
+from optimizer.output import OutputNetwork
 from tests.utils import assert_study
 
 
@@ -53,7 +54,7 @@ class TestOptimizer(unittest.TestCase):
             links=[])
 
         res = self.optimizer.solve(study)
-        assert_study(self, hd.Result(nodes_expected), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
 
     def test_exchange_two_nodes(self):
         """
@@ -94,7 +95,7 @@ class TestOptimizer(unittest.TestCase):
             links=[])
 
         res = self.optimizer.solve(study)
-        assert_study(self, hd.Result(nodes_expected), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
 
     def test_exchange_two_concurrent_nodes(self):
         """
@@ -151,7 +152,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(nodes_expected), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
 
     def test_exchange_link_saturation(self):
         """
@@ -192,7 +193,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(nodes_expected), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
 
     def test_consumer_cancel_exchange(self):
         """
@@ -243,7 +244,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(nodes_expected), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
 
 
     def test_many_links_on_node(self):
@@ -304,4 +305,4 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(nodes_expected), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
