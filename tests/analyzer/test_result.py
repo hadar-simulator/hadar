@@ -12,7 +12,7 @@ import pandas as pd
 
 from hadar.analyzer.result import Index, ResultAnalyzer, IntIndex
 from hadar.optimizer.input import Production, Consumption, Study
-from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result
+from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result, OutputNetwork
 
 
 class TestIndex(unittest.TestCase):
@@ -89,7 +89,7 @@ class TestAnalyzer(unittest.TestCase):
                             links=[])
         }
 
-        self.result = Result(nodes=out)
+        self.result = Result(networks={'default': OutputNetwork(nodes=out)})
 
     def test_build_consumption(self):
         # Expected
@@ -98,6 +98,7 @@ class TestAnalyzer(unittest.TestCase):
                                  'given': [20, 2, 2, 2, 20, 20, 30, 3, 3, 3, 30, 30, 20, 2, 2, 2, 20, 20],
                                  'name': ['load'] * 6 + ['car'] * 6 + ['load'] * 6,
                                  'node': ['a'] * 12 + ['b'] * 6,
+                                 'network': ['default'] * 18,
                                  't':   [0, 1, 2] * 6,
                                  'scn': [0, 0, 0, 1, 1, 1] * 3}, dtype=float)
 
@@ -112,6 +113,7 @@ class TestAnalyzer(unittest.TestCase):
                                  'used': [30, 3, 3, 3, 30, 30, 10, 1, 1, 1, 10, 10, 20, 2, 2, 2, 20, 20],
                                  'name': ['prod'] * 12 + ['nuclear'] * 6,
                                  'node': ['a'] * 6 + ['b'] * 12,
+                                 'network': ['default'] * 18,
                                  't':   [0, 1, 2] * 6,
                                  'scn': [0, 0, 0, 1, 1, 1] * 3}, dtype=float)
 
@@ -126,6 +128,7 @@ class TestAnalyzer(unittest.TestCase):
                                  'used': [10, 1, 1, 1, 10, 10, 20, 2, 2, 2, 20, 20],
                                  'node': ['a'] * 12,
                                  'dest': ['b'] * 6 + ['c'] * 6,
+                                 'network': ['default'] * 12,
                                  't':   [0, 1, 2] * 4,
                                  'scn': [0, 0, 0, 1, 1, 1] * 2}, dtype=float)
 
@@ -140,6 +143,7 @@ class TestAnalyzer(unittest.TestCase):
                                       'cost': [10 ** 3] * 3,
                                       'given': [20, 2, 2]}, dtype=float, index=index)
 
+        # Test
         agg = ResultAnalyzer(study=self.study, result=self.result)
         cons = agg.network().scn(0).node('a').consumption('load').time()
 
@@ -173,7 +177,7 @@ class TestAnalyzer(unittest.TestCase):
 
         pd.testing.assert_frame_equal(exp_cons, cons)
 
-    def test_get_elements_inide(self):
+    def test_get_elements_inside(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
         self.assertEqual((2, 1, 2), agg.get_elements_inside('a'))
         self.assertEqual((1, 2, 0), agg.get_elements_inside('b'))
