@@ -131,17 +131,30 @@ class OutputNode(DTO):
         return output
 
 
+class OutputNetwork(DTO):
+    """
+    Network element
+    """
+
+    def __init__(self, nodes: Dict[str, OutputNode]):
+        """
+        Create network
+        :param nodes: nodes belongs to network
+        """
+        self.nodes = nodes
+
+
 class Result(DTO):
     """
     Result of study
     """
-    def __init__(self, nodes: Dict[str, OutputNode]):
+    def __init__(self, networks: Dict[str, OutputNode]):
         """
         Create result
-        :param nodes: list of nodes present in network
+        :param networks: list of networks present in study
         """
-        self._nodes = nodes
+        self._networks = networks
 
     @property
-    def nodes(self):
-        return self._nodes
+    def networks(self):
+        return self._networks

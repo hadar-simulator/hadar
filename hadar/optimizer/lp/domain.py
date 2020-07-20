@@ -5,7 +5,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 import numpy as np
-from typing import List, Union
+from typing import List, Union, Dict
 
 from ortools.linear_solver.pywraplp import Variable
 
@@ -116,3 +116,17 @@ class LPNode(DTO):
         self.consumptions = consumptions
         self.productions = productions
         self.links = links
+
+
+class LPNetwork(DTO):
+    """
+    Network element for linear programming
+    """
+
+    def __init__(self, nodes: Dict[str, LPNode]):
+        """
+        Instance network.
+
+        :param nodes: nodes belong to network name as key, LPNode as value
+        """
+        self.nodes = nodes

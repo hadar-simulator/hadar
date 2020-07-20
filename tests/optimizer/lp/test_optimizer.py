@@ -104,7 +104,7 @@ class TestSolve(unittest.TestCase):
         res = _solve_batch((study, 0, solver, objective, adequacy, in_mapper))
 
         self.assertEqual([{'a': exp_var}], pickle.loads(res))
-        in_mapper.get_var.assert_called_with(name='a', t=0, scn=0)
+        in_mapper.get_var.assert_called_with(node='a', t=0, scn=0)
         adequacy.add_node.assert_called_with(name='a', t=0, node=var)
         objective.add_node.assert_called_with(node=var)
 

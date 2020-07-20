@@ -11,37 +11,41 @@ from hadar.optimizer.output import Result
 
 
 def assert_study(self, expected: Result, result: Result):
-    for name, node in expected.nodes.items():
-        if name not in result.nodes.keys():
-            self.fail('Node {} expected but not'.format(name))
-        res = result.nodes[name]
+    for name_network, network in expected.networks.items():
+        if name_network not in result.networks.keys():
+            self.fail('Network {} expected but not'.format(name_network))
 
-        # Consumptions
-        for cons_expected, cons_res in zip(node.consumptions, res.consumptions):
-            self.assertEqual(cons_expected.name, cons_res.name,
-                             "Consumption for node {} has different name".format(name))
-            np.testing.assert_array_equal(cons_expected.quantity, cons_res.quantity,
-                             'Consumption {} for node {} has different quantity'.format(cons_expected.name, name))
-            self.assertEqual(cons_expected.cost, cons_res.cost,
-                             'Consumption {} for node {} has different cost'.format(cons_expected.name, name))
+        for name_node, node in network.nodes.items():
+            if name_node not in result.networks[name_network].nodes.keys():
+                self.fail('Node {} expected but not'.format(name_node))
+            res = result.networks[name_network].nodes[name_node]
 
-        # Productions
-        for prod_expected, prod_res in zip(node.productions, res.productions):
-            self.assertEqual(prod_expected.name, prod_res.name,
-                             "Production for node {} has different name".format(name))
-            np.testing.assert_array_equal(prod_expected.quantity, prod_res.quantity,
-                             'Production {} for node {} has different quantity'.format(prod_expected.name, name))
-            self.assertEqual(prod_expected.cost, prod_res.cost,
-                             'Production {} for node {} has different cost'.format(prod_expected.name, name))
+            # Consumptions
+            for cons_expected, cons_res in zip(node.consumptions, res.consumptions):
+                self.assertEqual(cons_expected.name, cons_res.name,
+                                 "Consumption for node {} has different name".format(name_node))
+                np.testing.assert_array_equal(cons_expected.quantity, cons_res.quantity,
+                                 'Consumption {} for node {} has different quantity'.format(cons_expected.name, name_node))
+                self.assertEqual(cons_expected.cost, cons_res.cost,
+                                 'Consumption {} for node {} has different cost'.format(cons_expected.name, name_node))
 
-        # Links
-        for link_expected, link_res in zip(node.links, res.links):
-            self.assertEqual(link_expected.dest, link_res.dest,
-                             "Link for node {} has different name".format(name))
-            np.testing.assert_array_equal(link_expected.quantity, link_res.quantity,
-                             'Link {} for node {} has different quantity'.format(link_expected.dest, name))
-            self.assertEqual(link_expected.cost, link_res.cost,
-                             'Link {} for node {} has different cost'.format(link_expected.dest, name))
+            # Productions
+            for prod_expected, prod_res in zip(node.productions, res.productions):
+                self.assertEqual(prod_expected.name, prod_res.name,
+                                 "Production for node {} has different name".format(name_node))
+                np.testing.assert_array_equal(prod_expected.quantity, prod_res.quantity,
+                                 'Production {} for node {} has different quantity'.format(prod_expected.name, name_node))
+                self.assertEqual(prod_expected.cost, prod_res.cost,
+                                 'Production {} for node {} has different cost'.format(prod_expected.name, name_node))
+
+            # Links
+            for link_expected, link_res in zip(node.links, res.links):
+                self.assertEqual(link_expected.dest, link_res.dest,
+                                 "Link for node {} has different name".format(name_node))
+                np.testing.assert_array_equal(link_expected.quantity, link_res.quantity,
+                                 'Link {} for node {} has different quantity'.format(link_expected.dest, name_node))
+                self.assertEqual(link_expected.cost, link_res.cost,
+                                 'Link {} for node {} has different cost'.format(link_expected.dest, name_node))
 
 
 def plot(d):
