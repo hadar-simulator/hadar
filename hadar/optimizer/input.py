@@ -99,6 +99,19 @@ class InputNode(DTO):
         self.links = links
 
 
+class InputNetwork(DTO):
+    """
+    Network element
+    """
+    def __init__(self, nodes: Dict[str, InputNode] = None):
+        """
+        Create network element
+
+        :param nodes: nodes list inside network
+        """
+        self.nodes = nodes if nodes else {}
+
+
 class Study(DTO):
     """
     Main object to facilitate to build a study
@@ -112,22 +125,24 @@ class Study(DTO):
         :param nb_scn: number of scenarios in study. Default is 1.
         """
 
-        self.nodes = dict()
+        self.networks = dict()
         self.horizon = horizon
         self.nb_scn = nb_scn
 
-    def network(self):
+    def network(self, name='default'):
         """
         Entry point to create study with the fluent api.
 
         :return:
         """
-        return NetworkFluentAPISelector(study=self)
+        self.add_network(name)
+        return NetworkFluentAPISelector(selector={'network': name}, study=self)
 
-    def add_link(self, src: str, dest: str, cost: int, quantity: Union[List[float], np.ndarray, float]):
+    def add_link(self, network: str, src: str, dest: str, cost: int, quantity: Union[List[float], np.ndarray, float]):
         """
         Add a link inside network.
 
+        :param network: network where nodes belong
         :param src: source node name
         :param dest: destination node name
         :param cost: cost of use
@@ -136,39 +151,43 @@ class Study(DTO):
         """
         if cost < 0:
             raise ValueError('link cost must be positive')
-        if src not in self.nodes.keys():
+        if src not in self.networks[network].nodes.keys():
             raise ValueError('link source must be a valid node')
-        if dest not in self.nodes.keys():
+        if dest not in self.networks[network].nodes.keys():
             raise ValueError('link destination must be a valid node')
-        if dest in [l.dest for l in self.nodes[src].links]:
+        if dest in [l.dest for l in self.networks[network].nodes[src].links]:
             raise ValueError('link destination must be unique on a node')
 
         quantity = self._validate_quantity(quantity)
-        self.nodes[src].links.append(Link(dest=dest, quantity=quantity, cost=cost))
+        self.networks[network].nodes[src].links.append(Link(dest=dest, quantity=quantity, cost=cost))
 
         return self
 
-    def add_node(self, node):
-        if node not in self.nodes.keys():
-            self.nodes[node] = InputNode(consumptions=[], productions=[], links=[])
+    def add_network(self, network: str):
+        if network not in self.networks.keys():
+            self.networks[network] = InputNetwork()
 
-    def _add_production(self, node: str, prod: Production):
+    def add_node(self, network: str, node: str):
+        if node not in self.networks[network].nodes.keys():
+            self.networks[network].nodes[node] = InputNode(consumptions=[], productions=[], links=[])
+
+    def _add_production(self, network: str, node: str, prod: Production):
         if prod.cost < 0:
             raise ValueError('production cost must be positive')
-        if prod.name in [p.name for p in self.nodes[node].productions]:
+        if prod.name in [p.name for p in self.networks[network].nodes[node].productions]:
             raise ValueError('production name must be unique on a node')
 
         prod.quantity = self._validate_quantity(prod.quantity)
-        self.nodes[node].productions.append(prod)
+        self.networks[network].nodes[node].productions.append(prod)
 
-    def _add_consumption(self, node: str, cons: Consumption):
+    def _add_consumption(self, network: str, node: str, cons: Consumption):
         if cons.cost < 0:
             raise ValueError('consumption cost must be positive')
-        if cons.name in [c.name for c in self.nodes[node].consumptions]:
+        if cons.name in [c.name for c in self.networks[network].nodes[node].consumptions]:
             raise ValueError('consumption name must be unique on a node')
 
         cons.quantity = self._validate_quantity(cons.quantity)
-        self.nodes[node].consumptions.append(cons)
+        self.networks[network].nodes[node].consumptions.append(cons)
 
     def _validate_quantity(self, quantity: Union[List[float], np.ndarray, float]) -> np.ndarray:
         quantity = np.array(quantity)
@@ -206,9 +225,9 @@ class NetworkFluentAPISelector:
     """
     Network level of Fluent API Selector.
     """
-    def __init__(self, study):
+    def __init__(self, study, selector):
         self.study = study
-        self.selector = dict()
+        self.selector = selector
 
     def node(self, name):
         """
@@ -218,7 +237,7 @@ class NetworkFluentAPISelector:
         :return: NodeFluentAPISelector initialized
         """
         self.selector['node'] = name
-        self.study.add_node(name)
+        self.study.add_node(network=self.selector['network'], node=name)
         return NodeFluentAPISelector(self.study, self.selector)
 
     def link(self, src: str, dest: str, cost: int, quantity: Union[List, np.ndarray, float]):
@@ -232,8 +251,18 @@ class NetworkFluentAPISelector:
 
         :return: NetworkAPISelector with new link.
         """
-        self.study.add_link(src=src, dest=dest, cost=cost, quantity=quantity)
-        return NetworkFluentAPISelector(self.study)
+        self.study.add_link(network=self.selector['network'], src=src, dest=dest, cost=cost, quantity=quantity)
+        return NetworkFluentAPISelector(self.study, self.selector)
+
+    def network(self, name='default'):
+        """
+        Go to network level.
+
+        :param name: network level, 'default' as default name
+        :return: NetworkAPISelector with selector set to 'default'
+        """
+        self.study.add_network(name)
+        return NetworkFluentAPISelector(selector={'network': name}, study=self.study)
 
     def build(self):
         """
@@ -261,7 +290,8 @@ class NodeFluentAPISelector:
         :param quantity: consumption to sustain
         :return: NodeFluentAPISelector with new consumption
         """
-        self.study._add_consumption(node=self.selector['node'], cons=Consumption(name=name, cost=cost, quantity=quantity))
+        self.study._add_consumption(network=self.selector['network'], node=self.selector['node'],
+                                    cons=Consumption(name=name, cost=cost, quantity=quantity))
         return self
 
     def production(self, name: str, cost: int, quantity: Union[List, np.ndarray, float]):
@@ -273,7 +303,8 @@ class NodeFluentAPISelector:
         :param quantity: available capacities
         :return: NodeFluentAPISelector with new production
         """
-        self.study._add_production(node=self.selector['node'], prod=Production(name=name, cost=cost, quantity=quantity))
+        self.study._add_production(network=self.selector['network'], node=self.selector['node'],
+                                   prod=Production(name=name, cost=cost, quantity=quantity))
         return self
 
     def node(self, name):
@@ -283,7 +314,7 @@ class NodeFluentAPISelector:
         :param name: new node level
         :return: NodeFluentAPISelector
         """
-        return NetworkFluentAPISelector(self.study).node(name)
+        return NetworkFluentAPISelector(self.study, self.selector).node(name)
 
     def link(self, src: str, dest: str, cost: int, quantity: Union[List, np.ndarray, float]):
         """
@@ -296,7 +327,17 @@ class NodeFluentAPISelector:
 
         :return: NetworkAPISelector with new link.
         """
-        return NetworkFluentAPISelector(self.study).link(src=src, dest=dest, cost=cost, quantity=quantity)
+        return NetworkFluentAPISelector(self.study, self.selector).link(src=src, dest=dest, cost=cost, quantity=quantity)
+
+    def network(self, name='default'):
+        """
+        Go to network level.
+
+        :param name: network level, 'default' as default name
+        :return: NetworkAPISelector with selector set to 'default'
+        """
+        self.study.add_network(name)
+        return NetworkFluentAPISelector(selector={'network': name}, study=self.study)
 
     def build(self):
         """

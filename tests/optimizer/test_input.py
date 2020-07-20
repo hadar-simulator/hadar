@@ -25,11 +25,22 @@ class TestStudy(unittest.TestCase):
                     .production(name='nuclear', cost=20, quantity=10) \
                 .node('b') \
                 .link(src='b', dest='a', cost=20, quantity=10) \
+            .network('gas')\
+                .node('b')\
+                    .production(name='nuclear', cost=20, quantity=10)\
+                .node('a')\
+                    .consumption(name='load', cost=20, quantity=10)\
+                .link(src='b', dest='a', cost=20, quantity=10)\
             .build()
 
-        self.assertEqual(c, study.nodes['a'].consumptions[0])
-        self.assertEqual(p, study.nodes['a'].productions[0])
-        self.assertEqual(l, study.nodes['b'].links[0])
+        self.assertEqual(c, study.networks['default'].nodes['a'].consumptions[0])
+        self.assertEqual(p, study.networks['default'].nodes['a'].productions[0])
+        self.assertEqual(l, study.networks['default'].nodes['b'].links[0])
+
+        self.assertEqual(c, study.networks['gas'].nodes['a'].consumptions[0])
+        self.assertEqual(p, study.networks['gas'].nodes['b'].productions[0])
+        self.assertEqual(l, study.networks['gas'].nodes['b'].links[0])
+
         self.assertEqual(1, study.horizon)
 
 
