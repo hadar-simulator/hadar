@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 
 from hadar import RemoteOptimizer
 from hadar.optimizer.input import Study, Consumption
-from hadar.optimizer.output import Result, OutputConsumption, OutputNode
+from hadar.optimizer.output import Result, OutputConsumption, OutputNode, OutputNetwork
 from hadar.optimizer.remote.optimizer import _solve_remote_wrap, ServerError
 
 
@@ -54,9 +54,9 @@ class RemoteOptimizerTest(unittest.TestCase):
         self.study = Study(horizon=1) \
             .network().node('a').consumption(cost=0, quantity=[0], name='load').build()
 
-        self.result = Result(nodes={
-            'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
-                            productions=[], links=[])})
+        nodes = { 'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
+                                  productions=[], links=[])}
+        self.result = Result(networks={'default': OutputNetwork(nodes=nodes)})
 
     def test_job_terminated(self):
         requests = MockRequest(unit=self,

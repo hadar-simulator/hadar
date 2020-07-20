@@ -429,14 +429,14 @@ class ResultAnalyzer:
         """
         return self.study.nb_scn
 
-    @property
-    def nodes(self) -> List[str]:
+    def nodes(self, network: str = 'default') -> List[str]:
         """
         Shortcut to get list of node names
 
+        :param network: network selected
         :return: nodes name
         """
-        return self.result.nodes.keys()
+        return self.result.networks[network].nodes.keys()
 
 
 class FluentAPISelector:

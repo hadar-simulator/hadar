@@ -8,7 +8,7 @@
 import unittest
 
 import hadar as hd
-from optimizer.output import OutputNetwork
+from hadar.optimizer.output import OutputNetwork
 from tests.utils import assert_study
 
 

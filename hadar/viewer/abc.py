@@ -103,18 +103,20 @@ class ConsumptionFluentAPISelector(FluentAPISelector):
     """
     Consumption level of fluent api.
     """
-    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, name: str, node: str, kind: str):
+    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer,
+                 network: str, name: str, node: str, kind: str):
         FluentAPISelector.__init__(self, plotting, agg)
         self.name = name
         self.node = node
         self.kind = kind
+        self.network = network
 
     def timeline(self):
         """
         Plot timeline graphics.
         :return:
         """
-        cons = self.agg.network().node(self.node).consumption(self.name).scn().time()[self.kind]
+        cons = self.agg.network(self.network).node(self.node).consumption(self.name).scn().time()[self.kind]
         title = 'Consumptions %s for %s on node %s' % (self.kind, self.name, self.node)
         return self.plotting.timeline(cons, title)
 
@@ -129,10 +131,10 @@ class ConsumptionFluentAPISelector(FluentAPISelector):
         FluentAPISelector.not_both(t, scn)
 
         if t is not None:
-            y = self.agg.network().node(self.node).consumption(self.name).time(t).scn()[self.kind].values
+            y = self.agg.network(self.network).node(self.node).consumption(self.name).time(t).scn()[self.kind].values
             title = 'Monotone consumption of %s on node %s at t=%0d' % (self.name, self.node, t)
         elif scn is not None:
-            y = self.agg.network().node(self.node).consumption(self.name).scn(scn).time()[self.kind].values
+            y = self.agg.network(self.network).node(self.node).consumption(self.name).scn(scn).time()[self.kind].values
             title = 'Monotone consumption of %s on node %s at scn=%0d' % (self.name, self.node, scn)
 
         return self.plotting.monotone(y, title)
@@ -148,12 +150,12 @@ class ConsumptionFluentAPISelector(FluentAPISelector):
         FluentAPISelector.not_both(t, scn)
 
         if t is None:
-            cons = self.agg.network().node(self.node).consumption(self.name).scn(scn).time()[self.kind].values
-            rac = self.agg.get_rac()[scn, :]
+            cons = self.agg.network(self.network).node(self.node).consumption(self.name).scn(scn).time()[self.kind].values
+            rac = self.agg.get_rac(network=self.network)[scn, :]
             title = 'Gaussian consumption of %s on node %s at scn=%0d' % (self.name, self.node, scn)
         elif scn is None:
-            cons = self.agg.network().node(self.node).consumption(self.name).time(t).scn()[self.kind].values
-            rac = self.agg.get_rac()[:, t]
+            cons = self.agg.network(self.network).node(self.node).consumption(self.name).time(t).scn()[self.kind].values
+            rac = self.agg.get_rac(network=self.network)[:, t]
             title = 'Gaussian consumption of %s on node %s at t=%0d' % (self.name, self.node, t)
 
         return self.plotting.gaussian(rac=rac, qt=cons, title=title)
@@ -163,18 +165,20 @@ class ProductionFluentAPISelector(FluentAPISelector):
     """
     Production level of fluent api
     """
-    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, name: str, node: str, kind: str):
+    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer,
+                 network: str, name: str, node: str, kind: str):
         FluentAPISelector.__init__(self, plotting, agg)
         self.name = name
         self.node = node
         self.kind = kind
+        self.network = network
 
     def timeline(self):
         """
         Plot timeline graphics.
         :return:
         """
-        prod = self.agg.network().node(self.node).production(self.name).scn().time()[self.kind]
+        prod = self.agg.network(self.network).node(self.node).production(self.name).scn().time()[self.kind]
         title = 'Production %s for %s on node %s' % (self.kind, self.name, self.node)
         return self.plotting.timeline(prod, title)
 
@@ -189,10 +193,10 @@ class ProductionFluentAPISelector(FluentAPISelector):
         FluentAPISelector.not_both(t, scn)
 
         if t is not None:
-            y = self.agg.network().node(self.node).production(self.name).time(t).scn()[self.kind].values
+            y = self.agg.network(self.network).node(self.node).production(self.name).time(t).scn()[self.kind].values
             title = 'Monotone production of %s on node %s at t=%0d' % (self.name, self.node, t)
         elif scn is not None:
-            y = self.agg.network().node(self.node).production(self.name).scn(scn).time()[self.kind].values
+            y = self.agg.network(self.network).node(self.node).production(self.name).scn(scn).time()[self.kind].values
             title = 'Monotone production of %s on node %s at scn=%0d' % (self.name, self.node, scn)
 
         return self.plotting.monotone(y, title)
@@ -208,12 +212,12 @@ class ProductionFluentAPISelector(FluentAPISelector):
         FluentAPISelector.not_both(t, scn)
 
         if t is None:
-            prod = self.agg.network().node(self.node).production(self.name).scn(scn).time()[self.kind].values
-            rac = self.agg.get_rac()[scn, :]
+            prod = self.agg.network(self.network).node(self.node).production(self.name).scn(scn).time()[self.kind].values
+            rac = self.agg.get_rac(network=self.network)[scn, :]
             title = 'Gaussian production of %s on node %s at scn=%0d' % (self.name, self.node, scn)
         elif scn is None:
-            prod = self.agg.network().node(self.node).production(self.name).time(t).scn()[self.kind].values
-            rac = self.agg.get_rac()[:, t]
+            prod = self.agg.network(self.network).node(self.node).production(self.name).time(t).scn()[self.kind].values
+            rac = self.agg.get_rac(network=self.network)[:, t]
             title = 'Gaussian production of %s on node %s at t=%0d' % (self.name, self.node, t)
 
         return self.plotting.gaussian(rac=rac, qt=prod, title=title)
@@ -223,18 +227,20 @@ class LinkFluentAPISelector(FluentAPISelector):
     """
     Link level of fluent api
     """
-    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, src: str, dest: str, kind: str):
+    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer,
+                 network: str, src: str, dest: str, kind: str):
         FluentAPISelector.__init__(self, plotting, agg)
         self.src = src
         self.dest = dest
         self.kind = kind
+        self.network = network
 
     def timeline(self):
         """
         Plot timeline graphics.
         :return:
         """
-        links = self.agg.network().node(self.src).link(self.dest).scn().time()[self.kind]
+        links = self.agg.network(self.network).node(self.src).link(self.dest).scn().time()[self.kind]
         title = 'Link %s from %s to %s' % (self.kind, self.src, self.dest)
         return self.plotting.timeline(links, title)
 
@@ -249,10 +255,10 @@ class LinkFluentAPISelector(FluentAPISelector):
         FluentAPISelector.not_both(t, scn)
 
         if t is not None:
-            y = self.agg.network().node(self.src).link(self.dest).time(t).scn()[self.kind].values
+            y = self.agg.network(self.network).node(self.src).link(self.dest).time(t).scn()[self.kind].values
             title = 'Monotone link from %s to %s at t=%0d' % (self.src, self.dest, t)
         elif scn is not None:
-            y = self.agg.network().node(self.src).link(self.dest).scn(scn).time()[self.kind].values
+            y = self.agg.network(self.network).node(self.src).link(self.dest).scn(scn).time()[self.kind].values
             title = 'Monotone link from %s to %s at scn=%0d' % (self.src, self.dest, scn)
 
         return self.plotting.monotone(y, title)
@@ -268,12 +274,12 @@ class LinkFluentAPISelector(FluentAPISelector):
         FluentAPISelector.not_both(t, scn)
 
         if t is None:
-            prod = self.agg.network().node(self.src).link(self.dest).scn(scn).time()[self.kind].values
-            rac = self.agg.get_rac()[scn, :]
+            prod = self.agg.network(self.network).node(self.src).link(self.dest).scn(scn).time()[self.kind].values
+            rac = self.agg.get_rac(network=self.network)[scn, :]
             title = 'Gaussian link from %s to %s at t=%0d' % (self.src, self.dest, scn)
         elif scn is None:
-            prod = self.agg.network().node(self.src).link(self.dest).time(t).scn()[self.kind].values
-            rac = self.agg.get_rac()[:, t]
+            prod = self.agg.network(self.network).node(self.src).link(self.dest).time(t).scn()[self.kind].values
+            rac = self.agg.get_rac(network=self.network)[:, t]
             title = 'Gaussian link from %s to %s at t=%0d' % (self.src, self.dest, t)
 
         return self.plotting.gaussian(rac=rac, qt=prod, title=title)
@@ -283,9 +289,10 @@ class NodeFluentAPISelector(FluentAPISelector):
     """
     Node level of fluent api
     """
-    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, node: str):
+    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, network: str, node: str):
         FluentAPISelector.__init__(self, plotting, agg)
         self.node = node
+        self.network = network
 
     def stack(self, scn: int = 0, prod_kind: str = 'used', cons_kind: str = 'asked'):
         """
@@ -297,17 +304,17 @@ class NodeFluentAPISelector(FluentAPISelector):
         :param cons_kind: select which cons to stack : 'asked' or 'given'
         :return: plotly figure or jupyter widget to plot
         """
-        c, p, b = self.agg.get_elements_inside(node=self.node)
+        c, p, b = self.agg.get_elements_inside(node=self.node, network=self.network)
 
         areas = []
         # stack production with area
         if p > 0:
-            prod = self.agg.network().scn(scn).node(self.node).production().time().sort_values('cost', ascending=False)
+            prod = self.agg.network(self.network).scn(scn).node(self.node).production().time().sort_values('cost', ascending=False)
             for i, name in enumerate(prod.index.get_level_values('name').unique()):
                 areas.append((name, prod.loc[name][prod_kind].sort_index().values))
 
         # add import in production stack
-        balance = self.agg.get_balance(node=self.node)[scn]
+        balance = self.agg.get_balance(node=self.node, network=self.network)[scn]
         im = -np.clip(balance, None, 0)
         if not (im == 0).all():
             areas.append(('import', im))
@@ -315,7 +322,7 @@ class NodeFluentAPISelector(FluentAPISelector):
         lines = []
         # Stack consumptions with line
         if c > 0:
-            cons = self.agg.network().scn(scn).node(self.node).consumption().time().sort_values('cost', ascending=False)
+            cons = self.agg.network(self.network).scn(scn).node(self.node).consumption().time().sort_values('cost', ascending=False)
             for i, name in enumerate(cons.index.get_level_values('name').unique()):
                 lines.append((name, cons.loc[name][cons_kind].sort_index().values))
 
@@ -336,7 +343,8 @@ class NodeFluentAPISelector(FluentAPISelector):
         :param kind: kind of data 'asked' or 'given'
         :return:
         """
-        return ConsumptionFluentAPISelector(plotting=self.plotting, agg=self.agg, node=self.node, name=name, kind=kind)
+        return ConsumptionFluentAPISelector(plotting=self.plotting, agg=self.agg,
+                                            network=self.network, node=self.node, name=name, kind=kind)
 
     def production(self, name: str, kind: str = 'used') -> ProductionFluentAPISelector:
         """
@@ -346,7 +354,8 @@ class NodeFluentAPISelector(FluentAPISelector):
          :param kind: kind of data available ('avail') or 'used'
          :return:
          """
-        return ProductionFluentAPISelector(plotting=self.plotting, agg=self.agg, node=self.node, name=name, kind=kind)
+        return ProductionFluentAPISelector(plotting=self.plotting, agg=self.agg,
+                                           network=self.network, node=self.node, name=name, kind=kind)
 
     def link(self, dest: str, kind: str = 'used'):
         """
@@ -356,7 +365,8 @@ class NodeFluentAPISelector(FluentAPISelector):
          :param kind: kind of data available ('avail') or 'used'
          :return:
          """
-        return LinkFluentAPISelector(plotting=self.plotting, agg=self.agg, src=self.node, dest=dest, kind=kind)
+        return LinkFluentAPISelector(plotting=self.plotting, agg=self.agg,
+                                     network=self.network, src=self.node, dest=dest, kind=kind)
 
 
 class NetworkFluentAPISelector(FluentAPISelector):
@@ -364,13 +374,17 @@ class NetworkFluentAPISelector(FluentAPISelector):
     Network level of fluent API
     """
 
+    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer, network: str):
+        FluentAPISelector.__init__(self, plotting, agg)
+        self.network = network
+
     def rac_matrix(self):
         """
         plot RAC matrix graphics
 
         :return:
         """
-        rac = self.agg.get_rac()
+        rac = self.agg.get_rac(self.network)
         pct = (rac >= 0).sum() / rac.size * 100
         title = "RAC Matrix %0d %% passed" % pct
 
@@ -386,14 +400,14 @@ class NetworkFluentAPISelector(FluentAPISelector):
         :param limit: color scale limite to use
         :return:
         """
-        nodes = {node: self.agg.get_balance(node=node)[scn, t] for node in self.agg.nodes}
+        nodes = {node: self.agg.get_balance(node=node, network=self.network)[scn, t] for node in self.agg.nodes(self.network)}
 
         if limit is None:
             limit = max(max(nodes.values()), -min(nodes.values()))
 
         lines = {}
         # Compute lines
-        links = self.agg.network().scn(scn).time(t).node().link()
+        links = self.agg.network(self.network).scn(scn).time(t).node().link()
         for src in links.index.get_level_values('node').unique():
             for dest in links.loc[src].index.get_level_values('dest').unique():
                 exchange = links.loc[src, dest]['used']  # forward
@@ -413,7 +427,7 @@ class NetworkFluentAPISelector(FluentAPISelector):
         :param node: node name
         :return: NodeFluentAPISelector
         """
-        return NodeFluentAPISelector(plotting=self.plotting, agg=self.agg, node=node)
+        return NodeFluentAPISelector(plotting=self.plotting, agg=self.agg, node=node, network=self.network)
 
 
 class ABCPlotting(ABC):
@@ -449,10 +463,11 @@ class ABCPlotting(ABC):
         else:
             self.time_index = np.arange(self.agg.horizon)
 
-    def network(self):
+    def network(self, network: str = 'default'):
         """
         Entry point to use fluent API.
 
+        :param network: select network to anlyze. Default is 'default'
         :return: NetworkFluentAPISelector
         """
-        return NetworkFluentAPISelector(plotting=self.plotting, agg=self.agg)
+        return NetworkFluentAPISelector(plotting=self.plotting, agg=self.agg, network=network)
