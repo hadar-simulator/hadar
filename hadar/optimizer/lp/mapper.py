@@ -38,15 +38,15 @@ class InputMapper:
         :return: LPNode according to node name at t in study
         """
         suffix = 'inside network=%s on node=%s at t=%d for scn=%d' % (network, node, t, scn)
-        consumptions = [LPConsumption(name=c.name, cost=float(c.cost), quantity=c.quantity[scn, t],
+        consumptions = [LPConsumption(name=c.name, cost=c.cost[scn, t], quantity=c.quantity[scn, t],
                                       variable=self.solver.NumVar(0, float(c.quantity[scn, t]), name='lol=%s %s' % (c.name, suffix)))
                         for c in self.study.networks[network].nodes[node].consumptions]
 
-        productions = [LPProduction(name=p.name, cost=float(p.cost), quantity=p.quantity[scn, t],
+        productions = [LPProduction(name=p.name, cost=p.cost[scn, t], quantity=p.quantity[scn, t],
                                     variable=self.solver.NumVar(0, float(p.quantity[scn, t]), 'prod=%s %s' % (p.name, suffix)))
                        for p in self.study.networks[network].nodes[node].productions]
 
-        links = [LPLink(dest=l.dest, cost=float(l.cost), src=node, quantity=l.quantity[scn, t],
+        links = [LPLink(dest=l.dest, cost=l.cost[scn, t], src=node, quantity=l.quantity[scn, t],
                         variable=self.solver.NumVar(0, float(l.quantity[scn, t]), 'link=%s %s' % (l.dest, suffix)))
                  for l in self.study.networks[network].nodes[node].links]
 

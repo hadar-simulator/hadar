@@ -163,7 +163,7 @@ class ResultAnalyzer:
             for node in net.nodes.keys():
                 for i, c in enumerate(net.nodes[node].consumptions):
                     slices = cons.index[n_cons * h * scn: (n_cons + 1) * h * scn]
-                    cons.loc[slices, 'cost'] = c.cost
+                    cons.loc[slices, 'cost'] = c.cost.flatten()
                     cons.loc[slices, 'name'] = c.name
                     cons.loc[slices, 'node'] = node
                     cons.loc[slices, 'network'] = n
@@ -196,7 +196,7 @@ class ResultAnalyzer:
             for node in net.nodes.keys():
                 for i, c in enumerate(net.nodes[node].productions):
                     slices = prod.index[n_prod * h * scn: (n_prod + 1) * h * scn]
-                    prod.loc[slices, 'cost'] = c.cost
+                    prod.loc[slices, 'cost'] = c.cost.flatten()
                     prod.loc[slices, 'name'] = c.name
                     prod.loc[slices, 'node'] = node
                     prod.loc[slices, 'network'] = n
@@ -230,7 +230,7 @@ class ResultAnalyzer:
             for node in net.nodes.keys():
                 for i, c in enumerate(net.nodes[node].links):
                     slices = link.index[n_link * h * scn: (n_link + 1) * h * scn]
-                    link.loc[slices, 'cost'] = c.cost
+                    link.loc[slices, 'cost'] = c.cost.flatten()
                     link.loc[slices, 'dest'] = c.dest
                     link.loc[slices, 'node'] = node
                     link.loc[slices, 'network'] = n

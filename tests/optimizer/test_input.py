@@ -43,14 +43,6 @@ class TestStudy(unittest.TestCase):
 
         self.assertEqual(1, study.horizon)
 
-
-    def test_wrong_production_cost(self):
-        def test():
-            study = Study(horizon=1) \
-                .network().node('fr').production(name='solar', cost=-1, quantity=10).build()
-
-        self.assertRaises(ValueError, test)
-
     def test_wrong_production_quantity(self):
         def test():
             study = Study(horizon=1) \
@@ -66,13 +58,6 @@ class TestStudy(unittest.TestCase):
                         .production(name='solar', cost=1, quantity=-10)\
                         .production(name='solar', cost=1, quantity=-10)\
                 .build()
-
-        self.assertRaises(ValueError, test)
-
-    def test_wrong_consumption_cost(self):
-        def test():
-            study = Study(horizon=1) \
-                .network().node('fr').consumption(name='load', cost=-1, quantity=10).build()
 
         self.assertRaises(ValueError, test)
 
@@ -92,17 +77,6 @@ class TestStudy(unittest.TestCase):
                         .consumption(name='load', cost=1, quantity=-10)\
                 .build()
 
-
-        self.assertRaises(ValueError, test)
-
-    def test_wrong_link_cost(self):
-        def test():
-            study = Study(horizon=1) \
-                .network()\
-                    .node('fr')\
-                    .node('be')\
-                    .link(src='fr', dest='be', cost=-10, quantity=10)\
-                .build()
 
         self.assertRaises(ValueError, test)
 
@@ -146,7 +120,7 @@ class TestStudy(unittest.TestCase):
         i = np.ones((2, 10))
 
         # Test
-        r = study._validate_quantity(i)
+        r = study._standardize_array(i)
         np.testing.assert_array_equal(i, r)
 
     def test_validate_quantity_expend_scn(self):
@@ -159,7 +133,7 @@ class TestStudy(unittest.TestCase):
                         [1, 2, 3, 4, 5]])
 
         # Test
-        res = study._validate_quantity(i)
+        res = study._standardize_array(i)
         np.testing.assert_array_equal(exp, res)
 
     def test_validate_quantity_expend_horizon(self):
@@ -175,7 +149,7 @@ class TestStudy(unittest.TestCase):
                         [5, 5]])
 
         # Test
-        res = study._validate_quantity(i)
+        res = study._standardize_array(i)
         np.testing.assert_array_equal(exp, res)
 
     def test_validate_quantity_expend_both(self):
@@ -187,15 +161,10 @@ class TestStudy(unittest.TestCase):
         exp = np.ones((3, 2))
 
         # Test
-        res = study._validate_quantity(i)
+        res = study._standardize_array(i)
         np.testing.assert_array_equal(exp, res)
 
     def test_validate_quantity_wrong_size(self):
         # Input
         study = Study( horizon=2).network().build()
-        self.assertRaises(ValueError, lambda: study._validate_quantity([4, 5, 1]))
-
-    def test_validate_quantity_negative(self):
-        # Input
-        study = Study(horizon=3).network().build()
-        self.assertRaises(ValueError, lambda: study._validate_quantity([4, -5, 1]))
+        self.assertRaises(ValueError, lambda: study._standardize_array([4, 5, 1]))

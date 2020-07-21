@@ -46,7 +46,7 @@ class OutputConsumption(DTO):
     """
     Consumption element
     """
-    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, name: str = ''):
+    def __init__(self, quantity: Union[np.ndarray, list], cost: Union[np.ndarray, list], name: str = ''):
         """
         Create instance.
 
@@ -63,7 +63,7 @@ class OutputProduction(DTO):
     """
     Production element
     """
-    def __init__(self, quantity: Union[np.ndarray, list], cost: int = 0, name: str = 'in'):
+    def __init__(self, quantity: Union[np.ndarray, list], cost: Union[np.ndarray, list], name: str = 'in'):
         """
         Create instance.
 
@@ -80,7 +80,7 @@ class OutputLink(DTO):
     """
     Link element
     """
-    def __init__(self, dest: str, quantity: Union[np.ndarray, list], cost: int = 0):
+    def __init__(self, dest: str, quantity: Union[np.ndarray, list], cost: Union[np.ndarray, list]):
         """
         Create instance.
 

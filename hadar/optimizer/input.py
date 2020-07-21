@@ -35,7 +35,7 @@ class Consumption(DTO):
     Consumption element.
     """
 
-    def __init__(self, quantity: Union[List, np.ndarray, float], cost: int = 0, name: str = ''):
+    def __init__(self, quantity: Union[List, np.ndarray, float], cost: Union[List, np.ndarray, float], name: str = ''):
         """
         Create consumption.
 
@@ -52,7 +52,7 @@ class Production(DTO):
     """
     Production element
     """
-    def __init__(self, quantity: Union[List, np.ndarray, float], cost: int = 0, name: str = 'in'):
+    def __init__(self, quantity: Union[List, np.ndarray, float], cost: Union[List, np.ndarray, float], name: str = 'in'):
         """
         Create production
 
@@ -69,7 +69,7 @@ class Link(DTO):
     """
     Link element
     """
-    def __init__(self, dest: str, quantity: Union[List, np.ndarray, float], cost: int = 0):
+    def __init__(self, dest: str, quantity: Union[List, np.ndarray, float], cost: Union[List, np.ndarray, float]):
         """
         Create link.
 
@@ -149,8 +149,6 @@ class Study(DTO):
         :param quantity: transfer capacity
         :return:
         """
-        if cost < 0:
-            raise ValueError('link cost must be positive')
         if src not in self.networks[network].nodes.keys():
             raise ValueError('link source must be a valid node')
         if dest not in self.networks[network].nodes.keys():
@@ -158,7 +156,11 @@ class Study(DTO):
         if dest in [l.dest for l in self.networks[network].nodes[src].links]:
             raise ValueError('link destination must be unique on a node')
 
-        quantity = self._validate_quantity(quantity)
+        quantity = self._standardize_array(quantity)
+        if np.any(quantity < 0):
+            raise ValueError('Link quantity must be positive')
+
+        cost = self._standardize_array(cost)
         self.networks[network].nodes[src].links.append(Link(dest=dest, quantity=quantity, cost=cost))
 
         return self
@@ -172,50 +174,50 @@ class Study(DTO):
             self.networks[network].nodes[node] = InputNode(consumptions=[], productions=[], links=[])
 
     def _add_production(self, network: str, node: str, prod: Production):
-        if prod.cost < 0:
-            raise ValueError('production cost must be positive')
         if prod.name in [p.name for p in self.networks[network].nodes[node].productions]:
             raise ValueError('production name must be unique on a node')
 
-        prod.quantity = self._validate_quantity(prod.quantity)
+        prod.quantity = self._standardize_array(prod.quantity)
+        if np.any(prod.quantity < 0):
+            raise ValueError('Production quantity must be positive')
+
+        prod.cost = self._standardize_array(prod.cost)
         self.networks[network].nodes[node].productions.append(prod)
 
     def _add_consumption(self, network: str, node: str, cons: Consumption):
-        if cons.cost < 0:
-            raise ValueError('consumption cost must be positive')
         if cons.name in [c.name for c in self.networks[network].nodes[node].consumptions]:
             raise ValueError('consumption name must be unique on a node')
 
-        cons.quantity = self._validate_quantity(cons.quantity)
+        cons.quantity = self._standardize_array(cons.quantity)
+        if np.any(cons.quantity < 0):
+            raise ValueError('Consumption quantity must be positive')
+
+        cons.cost = self._standardize_array(cons.cost)
         self.networks[network].nodes[node].consumptions.append(cons)
 
-    def _validate_quantity(self, quantity: Union[List[float], np.ndarray, float]) -> np.ndarray:
-        quantity = np.array(quantity)
-
-        # If quantity are negative raise error:
-        if np.any(quantity < 0):
-            raise ValueError('Quantity must be positive')
+    def _standardize_array(self, array: Union[List[float], np.ndarray, float]) -> np.ndarray:
+        array = np.array(array)
 
         # If scenario and horizon are not provided, expend on both side
-        if quantity.size == 1:
-            return np.ones((self.nb_scn, self.horizon)) * quantity
+        if array.size == 1:
+            return np.ones((self.nb_scn, self.horizon)) * array
 
         # If scenario are not provided copy timeseries for each scenario
-        if quantity.shape == (self.horizon,):
-            return np.tile(quantity, (self.nb_scn, 1))
+        if array.shape == (self.horizon,):
+            return np.tile(array, (self.nb_scn, 1))
 
         # If horizon are not provide extend each scenario to full horizon
-        if quantity.shape == (self.nb_scn, 1):
-            return np.tile(quantity, self.horizon)
+        if array.shape == (self.nb_scn, 1):
+            return np.tile(array, self.horizon)
 
         # If perfect size
-        if quantity.shape == (self.nb_scn, self.horizon):
-            return quantity
+        if array.shape == (self.nb_scn, self.horizon):
+            return array
 
         # If any size pattern matches, raise error on quantity size given
-        horizon_given = quantity.shape[0] if len(quantity.shape) == 1 else quantity.shape[1]
-        sc_given = 1 if len(quantity.shape) == 1 else quantity.shape[0]
-        raise ValueError('Quantity must be: a number, an array like (horizon, ) or (nb_scn, 1) or (nb_scn, horizon). '
+        horizon_given = array.shape[0] if len(array.shape) == 1 else array.shape[1]
+        sc_given = 1 if len(array.shape) == 1 else array.shape[0]
+        raise ValueError('Array must be: a number, an array like (horizon, ) or (nb_scn, 1) or (nb_scn, horizon). '
                          'In your case horizon specified is %d and actual is %d. '
                          'And nb_scn specified %d is whereas actual is %d' %
                          (self.horizon, horizon_given, self.nb_scn, sc_given))
