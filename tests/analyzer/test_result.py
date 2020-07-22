@@ -77,13 +77,13 @@ class TestAnalyzer(unittest.TestCase):
             .build()
 
         out = {
-            'a': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load'),
-                                          OutputConsumption(cost=10 ** 3, quantity=[[30, 3, 3], [3, 30, 30]], name='car')],
+            'a': OutputNode(consumptions=[OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load'),
+                                          OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[30, 3, 3], [3, 30, 30]], name='car')],
                             productions=[OutputProduction(cost=np.ones((2, 3)) * 10, quantity=[[30, 3, 3], [3, 30, 30]], name='prod')],
                             links=[OutputLink(dest='b', quantity=[[10, 1, 1], [1, 10, 10]], cost=np.ones((2, 3)) * 2),
                                    OutputLink(dest='c', quantity=[[20, 2, 2], [2, 20, 20]], cost=np.ones((2, 3)) * 2)]),
 
-            'b': OutputNode(consumptions=[OutputConsumption(cost=10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load')],
+            'b': OutputNode(consumptions=[OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load')],
                             productions=[OutputProduction(cost=np.ones((2, 3)) * 20, quantity=[[10, 1, 1], [1, 10, 10]], name='prod'),
                                          OutputProduction(cost=np.ones((2, 3)) * 20, quantity=[[20, 2, 2], [2, 20, 20]], name='nuclear')],
                             links=[])
