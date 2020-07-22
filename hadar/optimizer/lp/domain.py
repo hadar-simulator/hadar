@@ -46,6 +46,7 @@ class LPConsumption(DTO):
         """
         return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.name)
 
+
 class LPProduction(DTO):
     """
     Production element for linear programming.
@@ -71,6 +72,42 @@ class LPProduction(DTO):
         :return: (constructor, values...)
         """
         return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.name)
+
+
+class LPStorage(DTO):
+    """
+    Storage element
+    """
+    def __init__(self, name, capacity: int, var_capacity: Union[Variable, SerializableVariable],
+                 flow_in: float, var_flow_in: Union[Variable, SerializableVariable],
+                 flow_out: float, var_flow_out: Union[Variable, SerializableVariable],
+                 cost_in: Union[List, np.ndarray, float], cost_out: Union[List, np.ndarray, float],
+                 init_capacity: int = 0,  eff: float = 1):
+        """
+        Create storage.
+
+        :param capacity: maximum storage capacity (like of many quantity to use inside storage)
+        :param var_capacity: solver variable for capacity
+        :param flow_in: max flow into storage during on time step
+        :param var_flow_in: solver variable for var_flow_in
+        :param flow_out: max flow out storage during on time step
+        :param var_flow_out: solver variable for var_flow_out
+        :param cost_in: unit cost of unsustainable on input flow
+        :param cost_out: unit cost of used for output flow
+        :param init_capacity: initial capacity level
+        :param eff: storage efficient. (applied on input flow stored)
+        """
+        self.name = name
+        self.capacity = capacity
+        self.var_capacity = var_capacity
+        self.flow_in = flow_in
+        self.var_flow_in = var_flow_in
+        self.flow_out = flow_out
+        self.var_flow_out = var_flow_out
+        self.cost_in = np.array(cost_in)
+        self.cost_out = np.array(cost_out)
+        self.init_capacity = init_capacity
+        self.eff = eff
 
 
 class LPLink(DTO):
@@ -105,7 +142,8 @@ class LPNode(DTO):
     """
     Node element for linear programming
     """
-    def __init__(self, consumptions: List[LPConsumption], productions: List[LPProduction], links: List[LPLink]):
+    def __init__(self, consumptions: List[LPConsumption], productions: List[LPProduction],
+                 storages: List[LPStorage], links: List[LPLink]):
         """
         Instance node.
 
@@ -115,6 +153,7 @@ class LPNode(DTO):
         """
         self.consumptions = consumptions
         self.productions = productions
+        self.storages = storages
         self.links = links
 
 

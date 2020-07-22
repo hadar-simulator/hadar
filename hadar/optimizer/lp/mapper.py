@@ -8,7 +8,7 @@
 from ortools.linear_solver.pywraplp import Solver
 
 from hadar.optimizer.input import Study, InputNetwork
-from hadar.optimizer.lp.domain import LPLink, LPConsumption, LPNode, LPProduction
+from hadar.optimizer.lp.domain import LPLink, LPConsumption, LPNode, LPProduction, LPStorage
 from hadar.optimizer.output import OutputNode, Result, OutputNetwork
 
 
@@ -46,11 +46,18 @@ class InputMapper:
                                     variable=self.solver.NumVar(0, float(p.quantity[scn, t]), 'prod=%s %s' % (p.name, suffix)))
                        for p in self.study.networks[network].nodes[node].productions]
 
+        storages = [LPStorage(name=s.name, capacity=s.capacity, flow_in=s.flow_in, flow_out=s.flow_out, eff=s.eff,
+                              init_capacity=s.init_capacity, cost_out=s.cost_out[scn, t], cost_in=s.cost_in[scn, t],
+                              var_capacity=self.solver.NumVar(0, float(s.capacity), 'storage_capacity=%s %s' % (s.name, suffix)),
+                              var_flow_in=self.solver.NumVar(0, float(s.flow_in), 'storage_flow_in=%s %s' % (s.name, suffix)),
+                              var_flow_out=self.solver.NumVar(0, float(s.flow_out), 'storage_flow_out=%s %s' % (s.name, suffix)))
+                    for s in self.study.networks[network].nodes[node].storages]
+
         links = [LPLink(dest=l.dest, cost=l.cost[scn, t], src=node, quantity=l.quantity[scn, t],
                         variable=self.solver.NumVar(0, float(l.quantity[scn, t]), 'link=%s %s' % (l.dest, suffix)))
                  for l in self.study.networks[network].nodes[node].links]
 
-        return LPNode(consumptions=consumptions, productions=productions, links=links)
+        return LPNode(consumptions=consumptions, productions=productions, links=links, storages=storages)
 
 
 class OutputMapper:

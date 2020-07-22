@@ -10,7 +10,8 @@ from typing import List, Union, Dict
 import numpy as np
 
 
-__all__ = ['Consumption', 'Link', 'Production', 'InputNode', 'Study', 'NetworkFluentAPISelector', 'NodeFluentAPISelector']
+__all__ = ['Consumption', 'Link', 'Production', 'Storage', 'InputNode', 'Study',
+           'NetworkFluentAPISelector', 'NodeFluentAPISelector']
 
 
 class DTO:
@@ -65,6 +66,34 @@ class Production(DTO):
         self.quantity = np.array(quantity)
 
 
+class Storage(DTO):
+    """
+    Storage element
+    """
+    def __init__(self, name, capacity: int, flow_in: float, flow_out: float,
+                 cost_in: Union[List, np.ndarray, float], cost_out: Union[List, np.ndarray, float],
+                 init_capacity: int = 0,  eff: float = 1):
+        """
+        Create storage.
+
+        :param capacity: maximum storage capacity (like of many quantity to use inside storage)
+        :param flow_in: max flow into storage during on time step
+        :param flow_out: max flow out storage during on time step
+        :param cost_in: unit cost of unsustainable on input flow
+        :param cost_out: unit cost of used for output flow
+        :param init_capacity: initial capacity level
+        :param eff: storage efficient. (applied on input flow stored)
+        """
+        self.name = name
+        self.capacity = capacity
+        self.flow_in = flow_in
+        self.flow_out = flow_out
+        self.cost_in = np.array(cost_in)
+        self.cost_out = np.array(cost_out)
+        self.init_capacity = init_capacity
+        self.eff = eff
+
+
 class Link(DTO):
     """
     Link element
@@ -86,16 +115,19 @@ class InputNode(DTO):
     """
     Node element
     """
-    def __init__(self, consumptions: List[Consumption], productions: List[Production], links: List[Link]):
+    def __init__(self, consumptions: List[Consumption], productions: List[Production],
+                 storages: List[Storage], links: List[Link]):
         """
         Create node element.
 
         :param consumptions: list of consumptions inside node
         :param productions: list of productions inside node
+        :param storages: list of storages inside node
         :param links: list of links inside node
         """
         self.consumptions = consumptions
         self.productions = productions
+        self.storages = storages
         self.links = links
 
 
@@ -171,7 +203,7 @@ class Study(DTO):
 
     def add_node(self, network: str, node: str):
         if node not in self.networks[network].nodes.keys():
-            self.networks[network].nodes[node] = InputNode(consumptions=[], productions=[], links=[])
+            self.networks[network].nodes[node] = InputNode(consumptions=[], productions=[], links=[], storages=[])
 
     def _add_production(self, network: str, node: str, prod: Production):
         if prod.name in [p.name for p in self.networks[network].nodes[node].productions]:
@@ -194,6 +226,20 @@ class Study(DTO):
 
         cons.cost = self._standardize_array(cons.cost)
         self.networks[network].nodes[node].consumptions.append(cons)
+
+    def _add_storage(self, network: str, node: str, store: Storage):
+        if store.name in [s.name for s in self.networks[network].nodes[node].storages]:
+            raise ValueError('storage name must be unique on a node')
+        if store.flow_in < 0 or store.flow_out < 0:
+            raise ValueError('storage flow must be positive')
+        if store.capacity < 0 or store.init_capacity < 0:
+            raise ValueError('storage capacities must be positive')
+        if store.eff < 0:
+            raise ValueError('storage efficiency must be positive')
+
+        store.cost_in = self._standardize_array(store.cost_in)
+        store.cost_out = self._standardize_array(store.cost_out)
+        self.networks[network].nodes[node].storages.append(store)
 
     def _standardize_array(self, array: Union[List[float], np.ndarray, float]) -> np.ndarray:
         array = np.array(array)
@@ -307,6 +353,15 @@ class NodeFluentAPISelector:
         """
         self.study._add_production(network=self.selector['network'], node=self.selector['node'],
                                    prod=Production(name=name, cost=cost, quantity=quantity))
+        return self
+
+    def storage(self, name, capacity: int, flow_in: float, flow_out: float,
+                 cost_in: Union[List, np.ndarray, float], cost_out: Union[List, np.ndarray, float],
+                 init_capacity: int = 0,  eff: int = 1):
+
+        self.study._add_storage(network=self.selector['network'], node=self.selector['node'],
+                                store=Storage(name=name, capacity=capacity, flow_in=flow_in, flow_out=flow_out,
+                                              cost_in=cost_in, cost_out=cost_out, init_capacity=init_capacity, eff=eff))
         return self
 
     def node(self, name):

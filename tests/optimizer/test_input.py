@@ -9,13 +9,14 @@ import unittest
 
 import numpy as np
 
-from hadar.optimizer.input import Study, Consumption, Production, Link
+from hadar.optimizer.input import Study, Consumption, Production, Link, Storage
 
 
 class TestStudy(unittest.TestCase):
     def test_create_study(self):
         c = Consumption(name='load', cost=20, quantity=10)
         p = Production(name='nuclear', cost=20, quantity=10)
+        s = Storage(name='store', capacity=100, flow_in=10, flow_out=10, cost_in=1, cost_out=2, init_capacity=4, eff=0.1)
         l = Link(dest='a', cost=20, quantity=10)
 
         study = Study(horizon=1) \
@@ -28,6 +29,7 @@ class TestStudy(unittest.TestCase):
             .network('gas')\
                 .node('b')\
                     .production(name='nuclear', cost=20, quantity=10)\
+                    .storage(name='store', capacity=100, flow_in=10, flow_out=10, cost_in=1, cost_out=2, init_capacity=4, eff=0.1)\
                 .node('a')\
                     .consumption(name='load', cost=20, quantity=10)\
                 .link(src='b', dest='a', cost=20, quantity=10)\
@@ -39,6 +41,7 @@ class TestStudy(unittest.TestCase):
 
         self.assertEqual(c, study.networks['gas'].nodes['a'].consumptions[0])
         self.assertEqual(p, study.networks['gas'].nodes['b'].productions[0])
+        self.assertEqual(s, study.networks['gas'].nodes['b'].storages[0])
         self.assertEqual(l, study.networks['gas'].nodes['b'].links[0])
 
         self.assertEqual(1, study.horizon)
@@ -77,6 +80,42 @@ class TestStudy(unittest.TestCase):
                         .consumption(name='load', cost=1, quantity=-10)\
                 .build()
 
+    def test_wrong_storage_flow(self):
+        def test_in():
+            study = Study(horizon=1)\
+                .network().node('fr')\
+                    .storage(name='store', capacity=1, flow_in=-1, flow_out=1, cost_in=1, cost_out=1)\
+                .build()
+
+        def test_out():
+            study = Study(horizon=1)\
+                .network().node('fr')\
+                    .storage(name='store', capacity=1, flow_in=1, flow_out=-1, cost_in=1, cost_out=1)\
+                .build()
+        self.assertRaises(ValueError, test_in)
+        self.assertRaises(ValueError, test_out)
+
+    def test_wrong_storage_capacity(self):
+        def test_capacity():
+            study = Study(horizon=1)\
+                .network().node('fr')\
+                    .storage(name='store', capacity=-1, flow_in=1, flow_out=1, cost_in=1, cost_out=1)\
+                .build()
+
+        def test_init_capacity():
+            study = Study(horizon=1)\
+                .network().node('fr')\
+                    .storage(name='store', capacity=1, flow_in=1, flow_out=1, cost_in=1, cost_out=1, init_capacity=-1)\
+                .build()
+        self.assertRaises(ValueError, test_capacity)
+        self.assertRaises(ValueError, test_init_capacity)
+
+    def test_wrong_storage_eff(self):
+        def test():
+            study = Study(horizon=1)\
+                .network().node('fr')\
+                    .storage(name='store', capacity=1, flow_in=1, flow_out=1, cost_in=1, cost_out=1, eff=-1)\
+                .build()
 
         self.assertRaises(ValueError, test)
 
