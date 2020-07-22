@@ -9,9 +9,9 @@ import unittest
 from unittest.mock import MagicMock
 
 from hadar.optimizer.input import Study, Consumption
-from hadar.optimizer.lp.domain import LPConsumption, LPProduction, LPLink, LPNode, SerializableVariable
+from hadar.optimizer.lp.domain import LPConsumption, LPProduction, LPLink, LPNode, SerializableVariable, LPStorage
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
-from hadar.optimizer.lp.optimizer import ObjectiveBuilder, AdequacyBuilder, _solve_batch
+from hadar.optimizer.lp.optimizer import ObjectiveBuilder, AdequacyBuilder, _solve_batch, StorageBuilder
 from hadar.optimizer.lp.optimizer import solve_lp
 from hadar.optimizer.output import OutputConsumption, OutputNode, Result, OutputNetwork
 from tests.optimizer.lp.ortools_mock import MockConstraint, MockNumVar, MockObjective, MockSolver
@@ -27,11 +27,17 @@ class TestObjectiveBuilder(unittest.TestCase):
         # Input
         consumptions = [LPConsumption(name='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
         productions = [LPProduction(name='solar', quantity=10, cost=20, variable=MockNumVar(0, 20, 'solar'))]
+        storages = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'cell_capacity'),
+                              flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'), cost_in=1,
+                              flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'), cost_out=10,
+                              init_capacity=2, eff=1.2
+                              )]
         links = [LPLink(src='fr', dest='be', quantity=10, cost=30, variable=MockNumVar(0, 30, 'be'))]
-        node = LPNode(consumptions=consumptions, productions=productions, links=links)
+        node = LPNode(consumptions=consumptions, productions=productions, storages=storages, links=links)
 
         # Expected
-        coeffs = {MockNumVar(0, 10, 'load'): 10, MockNumVar(0, 20, 'solar'): 20, MockNumVar(0, 30, 'be'): 30}
+        coeffs = {MockNumVar(0, 10, 'load'): 10, MockNumVar(0, 20, 'solar'): 20, MockNumVar(0, 30, 'be'): 30,
+                  MockNumVar(0, 1, 'cell_flow_in'): 1, MockNumVar(0, 10, 'cell_flow_out'): 10}
         expected = MockObjective(min=True, coeffs=coeffs)
 
         # Test
@@ -51,13 +57,19 @@ class TestAdequacyBuilder(unittest.TestCase):
         # Input
         fr_consumptions = [LPConsumption(name='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
         fr_productions = [LPProduction(name='solar', quantity=10, cost=20, variable=MockNumVar(0, 20, 'solar'))]
+        fr_storages = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'cell_capacity'),
+                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'), cost_in=1,
+                                 flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'), cost_out=10,
+                                 init_capacity=2, eff=1.2)]
         fr_links = [LPLink(src='fr', dest='be', quantity=10, cost=30, variable=MockNumVar(0, 30, 'be'))]
-        fr_node = LPNode(consumptions=fr_consumptions, productions=fr_productions, links=fr_links)
+        fr_node = LPNode(consumptions=fr_consumptions, productions=fr_productions, storages=fr_storages, links=fr_links)
 
-        be_node = LPNode(consumptions=[], productions=[], links=[])
+        be_node = LPNode(consumptions=[], productions=[], storages=[], links=[])
 
         # Expected
-        fr_coeffs = {MockNumVar(0, 10, 'load'): 1, MockNumVar(0, 20, 'solar'): 1, MockNumVar(0, 30, 'be'): -1}
+        fr_coeffs = {MockNumVar(0, 10, 'load'): 1, MockNumVar(0, 20, 'solar'): 1,
+                     MockNumVar(0, 1, 'cell_flow_in'): -1, MockNumVar(0, 10, 'cell_flow_out'): 1,
+                     MockNumVar(0, 30, 'be'): -1}
         fr_constraint = MockConstraint(10, 10, coeffs=fr_coeffs)
 
         be_coeffs = {MockNumVar(0, 30, 'be'): 1}
@@ -71,6 +83,60 @@ class TestAdequacyBuilder(unittest.TestCase):
 
         self.assertEqual(fr_constraint, builder.constraints[(0, 'default', 'fr')])
         self.assertEqual(be_constraint, builder.constraints[(0, 'default', 'be')])
+
+
+class TestStorageBuilder(unittest.TestCase):
+    def test_t0(self):
+        # Mock
+        solver = MockSolver()
+
+        # Input
+        c0 = MockNumVar(0, 10, 'cell_capacity')
+        storages = [LPStorage(name='cell', capacity=10, var_capacity=c0,
+                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'), cost_in=1,
+                                 flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'), cost_out=10,
+                                 init_capacity=2, eff=1.2)]
+        node = LPNode(consumptions=[], productions=[], storages=storages, links=[])
+
+        # Expected
+        coeffs = {MockNumVar(0, 1, 'cell_flow_in'): -1, MockNumVar(0, 10, 'cell_flow_out'): 1,
+                  c0: 1}
+        constraint = MockConstraint(2, 2, coeffs=coeffs)
+
+        # Test
+        builder = StorageBuilder(solver=solver)
+        res = builder.add_node(name_network='default', name_node='fr', node=node, t=0)
+
+        self.assertEqual(constraint, res)
+        self.assertEqual(builder.capacities[(0, 'default', 'fr', 'cell')], c0)
+
+    def test(self):
+        # Mock
+        solver = MockSolver()
+
+        # Input
+        storages = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'cell_capacity at 1'),
+                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'), cost_in=1,
+                                 flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'), cost_out=10,
+                                 init_capacity=2, eff=1.2)]
+        node = LPNode(consumptions=[], productions=[], storages=storages, links=[])
+
+        c0 = MockNumVar(0, 11, 'cell_capacity at 0')
+        c1 = MockNumVar(0, 10, 'cell_capacity at 1')
+
+        # Expected
+        coeffs = {MockNumVar(0, 1, 'cell_flow_in'): -1, MockNumVar(0, 10, 'cell_flow_out'): 1,
+                  c0: -1, c1: 1}
+        constraint = MockConstraint(0, 0, coeffs=coeffs)
+
+        # Test
+        builder = StorageBuilder(solver=solver)
+        builder.capacities[(0, 'default', 'fr', 'cell')] = c0
+        res = builder.add_node(name_network='default', name_node='fr', node=node, t=1)
+
+        self.assertEqual(constraint, res)
+        self.assertEqual(c1, builder.capacities[(1, 'default', 'fr', 'cell')])
+
 
 
 class TestSolve(unittest.TestCase):
@@ -92,7 +158,7 @@ class TestSolve(unittest.TestCase):
         adequacy.build = MagicMock()
 
         in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))
-        var = LPNode(consumptions=[in_cons], productions=[], links=[])
+        var = LPNode(consumptions=[in_cons], productions=[], storages=[],links=[])
         in_mapper = InputMapper(solver=solver, study=study)
         in_mapper.get_var = MagicMock(return_value=var)
 
@@ -124,7 +190,7 @@ class TestSolve(unittest.TestCase):
         exp_result = Result(networks={'default': OutputNetwork(nodes={'a': out_a})})
 
         in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, '')))
-        exp_var = LPNode(consumptions=[in_cons], productions=[], links=[])
+        exp_var = LPNode(consumptions=[in_cons], productions=[], storages=[], links=[])
 
         # Mock
         out_mapper = OutputMapper(study=study)

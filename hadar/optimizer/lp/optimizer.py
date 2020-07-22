@@ -13,10 +13,10 @@ import numpy as np
 import multiprocessing
 from typing import List, Dict
 
-from ortools.linear_solver.pywraplp import Solver, Variable
+from ortools.linear_solver.pywraplp import Solver, Variable, Constraint
 
 from hadar.optimizer.input import Study
-from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPLink
+from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPLink, LPStorage
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
 from hadar.optimizer.output import Result
 
@@ -47,6 +47,7 @@ class ObjectiveBuilder:
         """
         self._add_consumption(node.consumptions)
         self._add_productions(node.productions)
+        self._add_storages(node.storages)
         self._add_links(node.links)
 
     def _add_consumption(self, consumptions: List[LPConsumption]):
@@ -70,6 +71,17 @@ class ObjectiveBuilder:
         for prod in prods:
             self.objective.SetCoefficient(prod.variable, prod.cost)
             self.logger.debug('Add production %s into objective', prod.name)
+
+    def _add_storages(self, stors: List[LPStorage]):
+        """
+        Add storage cost. Cost of unsustainable storage in and cost of use for storage out
+        :param stors: list of storages
+        :return:
+        """
+        for stor in stors:
+            self.objective.SetCoefficient(stor.var_flow_in, stor.cost_in)
+            self.objective.SetCoefficient(stor.var_flow_out, stor.cost_out)
+            self.logger.debug('Add storage %s into objective', stor.name)
 
     def _add_links(self, links: List[LPLink]):
         """
@@ -117,6 +129,7 @@ class AdequacyBuilder:
 
         self._add_consumptions(name_network, name_node, t, node.consumptions)
         self._add_productions(name_network, name_node, t, node.productions)
+        self._add_storages(name_network, name_node, t, node.storages)
         self._add_links(name_network, name_node, t, node.links)
 
     def _add_consumptions(self, name_network: str, name_node: str, t: int, consumptions: List[LPConsumption]):
@@ -148,6 +161,21 @@ class AdequacyBuilder:
             self.constraints[(t, name_network, name_node)].SetCoefficient(prod.variable, 1)
             self.logger.debug('Add prod %s for %s inside %s into adequacy constraint', prod.name, name_node, name_network)
 
+    def _add_storages(self, name_network: str, name_node: str, t: int, storages: List[LPStorage]):
+        """
+        Add storage flow. Flow in is like a consumption. Flow out is like a production.
+
+        :param name_network: network's name
+        :param name_node: node's name
+        :param t: timestamp
+        :param productions: storage with flow used as variable
+        :return:
+        """
+        for stor in storages:
+            self.constraints[(t, name_network, name_node)].SetCoefficient(stor.var_flow_in, -1)
+            self.constraints[(t, name_network, name_node)].SetCoefficient(stor.var_flow_out, 1)
+            self.logger.debug('Add storage %s for %s inside %s into adequacy constraint', stor.name, name_node, name_network)
+
     def _add_links(self, name_network: str, name_node: str, t: int, links: List[LPLink]):
         """
         Add links. That mean the link export is like a consumption.
@@ -174,6 +202,35 @@ class AdequacyBuilder:
         # Apply import link in adequacy
         for (t, net, src, dest), var in self.importations.items():
             self.constraints[(t, net, dest)].SetCoefficient(var, 1)
+
+
+class StorageBuilder:
+    """
+    Build storage constraints
+    """
+
+    def __init__(self, solver: Solver):
+        self.capacities = dict()
+        self.solver = solver
+        self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
+
+    def add_node(self, name_network: str, name_node: str, node: LPNode, t: int) -> Constraint:
+        for stor in node.storages:
+            self.capacities[(t, name_network, name_node, stor.name)] = stor.var_capacity
+            if t == 0:
+                const = self.solver.Constraint(stor.init_capacity, stor.init_capacity)
+                const.SetCoefficient(stor.var_flow_in, -1)
+                const.SetCoefficient(stor.var_flow_out, 1)
+                const.SetCoefficient(stor.var_capacity, 1)
+                return const
+            else:
+                const = self.solver.Constraint(0, 0)
+                const.SetCoefficient(stor.var_flow_in, -1)
+                const.SetCoefficient(stor.var_flow_out, 1)
+                const.SetCoefficient(self.capacities[(t-1, name_network, name_node, stor.name)], -1)
+                const.SetCoefficient(stor.var_capacity, 1)
+                return const
+
 
 
 def _solve_batch(params) -> bytes:
