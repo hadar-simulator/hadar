@@ -55,7 +55,7 @@ class RemoteOptimizerTest(unittest.TestCase):
             .network().node('a').consumption(cost=0, quantity=[0], name='load').build()
 
         nodes = { 'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
-                                  productions=[], links=[])}
+                                  productions=[], storages=[], links=[])}
         self.result = Result(networks={'default': OutputNetwork(nodes=nodes)})
 
     def test_job_terminated(self):

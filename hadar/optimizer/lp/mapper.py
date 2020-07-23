@@ -93,6 +93,11 @@ class OutputMapper:
         for i in range(len(vars.productions)):
             self.networks[network].nodes[node].productions[i].quantity[scn, t] = vars.productions[i].variable.solution_value()
 
+        for i in range(len(vars.storages)):
+            self.networks[network].nodes[node].storages[i].capacity[scn, t] = vars.storages[i].var_capacity.solution_value()
+            self.networks[network].nodes[node].storages[i].flow_in[scn, t] = vars.storages[i].var_flow_in.solution_value()
+            self.networks[network].nodes[node].storages[i].flow_out[scn, t] = vars.storages[i].var_flow_out.solution_value()
+
         for i in range(len(vars.links)):
             self.networks[network].nodes[node].links[i].quantity[scn, t] = vars.links[i].variable.solution_value()
 

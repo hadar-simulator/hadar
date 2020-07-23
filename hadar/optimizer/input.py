@@ -79,7 +79,7 @@ class Storage(DTO):
         :param capacity: maximum storage capacity (like of many quantity to use inside storage)
         :param flow_in: max flow into storage during on time step
         :param flow_out: max flow out storage during on time step
-        :param cost_in: unit cost of unsustainable on input flow
+        :param cost_in: unit cost of use for input flow
         :param cost_out: unit cost of used for output flow
         :param init_capacity: initial capacity level
         :param eff: storage efficient. (applied on input flow stored)

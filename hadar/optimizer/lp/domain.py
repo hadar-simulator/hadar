@@ -81,7 +81,7 @@ class LPStorage(DTO):
     def __init__(self, name, capacity: int, var_capacity: Union[Variable, SerializableVariable],
                  flow_in: float, var_flow_in: Union[Variable, SerializableVariable],
                  flow_out: float, var_flow_out: Union[Variable, SerializableVariable],
-                 cost_in: Union[List, np.ndarray, float], cost_out: Union[List, np.ndarray, float],
+                 cost_in: float, cost_out: float,
                  init_capacity: int = 0,  eff: float = 1):
         """
         Create storage.
@@ -92,7 +92,7 @@ class LPStorage(DTO):
         :param var_flow_in: solver variable for var_flow_in
         :param flow_out: max flow out storage during on time step
         :param var_flow_out: solver variable for var_flow_out
-        :param cost_in: unit cost of unsustainable on input flow
+        :param cost_in: unit cost of use for input flow
         :param cost_out: unit cost of used for output flow
         :param init_capacity: initial capacity level
         :param eff: storage efficient. (applied on input flow stored)
@@ -104,10 +104,20 @@ class LPStorage(DTO):
         self.var_flow_in = var_flow_in
         self.flow_out = flow_out
         self.var_flow_out = var_flow_out
-        self.cost_in = np.array(cost_in)
-        self.cost_out = np.array(cost_out)
+        self.cost_in = cost_in
+        self.cost_out = cost_out
         self.init_capacity = init_capacity
         self.eff = eff
+
+    def __reduce__(self):
+        """
+        Help pickle to serialize object, specially variable object
+        :return: (constructor, values...)
+        """
+        return self.__class__, (self.name, self.capacity, SerializableVariable(self.var_capacity),
+                                self.flow_in, SerializableVariable(self.var_flow_in),
+                                self.flow_out, SerializableVariable(self.var_flow_out),
+                                self.cost_in, self.cost_out, self.init_capacity, self.eff)
 
 
 class LPLink(DTO):

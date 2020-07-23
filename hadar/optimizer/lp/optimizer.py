@@ -124,7 +124,7 @@ class AdequacyBuilder:
         :return:
         """
         # Set forced consumption
-        load = sum([c.quantity for c in node.consumptions])*1.0
+        load = sum([c.quantity for c in node.consumptions]) * 1.0
         self.constraints[(t, name_network, name_node)] = self.solver.Constraint(load, load)
 
         self._add_consumptions(name_network, name_node, t, node.consumptions)
@@ -219,17 +219,20 @@ class StorageBuilder:
             self.capacities[(t, name_network, name_node, stor.name)] = stor.var_capacity
             if t == 0:
                 const = self.solver.Constraint(stor.init_capacity, stor.init_capacity)
-                const.SetCoefficient(stor.var_flow_in, -1)
+                const.SetCoefficient(stor.var_flow_in, -stor.eff)
                 const.SetCoefficient(stor.var_flow_out, 1)
                 const.SetCoefficient(stor.var_capacity, 1)
                 return const
             else:
                 const = self.solver.Constraint(0, 0)
-                const.SetCoefficient(stor.var_flow_in, -1)
+                const.SetCoefficient(stor.var_flow_in, -stor.eff)
                 const.SetCoefficient(stor.var_flow_out, 1)
                 const.SetCoefficient(self.capacities[(t-1, name_network, name_node, stor.name)], -1)
                 const.SetCoefficient(stor.var_capacity, 1)
                 return const
+
+    def build(self):
+        pass  # Currently nothing are need at the end. But we keep builder pattern syntax
 
 
 
@@ -247,10 +250,11 @@ def _solve_batch(params) -> bytes:
 
         objective = ObjectiveBuilder(solver=solver)
         adequacy = AdequacyBuilder(solver=solver)
+        storage = StorageBuilder(solver=solver)
 
         in_mapper = InputMapper(solver=solver, study=study)
     else:  # Test purpose only
-        study, i_scn, solver, objective, adequacy, in_mapper = params
+        study, i_scn, solver, objective, adequacy, storage, in_mapper = params
 
     variables = [{name: dict() for name in study.networks.keys()} for _ in range(study.horizon)]
 
@@ -261,10 +265,12 @@ def _solve_batch(params) -> bytes:
                 node = in_mapper.get_var(network=name_network, node=name_node, t=t, scn=i_scn)
                 variables[t][name_network][name_node] = node
                 adequacy.add_node(name_network=name_network, name_node=name_node, node=node, t=t)
+                storage.add_node(name_network=name_network, name_node=name_node, node=node, t=t)
                 objective.add_node(node=node)
 
     objective.build()
     adequacy .build()
+    storage.build()
 
     logger.info('Problem build. Start solver')
     solver.EnableOutput()

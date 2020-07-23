@@ -12,7 +12,7 @@ from typing import Union, List, Dict
 from hadar.optimizer.input import InputNode
 
 
-__all__ = ['OutputProduction', 'OutputNode', 'OutputLink', 'OutputConsumption', 'OutputNetwork', 'Result']
+__all__ = ['OutputProduction', 'OutputNode', 'OutputStorage', 'OutputLink', 'OutputConsumption', 'OutputNetwork', 'Result']
 
 
 class DTO:
@@ -76,6 +76,26 @@ class OutputProduction(DTO):
         self.quantity = np.array(quantity)
 
 
+class OutputStorage(DTO):
+    """
+    Storage element
+    """
+    def __init__(self, name: str, capacity: Union[np.ndarray, list],
+                 flow_in: Union[np.ndarray, list], flow_out: Union[np.ndarray, list]):
+        """
+        Create instance.
+
+        :param name: storage name
+        :param capacity: final capacity
+        :param flow_in: final input flow
+        :param flow_out: final output flow
+        """
+        self.name = name
+        self.capacity = capacity
+        self.flow_in = flow_in
+        self.flow_out = flow_out
+
+
 class OutputLink(DTO):
     """
     Link element
@@ -100,16 +120,19 @@ class OutputNode(DTO):
     def __init__(self,
                  consumptions: List[OutputConsumption],
                  productions: List[OutputProduction],
+                 storages: List[OutputStorage],
                  links: List[OutputLink]):
         """
         Create Node.
 
         :param consumptions: consumptions list
         :param productions: productions list
+        :param storages: storages list
         :param links:  link list
         """
         self.consumptions = consumptions
         self.productions = productions
+        self.storages = storages
         self.links = links
 
     @staticmethod
@@ -120,12 +143,15 @@ class OutputNode(DTO):
         :param input: InputNode to copy
         :return: OutputNode like InputNode with all quantity at zero
         """
-        output = OutputNode(consumptions=[], productions=[], links=[])
+        output = OutputNode(consumptions=[], productions=[], storages=[], links=[])
 
         output.consumptions = [OutputConsumption(name=i.name, cost=i.cost, quantity=np.zeros_like(i.quantity))
                                for i in input.consumptions]
         output.productions = [OutputProduction(name=i.name, cost=i.cost, quantity=np.zeros_like(i.quantity))
                               for i in input.productions]
+        output.storages = [OutputStorage(name=i.name, capacity=np.zeros_like(i.cost_in),
+                                         flow_out=np.zeros_like(i.cost_out), flow_in=np.zeros_like(i.cost_in))
+                           for i in input.storages]
         output.links = [OutputLink(dest=i.dest, cost=i.cost, quantity=np.zeros_like(i.quantity))
                         for i in input.links]
         return output

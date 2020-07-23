@@ -99,7 +99,7 @@ class TestStorageBuilder(unittest.TestCase):
         node = LPNode(consumptions=[], productions=[], storages=storages, links=[])
 
         # Expected
-        coeffs = {MockNumVar(0, 1, 'cell_flow_in'): -1, MockNumVar(0, 10, 'cell_flow_out'): 1,
+        coeffs = {MockNumVar(0, 1, 'cell_flow_in'): -1.2, MockNumVar(0, 10, 'cell_flow_out'): 1,
                   c0: 1}
         constraint = MockConstraint(2, 2, coeffs=coeffs)
 
@@ -125,7 +125,7 @@ class TestStorageBuilder(unittest.TestCase):
         c1 = MockNumVar(0, 10, 'cell_capacity at 1')
 
         # Expected
-        coeffs = {MockNumVar(0, 1, 'cell_flow_in'): -1, MockNumVar(0, 10, 'cell_flow_out'): 1,
+        coeffs = {MockNumVar(0, 1, 'cell_flow_in'): -1.2, MockNumVar(0, 10, 'cell_flow_out'): 1,
                   c0: -1, c1: 1}
         constraint = MockConstraint(0, 0, coeffs=coeffs)
 
@@ -136,7 +136,6 @@ class TestStorageBuilder(unittest.TestCase):
 
         self.assertEqual(constraint, res)
         self.assertEqual(c1, builder.capacities[(1, 'default', 'fr', 'cell')])
-
 
 
 class TestSolve(unittest.TestCase):
@@ -157,21 +156,26 @@ class TestSolve(unittest.TestCase):
         adequacy.add_node = MagicMock()
         adequacy.build = MagicMock()
 
+        storage = StorageBuilder(solver=solver)
+        storage.add_node = MagicMock()
+        storage.build = MagicMock()
+
         in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))
-        var = LPNode(consumptions=[in_cons], productions=[], storages=[],links=[])
+        var = LPNode(consumptions=[in_cons], productions=[], storages=[], links=[])
         in_mapper = InputMapper(solver=solver, study=study)
         in_mapper.get_var = MagicMock(return_value=var)
 
         # Expected
         in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, 'load')))
-        exp_var = LPNode(consumptions=[in_cons], productions=[], links=[])
+        exp_var = LPNode(consumptions=[in_cons], productions=[], storages=[], links=[])
 
         # Test
-        res = _solve_batch((study, 0, solver, objective, adequacy, in_mapper))
+        res = _solve_batch((study, 0, solver, objective, adequacy, storage, in_mapper))
 
         self.assertEqual([{'default': {'a': exp_var}}], pickle.loads(res))
         in_mapper.get_var.assert_called_with(network='default', node='a', t=0, scn=0)
         adequacy.add_node.assert_called_with(name_network='default', name_node='a', t=0, node=var)
+        storage.add_node.assert_called_with(name_network='default', name_node='a', t=0, node=var)
         objective.add_node.assert_called_with(node=var)
 
         objective.build.assert_called_with()
@@ -186,7 +190,7 @@ class TestSolve(unittest.TestCase):
 
         # Expected
         out_a = OutputNode(consumptions=[OutputConsumption(name='load', cost=10, quantity=[0])],
-                           productions=[], links=[])
+                           productions=[], storages=[], links=[])
         exp_result = Result(networks={'default': OutputNetwork(nodes={'a': out_a})})
 
         in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, '')))
