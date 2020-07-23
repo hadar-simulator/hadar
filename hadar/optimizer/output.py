@@ -91,9 +91,9 @@ class OutputStorage(DTO):
         :param flow_out: final output flow
         """
         self.name = name
-        self.capacity = capacity
-        self.flow_in = flow_in
-        self.flow_out = flow_out
+        self.capacity = np.array(capacity)
+        self.flow_in = np.array(flow_in)
+        self.flow_out = np.array(flow_out)
 
 
 class OutputLink(DTO):

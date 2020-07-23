@@ -12,7 +12,8 @@ import pandas as pd
 
 from hadar.analyzer.result import Index, ResultAnalyzer, IntIndex
 from hadar.optimizer.input import Production, Consumption, Study
-from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result, OutputNetwork
+from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result, OutputNetwork, \
+    OutputStorage
 
 
 class TestIndex(unittest.TestCase):
@@ -70,7 +71,9 @@ class TestAnalyzer(unittest.TestCase):
                 .node('b')\
                     .consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], name='load')\
                     .production(cost=20, quantity=[[110, 11, 11], [11, 110, 110]], name='prod')\
-                    .production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], name='nuclear')\
+                    .production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], name='nuclear') \
+                    .storage(name='store', capacity=100, flow_in=10, flow_out=20,
+                             cost_in=[[10, 1, 1], [1, 10, 10]], cost_out=[[20, 2, 2], [2, 20, 20]]) \
                 .node('c')\
                 .link(src='a', dest='b', quantity=[[110, 11, 11], [11, 110, 110]], cost=2)\
                 .link(src='a', dest='c', quantity=[[120, 12, 12], [12, 120, 120]], cost=2)\
@@ -80,12 +83,16 @@ class TestAnalyzer(unittest.TestCase):
             'a': OutputNode(consumptions=[OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load'),
                                           OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[30, 3, 3], [3, 30, 30]], name='car')],
                             productions=[OutputProduction(cost=np.ones((2, 3)) * 10, quantity=[[30, 3, 3], [3, 30, 30]], name='prod')],
+                            storages=[],
                             links=[OutputLink(dest='b', quantity=[[10, 1, 1], [1, 10, 10]], cost=np.ones((2, 3)) * 2),
                                    OutputLink(dest='c', quantity=[[20, 2, 2], [2, 20, 20]], cost=np.ones((2, 3)) * 2)]),
 
             'b': OutputNode(consumptions=[OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load')],
                             productions=[OutputProduction(cost=np.ones((2, 3)) * 20, quantity=[[10, 1, 1], [1, 10, 10]], name='prod'),
                                          OutputProduction(cost=np.ones((2, 3)) * 20, quantity=[[20, 2, 2], [2, 20, 20]], name='nuclear')],
+                            storages=[OutputStorage(name='store', capacity=[[10, 1, 1], [1, 10, 10]],
+                                                    flow_out=[[20, 2, 2], [2, 20, 20]],
+                                                    flow_in=[[30, 3, 3], [3, 30, 30]])],
                             links=[])
         }
 
@@ -120,6 +127,27 @@ class TestAnalyzer(unittest.TestCase):
         prod = ResultAnalyzer._build_production(self.study, self.result)
 
         pd.testing.assert_frame_equal(exp, prod)
+
+    def test_build_storage(self):
+        # Expected
+        exp = pd.DataFrame(data={'max_capacity': [100] * 6,
+                                 'capacity': [10, 1, 1, 1, 10, 10],
+                                 'max_flow_in': [10] * 6,
+                                 'flow_in': [30, 3, 3, 3, 30, 30],
+                                 'max_flow_out': [20] * 6,
+                                 'flow_out': [20, 2, 2, 2, 20, 20],
+                                 'cost_in': [10, 1, 1, 1, 10, 10],
+                                 'cost_out': [20, 2, 2, 2, 20, 20],
+                                 'init_capacity': [0] * 6,
+                                 'eff': [0] * 6,
+                                 'name': ['store'] * 6,
+                                 'node': ['b'] * 6,
+                                 'network': ['default'] * 6,
+                                 't': [0, 1, 2] * 2,
+                                 'scn': [0, 0, 1, 1, 2, 2]}, dtype=float)
+
+        stor = ResultAnalyzer._build_storage(self.study, self.result)
+        pd.testing.assert_frame_equal(exp, stor)
 
     def test_build_link(self):
         # Expected

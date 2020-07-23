@@ -75,6 +75,12 @@ class ConsIndex(Index[str]):
         Index.__init__(self, column='name', index=index)
 
 
+class StorIndex(Index[str]):
+    """ Index implementation to filter storage"""
+    def __init__(self, index):
+        Index.__init__(self, column='name', index=index)
+
+
 class LinkIndex(Index[str]):
     """Index implementation to filter destination node"""
     def __init__(self, index):
@@ -139,6 +145,7 @@ class ResultAnalyzer:
 
         self.consumption = ResultAnalyzer._build_consumption(self.study, self.result)
         self.production = ResultAnalyzer._build_production(self.study, self.result)
+        self.storage = ResultAnalyzer._build_storage(self.study, self.result)
         self.link = ResultAnalyzer._build_link(self.study, self.result)
 
 
@@ -180,7 +187,7 @@ class ResultAnalyzer:
     def _build_production(study: Study, result: Result):
         """
         Flat all data to build global production dataframe
-        columns: | cost | avail | used | name | node | t |
+        columns: | cost | avail | used | network | name | node | t |
         """
         h = study.horizon
         scn = study.nb_scn
@@ -208,6 +215,55 @@ class ResultAnalyzer:
                     n_prod += 1
 
         return prod
+
+    @staticmethod
+    def _build_storage(study: Study, result: Result):
+        """
+        Flat all data to build global storage dataframe
+        :param study:
+        :param result:
+        :return:
+        """
+        h = study.horizon
+        scn = study.nb_scn
+        elements = sum([sum([len(n.storages) for n in net.nodes.values()]) for net in study.networks.values()])
+        size = h * scn * elements
+
+        stor = {'max_capacity': np.empty(size, dtype=float), 'capacity': np.empty(size, dtype=float),
+                'max_flow_in': np.empty(size, dtype=float), 'flow_in': np.empty(size, dtype=float),
+                'max_flow_out': np.empty(size, dtype=float), 'flow_out': np.empty(size, dtype=float),
+                'cost_in': np.empty(size, dtype=float), 'cost_out': np.empty(size, dtype=float),
+                'init_capacity': np.empty(size, dtype=float), 'eff': np.empty(size, dtype=float),
+                'name': np.empty(size, dtype=str), 'node': np.empty(size, dtype=str),
+                'network': np.empty(size, dtype=str),
+                't': np.empty(size, dtype=float), 'scn': np.empty(size, dtype=float)}
+
+        stor = pd.DataFrame(data=stor)
+
+        n_stor = 0
+        for n, net in result.networks.items():
+            for node in net.nodes.keys():
+                for i, c in enumerate(net.nodes[node].storages):
+                    slices = stor.index[n_stor * h * scn: (n_stor + 1) * h * scn]
+                    study_stor = study.networks[n].nodes[node].storages[i]
+
+                    stor.loc[slices, 'max_capacity'] = study_stor.capacity
+                    stor.loc[slices, 'capacity'] = c.capacity.flatten()
+                    stor.loc[slices, 'max_flow_in'] = study_stor.flow_in
+                    stor.loc[slices, 'flow_in'] = c.flow_in.flatten()
+                    stor.loc[slices, 'max_flow_out'] = study_stor.flow_out
+                    stor.loc[slices, 'flow_out'] = c.flow_out.flatten()
+                    stor.loc[slices, 'cost_in'] = study_stor.cost_in.flatten()
+                    stor.loc[slices, 'cost_out'] = study_stor.cost_in.flatten()
+                    stor.loc[slices, 'init_capacity'] = study_stor.init_capacity
+                    stor.loc[slices, 'eff'] = study_stor.eff
+                    stor.loc[slices, 'network'] = n
+                    stor.loc[slices, 'name'] = c.name
+                    stor.loc[slices, 'node'] = node
+                    stor.loc[slices, 't'] = np.tile(np.arange(h), scn)
+                    stor.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
+
+        return stor
 
     @staticmethod
     def _build_link(study: Study, result: Result):
