@@ -52,6 +52,17 @@ class ABCElementPlotting(ABC):
         pass
 
     @abstractmethod
+    def candles(self, open: np.ndarray, close: np.ndarray, title: str):
+        """
+        Plot candle stick with open close
+        :param open: candle open data
+        :param close: candle close data
+        :param title: title to plot
+        :return:
+        """
+        pass
+
+    @abstractmethod
     def stack(self, areas: List[Tuple[str, np.ndarray]], lines: List[Tuple[str, np.ndarray]], title: str):
         """
         Plot stack.
@@ -223,6 +234,54 @@ class ProductionFluentAPISelector(FluentAPISelector):
         return self.plotting.gaussian(rac=rac, qt=prod, title=title)
 
 
+class StorageFluentAPISelector(FluentAPISelector):
+    """
+    Storage level of fluent API
+    """
+    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer,
+                 network: str, node: str, name: str):
+        FluentAPISelector.__init__(self, plotting, agg)
+        self.network = network
+        self.node = node
+        self.name = name
+
+    def candles(self, scn: int):
+        df = self.agg.network(self.network).node(self.node).storage(self.name).scn(scn).time()
+        df.sort_index(ascending=True, inplace=True)
+
+        open = np.append(df['init_capacity'][0], (df['flow_in'] - df['flow_out']).values)
+        open = open.cumsum()
+        close = open[1:]
+        open = open[:-1]
+
+        title = 'Stockage capacity of %s on node %s for scn=%d' % (self.name, self.node, scn)
+        return self.plotting.candles(open=open, close=close, title=title)
+
+    def monotone(self, t: int = None, scn: int = None):
+        """
+        Plot monotone graphics.
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
+        FluentAPISelector.not_both(t, scn)
+
+        if t is not None:
+            df = self.agg.network(self.network).node(self.node).storage(self.name).time(t).scn()
+            df.sort_index(ascending=True, inplace=True)
+            y = (df['flow_in'] - df['flow_out']).values
+            title = 'Monotone storage of %s on node %s at t=%0d' % (self.name, self.node, t)
+        if scn is not None:
+            df = self.agg.network(self.network).node(self.node).storage(self.name).scn(scn).time()
+            df.sort_index(ascending=True, inplace=True)
+            y = (df['flow_in'] - df['flow_out']).values
+            title = 'Monotone storage of %s on node %s for scn=%0d' % (self.name, self.node, scn)
+
+        return self.plotting.monotone(y, title)
+
+
+
 class LinkFluentAPISelector(FluentAPISelector):
     """
     Link level of fluent api
@@ -304,7 +363,7 @@ class NodeFluentAPISelector(FluentAPISelector):
         :param cons_kind: select which cons to stack : 'asked' or 'given'
         :return: plotly figure or jupyter widget to plot
         """
-        c, p, b = self.agg.get_elements_inside(node=self.node, network=self.network)
+        c, p, s, b = self.agg.get_elements_inside(node=self.node, network=self.network)
 
         areas = []
         # stack production with area
@@ -312,6 +371,12 @@ class NodeFluentAPISelector(FluentAPISelector):
             prod = self.agg.network(self.network).scn(scn).node(self.node).production().time().sort_values('cost', ascending=False)
             for i, name in enumerate(prod.index.get_level_values('name').unique()):
                 areas.append((name, prod.loc[name][prod_kind].sort_index().values))
+
+        # add  storage output flow
+        if s > 0:
+            stor = self.agg.network(self.network).scn(scn).node(self.node).storage().time().sort_values('cost_out', ascending=False)
+            for i, name in enumerate(stor.index.get_level_values('name').unique()):
+                areas.append((name, stor.loc[name]['flow_out'].sort_index().values))
 
         # add import in production stack
         balance = self.agg.get_balance(node=self.node, network=self.network)[scn]
@@ -325,6 +390,12 @@ class NodeFluentAPISelector(FluentAPISelector):
             cons = self.agg.network(self.network).scn(scn).node(self.node).consumption().time().sort_values('cost', ascending=False)
             for i, name in enumerate(cons.index.get_level_values('name').unique()):
                 lines.append((name, cons.loc[name][cons_kind].sort_index().values))
+
+        # add  storage output intput
+        if s > 0:
+            stor = self.agg.network(self.network).scn(scn).node(self.node).storage().time().sort_values('cost_in', ascending=False)
+            for i, name in enumerate(stor.index.get_level_values('name').unique()):
+                lines.append((name, stor.loc[name]['flow_in'].sort_index().values))
 
         # Add export in consumption stack
         exp = np.clip(balance, 0, None)
@@ -356,6 +427,16 @@ class NodeFluentAPISelector(FluentAPISelector):
          """
         return ProductionFluentAPISelector(plotting=self.plotting, agg=self.agg,
                                            network=self.network, node=self.node, name=name, kind=kind)
+
+    def storage(self, name: str) -> StorageFluentAPISelector:
+        """
+        Got o storage level of fluent API
+
+        :param name: select storage name
+        :return:
+        """
+        return StorageFluentAPISelector(plotting=self.plotting, agg=self.agg,
+                                        network=self.network, node=self.node, name=name)
 
     def link(self, dest: str, kind: str = 'used'):
         """

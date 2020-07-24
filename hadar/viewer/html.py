@@ -98,6 +98,17 @@ class HTMLElementPlotting(ABCElementPlotting):
 
         return fig
 
+    def candles(self, open: np.ndarray, close: np.ndarray, title: str):
+        fig = go.Figure()
+        text = ['%s<br>Begin=%d<br>End=%d<br>Flow=%d' % (t, o, c, o-c) for o, c, t in zip(open, close, self.time_index)]
+        fig.add_trace(go.Ohlc(x=self.time_index, open=open, high=open, low=close, close=close,
+                              hoverinfo='text', text=text))
+
+        fig.update_layout(title_text=title, yaxis_title='Quantity %s' % self.unit, xaxis_rangeslider_visible=False,
+                          xaxis_title='Time', showlegend=False)
+
+        return fig
+
     def stack(self, areas: List[Tuple[str, np.ndarray]], lines: List[Tuple[str, np.ndarray]], title: str):
         fig = go.Figure()
 

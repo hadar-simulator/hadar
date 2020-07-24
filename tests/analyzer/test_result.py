@@ -139,15 +139,15 @@ class TestAnalyzer(unittest.TestCase):
                                  'cost_in': [10, 1, 1, 1, 10, 10],
                                  'cost_out': [20, 2, 2, 2, 20, 20],
                                  'init_capacity': [0] * 6,
-                                 'eff': [0] * 6,
+                                 'eff': [1] * 6,
                                  'name': ['store'] * 6,
                                  'node': ['b'] * 6,
                                  'network': ['default'] * 6,
                                  't': [0, 1, 2] * 2,
-                                 'scn': [0, 0, 1, 1, 2, 2]}, dtype=float)
+                                 'scn': [0, 0, 0, 1, 1, 1]}, dtype=float)
 
         stor = ResultAnalyzer._build_storage(self.study, self.result)
-        pd.testing.assert_frame_equal(exp, stor)
+        pd.testing.assert_frame_equal(exp, stor, check_dtype=False)
 
     def test_build_link(self):
         # Expected
@@ -186,10 +186,31 @@ class TestAnalyzer(unittest.TestCase):
                                       'cost': [10, 10, 10, 20, 20, 20],
                                       'used': [30, 3, 3, 10, 1, 1]}, dtype=float, index=index)
 
+        # Test
         agg = ResultAnalyzer(study=self.study, result=self.result)
         cons = agg.network().scn(0).node(['a', 'b']).production('prod').time()
 
         pd.testing.assert_frame_equal(exp_cons, cons)
+
+    def test_aggregate_stor(self):
+        # Expected
+        index = pd.MultiIndex.from_tuples((('b', 'store', 0), ('b', 'store', 1), ('b', 'store', 2)),
+                                          names=['node', 'name', 't'], )
+        exp_stor = pd.DataFrame(data={'capacity': [10, 1, 1],
+                                      'cost_in': [10, 1, 1],
+                                      'cost_out': [20, 2, 2],
+                                      'eff': [1] * 3,
+                                      'flow_in': [30, 3, 3],
+                                      'flow_out': [20, 2, 2],
+                                      'init_capacity': [0] * 3,
+                                      'max_capacity': [100] * 3,
+                                      'max_flow_in': [10] * 3,
+                                      'max_flow_out': [20] * 3}, index=index)
+
+        # Test
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        stor = agg.network().scn(0).node().storage('store').time()
+        pd.testing.assert_frame_equal(exp_stor, stor, check_dtype=False)
 
     def test_aggregate_link(self):
         # Expected
@@ -207,8 +228,8 @@ class TestAnalyzer(unittest.TestCase):
 
     def test_get_elements_inside(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        self.assertEqual((2, 1, 2), agg.get_elements_inside('a'))
-        self.assertEqual((1, 2, 0), agg.get_elements_inside('b'))
+        self.assertEqual((2, 1, 0, 2), agg.get_elements_inside('a'))
+        self.assertEqual((1, 2, 1, 0), agg.get_elements_inside('b'))
 
     def test_balance(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
@@ -218,7 +239,7 @@ class TestAnalyzer(unittest.TestCase):
     def test_cost(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
         np.testing.assert_array_equal([[200360, 20036, 20036], [20036, 200360, 200360]], agg.get_cost(node='a'))
-        np.testing.assert_array_equal([[100600, 10060, 10060], [10060, 100600, 100600]], agg.get_cost(node='b'))
+        np.testing.assert_array_equal([[101300, 10067, 10067], [10067, 101300, 101300]], agg.get_cost(node='b'))
 
     def test_rac(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)

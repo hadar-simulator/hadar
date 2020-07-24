@@ -254,7 +254,7 @@ class ResultAnalyzer:
                     stor.loc[slices, 'max_flow_out'] = study_stor.flow_out
                     stor.loc[slices, 'flow_out'] = c.flow_out.flatten()
                     stor.loc[slices, 'cost_in'] = study_stor.cost_in.flatten()
-                    stor.loc[slices, 'cost_out'] = study_stor.cost_in.flatten()
+                    stor.loc[slices, 'cost_out'] = study_stor.cost_out.flatten()
                     stor.loc[slices, 'init_capacity'] = study_stor.init_capacity
                     stor.loc[slices, 'eff'] = study_stor.eff
                     stor.loc[slices, 'network'] = n
@@ -366,6 +366,9 @@ class ResultAnalyzer:
         if ResultAnalyzer.check_index(indexes, ProdIndex):
             return ResultAnalyzer._pivot(indexes, self.production)
 
+        if ResultAnalyzer.check_index(indexes, StorIndex):
+            return ResultAnalyzer._pivot(indexes, self.storage)
+
         if ResultAnalyzer.check_index(indexes, LinkIndex):
             return ResultAnalyzer._pivot(indexes, self.link)
 
@@ -377,17 +380,19 @@ class ResultAnalyzer:
         """
         return FluentAPISelector([NetworkIndex(index=name)], self)
 
-    def get_elements_inside(self,node: str, network: str = 'default'):
+    def get_elements_inside(self, node: str, network: str = 'default'):
         """
         Get numbers of elements by node.
 
         :param network: network name
         :param node: node name
-        :return: (nb of consumptions, nb of productions, nb of links (export))
+        :return: (nb of consumptions, nb of productions, nb of storages, nb of links (export))
         """
-        return len(self.result.networks[network].nodes[node].consumptions),\
-               len(self.result.networks[network].nodes[node].productions),\
-               len(self.result.networks[network].nodes[node].links)
+        n = self.result.networks[network].nodes[node]
+        return len(n.consumptions),\
+               len(n.productions),\
+               len(n.storages),\
+               len(n.links)
 
     def get_balance(self, node: str, network: str = 'default') -> np.ndarray:
         """
@@ -410,27 +415,34 @@ class ResultAnalyzer:
             balance += exp['used'].values.reshape(self.nb_scn, self.horizon)
         return balance
 
-    def get_cost(self, node: str) -> np.ndarray:
+    def get_cost(self, node: str, network='default') -> np.ndarray:
         """
         Compute adequacy cost on a node.
 
         :param node: node name
+        ;param network: network name, 'default' as default
         :return: matrix (scn, time)
         """
         cost = np.zeros((self.nb_scn,  self.horizon))
-        c, p, b = self.get_elements_inside(node)
+        c, p, s, b = self.get_elements_inside(node)
         if c:
-            cons = self.network().node(node).scn().time().consumption()
+            cons = self.network(network).node(node).scn().time().consumption()
             cost += ((cons['asked'] - cons['given']) * cons['cost']).groupby(axis=0, level=(0, 1)) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if p:
-            prod = self.network().node(node).scn().time().production()
+            prod = self.network(network).node(node).scn().time().production()
             cost += (prod['used'] * prod['cost']).groupby(axis=0, level=(0, 1)) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
+        if s:
+            stor = self.network(network).node(node).scn().time().storage()
+            cost += (stor['flow_in'] * stor['cost_in'] + stor['flow_out'] * stor['cost_out'])\
+                .groupby(axis=0, level=(0, 1))\
+                .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
+
         if b:
-            link = self.network().node(node).scn().time().link()
+            link = self.network(network).node(node).scn().time().link()
             cost += (link['used'] * link['cost']).groupby(axis=0, level=(0, 1)) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
@@ -513,18 +525,13 @@ class FluentAPISelector:
 
         if not ResultAnalyzer.check_index(indexes, ConsIndex) \
                 and not ResultAnalyzer.check_index(indexes, ProdIndex) \
+                and not ResultAnalyzer.check_index(indexes, StorIndex) \
                 and not ResultAnalyzer.check_index(indexes, LinkIndex):
+
             self.consumption = lambda x=None: self._append(ConsIndex(x))
-
-        if not ResultAnalyzer.check_index(indexes, ProdIndex) \
-                and not ResultAnalyzer.check_index(indexes, ConsIndex) \
-                and not ResultAnalyzer.check_index(indexes, LinkIndex):
             self.production = lambda x=None: self._append(ProdIndex(x))
-
-        if not ResultAnalyzer.check_index(indexes, LinkIndex) \
-                and not ResultAnalyzer.check_index(indexes, ConsIndex) \
-                and not ResultAnalyzer.check_index(indexes, ProdIndex):
             self.link = lambda x=None: self._append(LinkIndex(x))
+            self.storage = lambda x=None: self._append(StorIndex(x))
 
         if not ResultAnalyzer.check_index(indexes, NodeIndex):
             self.node = lambda x=None: self._append(NodeIndex(x))

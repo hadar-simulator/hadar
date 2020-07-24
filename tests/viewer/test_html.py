@@ -83,6 +83,31 @@ class TestHTMLPlotting(unittest.TestCase):
         fig = self.plot.network().node('a').link('b').gaussian(scn=0)
         self.assert_fig_hash('52620565ce8ea670b18707cccf30594b5c3d58ea', fig)
 
+    def test_storage(self):
+        study = Study(horizon=4)\
+            .network()\
+                .node('a')\
+                    .production(name='nuclear', cost=20, quantity=[10, 10, 10, 0]) \
+                .node('b')\
+                    .consumption(name='load', cost=10 ** 6, quantity=[20, 10, 0, 10]) \
+                    .storage(name='cell', capacity=30, flow_in=10, flow_out=10, cost_in=-22, cost_out=30,
+                             init_capacity=20, eff=.5) \
+            .link(src='a', dest='b', cost=1, quantity=10)\
+            .build()
+
+        optimizer = LPOptimizer()
+        res = optimizer.solve(study)
+        plot = HTMLPlotting(agg=ResultAnalyzer(study, res), unit_symbol='MW', time_start='2020-02-01', time_end='2020-02-02')
+
+        fig = plot.network().node('b').stack()
+        self.assert_fig_hash('e0dacd6b3acdae13f9623e91f122951ce4082be9', fig)
+
+        fig = plot.network().node('b').storage('cell').candles(scn=0)
+        self.assert_fig_hash('f53b5742f063d1bfd6242e56e5633afcbb41e645', fig)
+
+        fig = plot.network().node('b').storage('cell').monotone(scn=0)
+        self.assert_fig_hash('992352e7ef354ce54a99efb19d493e2fa85fcf96', fig)
+
     def assert_fig_hash(self, expected: str, fig: go.Figure):
         actual = hashlib.sha1(TestHTMLPlotting.get_html(fig)).hexdigest()
         if expected != actual:
