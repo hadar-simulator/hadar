@@ -73,7 +73,7 @@ class TestAnalyzer(unittest.TestCase):
                     .production(cost=20, quantity=[[110, 11, 11], [11, 110, 110]], name='prod')\
                     .production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], name='nuclear') \
                     .storage(name='store', capacity=100, flow_in=10, flow_out=20,
-                             cost_in=[[10, 1, 1], [1, 10, 10]], cost_out=[[20, 2, 2], [2, 20, 20]]) \
+                             cost=1) \
                 .node('c')\
                 .link(src='a', dest='b', quantity=[[110, 11, 11], [11, 110, 110]], cost=2)\
                 .link(src='a', dest='c', quantity=[[120, 12, 12], [12, 120, 120]], cost=2)\
@@ -136,10 +136,9 @@ class TestAnalyzer(unittest.TestCase):
                                  'flow_in': [30, 3, 3, 3, 30, 30],
                                  'max_flow_out': [20] * 6,
                                  'flow_out': [20, 2, 2, 2, 20, 20],
-                                 'cost_in': [10, 1, 1, 1, 10, 10],
-                                 'cost_out': [20, 2, 2, 2, 20, 20],
+                                 'cost': [1] * 6,
                                  'init_capacity': [0] * 6,
-                                 'eff': [1] * 6,
+                                 'eff': [.99] * 6,
                                  'name': ['store'] * 6,
                                  'node': ['b'] * 6,
                                  'network': ['default'] * 6,
@@ -197,9 +196,8 @@ class TestAnalyzer(unittest.TestCase):
         index = pd.MultiIndex.from_tuples((('b', 'store', 0), ('b', 'store', 1), ('b', 'store', 2)),
                                           names=['node', 'name', 't'], )
         exp_stor = pd.DataFrame(data={'capacity': [10, 1, 1],
-                                      'cost_in': [10, 1, 1],
-                                      'cost_out': [20, 2, 2],
-                                      'eff': [1] * 3,
+                                      'cost': [1, 1, 1],
+                                      'eff': [.99] * 3,
                                       'flow_in': [30, 3, 3],
                                       'flow_out': [20, 2, 2],
                                       'init_capacity': [0] * 3,
@@ -239,7 +237,7 @@ class TestAnalyzer(unittest.TestCase):
     def test_cost(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
         np.testing.assert_array_equal([[200360, 20036, 20036], [20036, 200360, 200360]], agg.get_cost(node='a'))
-        np.testing.assert_array_equal([[101300, 10067, 10067], [10067, 101300, 101300]], agg.get_cost(node='b'))
+        np.testing.assert_array_equal([[100610, 10061, 10061], [10061, 100610, 100610]], agg.get_cost(node='b'))
 
     def test_rac(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)

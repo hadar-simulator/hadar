@@ -232,7 +232,7 @@ class ResultAnalyzer:
         stor = {'max_capacity': np.empty(size, dtype=float), 'capacity': np.empty(size, dtype=float),
                 'max_flow_in': np.empty(size, dtype=float), 'flow_in': np.empty(size, dtype=float),
                 'max_flow_out': np.empty(size, dtype=float), 'flow_out': np.empty(size, dtype=float),
-                'cost_in': np.empty(size, dtype=float), 'cost_out': np.empty(size, dtype=float),
+                'cost': np.empty(size, dtype=float),
                 'init_capacity': np.empty(size, dtype=float), 'eff': np.empty(size, dtype=float),
                 'name': np.empty(size, dtype=str), 'node': np.empty(size, dtype=str),
                 'network': np.empty(size, dtype=str),
@@ -253,8 +253,7 @@ class ResultAnalyzer:
                     stor.loc[slices, 'flow_in'] = c.flow_in.flatten()
                     stor.loc[slices, 'max_flow_out'] = study_stor.flow_out
                     stor.loc[slices, 'flow_out'] = c.flow_out.flatten()
-                    stor.loc[slices, 'cost_in'] = study_stor.cost_in.flatten()
-                    stor.loc[slices, 'cost_out'] = study_stor.cost_out.flatten()
+                    stor.loc[slices, 'cost'] = study_stor.cost
                     stor.loc[slices, 'init_capacity'] = study_stor.init_capacity
                     stor.loc[slices, 'eff'] = study_stor.eff
                     stor.loc[slices, 'network'] = n
@@ -415,12 +414,12 @@ class ResultAnalyzer:
             balance += exp['used'].values.reshape(self.nb_scn, self.horizon)
         return balance
 
-    def get_cost(self, node: str, network='default') -> np.ndarray:
+    def get_cost(self, node: str, network: str = 'default') -> np.ndarray:
         """
         Compute adequacy cost on a node.
 
         :param node: node name
-        ;param network: network name, 'default' as default
+        :param network: network name, 'default' as default
         :return: matrix (scn, time)
         """
         cost = np.zeros((self.nb_scn,  self.horizon))
@@ -437,8 +436,7 @@ class ResultAnalyzer:
 
         if s:
             stor = self.network(network).node(node).scn().time().storage()
-            cost += (stor['flow_in'] * stor['cost_in'] + stor['flow_out'] * stor['cost_out'])\
-                .groupby(axis=0, level=(0, 1))\
+            cost += (stor['capacity'] * stor['cost']).groupby(axis=0, level=(0, 1))\
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if b:

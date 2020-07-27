@@ -47,7 +47,7 @@ class InputMapper:
                        for p in self.study.networks[network].nodes[node].productions]
 
         storages = [LPStorage(name=s.name, capacity=s.capacity, flow_in=s.flow_in, flow_out=s.flow_out, eff=s.eff,
-                              init_capacity=s.init_capacity, cost_out=s.cost_out[scn, t], cost_in=s.cost_in[scn, t],
+                              init_capacity=s.init_capacity, cost=s.cost,
                               var_capacity=self.solver.NumVar(0, float(s.capacity), 'storage_capacity=%s %s' % (s.name, suffix)),
                               var_flow_in=self.solver.NumVar(0, float(s.flow_in), 'storage_flow_in=%s %s' % (s.name, suffix)),
                               var_flow_out=self.solver.NumVar(0, float(s.flow_out), 'storage_flow_out=%s %s' % (s.name, suffix)))
@@ -72,7 +72,7 @@ class OutputMapper:
         :param study: input study to reproduce structure
         """
         def build_nodes(network: InputNetwork):
-            return {name: OutputNode.build_like_input(input) for name, input in network.nodes.items()}
+            return {name: OutputNode.build_like_input(input, h=study.horizon, scn=study.nb_scn) for name, input in network.nodes.items()}
 
         self.networks = {name: OutputNetwork(nodes=build_nodes(network)) for name, network in study.networks.items()}
 

@@ -136,21 +136,23 @@ class OutputNode(DTO):
         self.links = links
 
     @staticmethod
-    def build_like_input(input: InputNode):
+    def build_like_input(input: InputNode, h: int, scn: int):
         """
         Use an input node to create an output node. Keep list elements fill quantity by zeros.
 
         :param input: InputNode to copy
+        :param h: time horizon size
+        :param scn: number of scnearios in study
         :return: OutputNode like InputNode with all quantity at zero
         """
         output = OutputNode(consumptions=[], productions=[], storages=[], links=[])
-
-        output.consumptions = [OutputConsumption(name=i.name, cost=i.cost, quantity=np.zeros_like(i.quantity))
+        shape = (scn, h)
+        output.consumptions = [OutputConsumption(name=i.name, cost=i.cost, quantity=np.zeros(shape))
                                for i in input.consumptions]
-        output.productions = [OutputProduction(name=i.name, cost=i.cost, quantity=np.zeros_like(i.quantity))
+        output.productions = [OutputProduction(name=i.name, cost=i.cost, quantity=np.zeros(shape))
                               for i in input.productions]
-        output.storages = [OutputStorage(name=i.name, capacity=np.zeros_like(i.cost_in),
-                                         flow_out=np.zeros_like(i.cost_out), flow_in=np.zeros_like(i.cost_in))
+        output.storages = [OutputStorage(name=i.name, capacity=np.zeros(shape),
+                                         flow_out=np.zeros(shape), flow_in=np.zeros(shape))
                            for i in input.storages]
         output.links = [OutputLink(dest=i.dest, cost=i.cost, quantity=np.zeros_like(i.quantity))
                         for i in input.links]

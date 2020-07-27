@@ -27,9 +27,9 @@ class TestObjectiveBuilder(unittest.TestCase):
         # Input
         consumptions = [LPConsumption(name='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
         productions = [LPProduction(name='solar', quantity=10, cost=20, variable=MockNumVar(0, 20, 'solar'))]
-        storages = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'cell_capacity'),
-                              flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'), cost_in=1,
-                              flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'), cost_out=10,
+        storages = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'cell_capacity'), cost=1,
+                              flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'),
+                              flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'),
                               init_capacity=2, eff=1.2
                               )]
         links = [LPLink(src='fr', dest='be', quantity=10, cost=30, variable=MockNumVar(0, 30, 'be'))]
@@ -37,7 +37,7 @@ class TestObjectiveBuilder(unittest.TestCase):
 
         # Expected
         coeffs = {MockNumVar(0, 10, 'load'): 10, MockNumVar(0, 20, 'solar'): 20, MockNumVar(0, 30, 'be'): 30,
-                  MockNumVar(0, 1, 'cell_flow_in'): 1, MockNumVar(0, 10, 'cell_flow_out'): 10}
+                  MockNumVar(0, 10, 'cell_capacity'): 1}
         expected = MockObjective(min=True, coeffs=coeffs)
 
         # Test
@@ -57,9 +57,9 @@ class TestAdequacyBuilder(unittest.TestCase):
         # Input
         fr_consumptions = [LPConsumption(name='load', quantity=10, cost=10, variable=MockNumVar(0, 10, 'load'))]
         fr_productions = [LPProduction(name='solar', quantity=10, cost=20, variable=MockNumVar(0, 20, 'solar'))]
-        fr_storages = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'cell_capacity'),
-                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'), cost_in=1,
-                                 flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'), cost_out=10,
+        fr_storages = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'cell_capacity'), cost=1,
+                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'),
+                                 flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'),
                                  init_capacity=2, eff=1.2)]
         fr_links = [LPLink(src='fr', dest='be', quantity=10, cost=30, variable=MockNumVar(0, 30, 'be'))]
         fr_node = LPNode(consumptions=fr_consumptions, productions=fr_productions, storages=fr_storages, links=fr_links)
@@ -92,9 +92,9 @@ class TestStorageBuilder(unittest.TestCase):
 
         # Input
         c0 = MockNumVar(0, 10, 'cell_capacity')
-        storages = [LPStorage(name='cell', capacity=10, var_capacity=c0,
-                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'), cost_in=1,
-                                 flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'), cost_out=10,
+        storages = [LPStorage(name='cell', capacity=10, var_capacity=c0, cost=1,
+                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'),
+                                 flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'),
                                  init_capacity=2, eff=1.2)]
         node = LPNode(consumptions=[], productions=[], storages=storages, links=[])
 
@@ -115,9 +115,9 @@ class TestStorageBuilder(unittest.TestCase):
         solver = MockSolver()
 
         # Input
-        storages = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'cell_capacity at 1'),
-                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'), cost_in=1,
-                                 flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'), cost_out=10,
+        storages = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'cell_capacity at 1'), cost=1,
+                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'cell_flow_in'),
+                                 flow_out=10, var_flow_out=MockNumVar(0, 10, 'cell_flow_out'),
                                  init_capacity=2, eff=1.2)]
         node = LPNode(consumptions=[], productions=[], storages=storages, links=[])
 

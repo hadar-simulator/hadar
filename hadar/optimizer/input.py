@@ -70,26 +70,23 @@ class Storage(DTO):
     """
     Storage element
     """
-    def __init__(self, name, capacity: int, flow_in: float, flow_out: float,
-                 cost_in: Union[List, np.ndarray, float], cost_out: Union[List, np.ndarray, float],
-                 init_capacity: int = 0,  eff: float = 1):
+    def __init__(self, name, capacity: int, flow_in: float, flow_out: float, cost: float = 0,
+                 init_capacity: int = 0,  eff: float = 0.99):
         """
         Create storage.
 
         :param capacity: maximum storage capacity (like of many quantity to use inside storage)
         :param flow_in: max flow into storage during on time step
         :param flow_out: max flow out storage during on time step
-        :param cost_in: unit cost of use for input flow
-        :param cost_out: unit cost of used for output flow
-        :param init_capacity: initial capacity level
-        :param eff: storage efficient. (applied on input flow stored)
+        :param cost: unit cost of storage at each time-step. default 0
+        :param init_capacity: initial capacity level. default 0
+        :param eff: storage efficient (applied on input flow stored). default 0.99
         """
         self.name = name
         self.capacity = capacity
         self.flow_in = flow_in
         self.flow_out = flow_out
-        self.cost_in = np.array(cost_in)
-        self.cost_out = np.array(cost_out)
+        self.cost = cost
         self.init_capacity = init_capacity
         self.eff = eff
 
@@ -234,11 +231,9 @@ class Study(DTO):
             raise ValueError('storage flow must be positive')
         if store.capacity < 0 or store.init_capacity < 0:
             raise ValueError('storage capacities must be positive')
-        if store.eff < 0:
-            raise ValueError('storage efficiency must be positive')
+        if store.eff < 0 or store.eff > 1:
+            raise ValueError('storage efficiency must be in ]0, 1[')
 
-        store.cost_in = self._standardize_array(store.cost_in)
-        store.cost_out = self._standardize_array(store.cost_out)
         self.networks[network].nodes[node].storages.append(store)
 
     def _standardize_array(self, array: Union[List[float], np.ndarray, float]) -> np.ndarray:
@@ -355,13 +350,21 @@ class NodeFluentAPISelector:
                                    prod=Production(name=name, cost=cost, quantity=quantity))
         return self
 
-    def storage(self, name, capacity: int, flow_in: float, flow_out: float,
-                 cost_in: Union[List, np.ndarray, float], cost_out: Union[List, np.ndarray, float],
-                 init_capacity: int = 0,  eff: int = 1):
+    def storage(self, name, capacity: int, flow_in: float, flow_out: float, cost: float = 0,
+                 init_capacity: int = 0,  eff: int = 0.99):
+        """
+        Create storage.
 
+        :param capacity: maximum storage capacity (like of many quantity to use inside storage)
+        :param flow_in: max flow into storage during on time step
+        :param flow_out: max flow out storage during on time step
+        :param cost: unit cost of storage at each time-step. default 0
+        :param init_capacity: initial capacity level. default 0
+        :param eff: storage efficient (applied on input flow stored). default 0.99
+        """
         self.study._add_storage(network=self.selector['network'], node=self.selector['node'],
                                 store=Storage(name=name, capacity=capacity, flow_in=flow_in, flow_out=flow_out,
-                                              cost_in=cost_in, cost_out=cost_out, init_capacity=init_capacity, eff=eff))
+                                              cost=cost, init_capacity=init_capacity, eff=eff))
         return self
 
     def node(self, name):

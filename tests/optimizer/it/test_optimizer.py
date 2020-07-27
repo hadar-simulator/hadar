@@ -323,7 +323,7 @@ class TestOptimizer(unittest.TestCase):
                 Capacity
         |          A           | --------> |          B           |
         | nuclear: 10 @ 20     |  10       | load: 20, 10, 0, 10  |
-        |                      |           | storage: 20 @ 40     |
+        |                      |           | storage: 0 @ 30     |
         :return:
         """
 
@@ -333,8 +333,8 @@ class TestOptimizer(unittest.TestCase):
                     .production(name='nuclear', cost=20, quantity=[10, 10, 10, 0]) \
                 .node('b')\
                     .consumption(name='load', cost=10 ** 6, quantity=[20, 10, 0, 10]) \
-                    .storage(name='cell', capacity=30, flow_in=10, flow_out=10, cost_in=-22, cost_out=30,
-                             init_capacity=20, eff=.5) \
+                    .storage(name='cell', capacity=30, flow_in=20, flow_out=20,
+                             init_capacity=15, eff=.5)\
             .link(src='a', dest='b', cost=1, quantity=10)\
             .build()
 
@@ -345,7 +345,7 @@ class TestOptimizer(unittest.TestCase):
 
         nodes_expected['b'] = hd.OutputNode(
             consumptions=[hd.OutputConsumption(cost=10 ** 6, quantity=[[20, 10, 0, 10]], name='load')],
-            storages=[hd.OutputStorage(name='cell', capacity=[[10, 10, 20, 10]],
+            storages=[hd.OutputStorage(name='cell', capacity=[[15, 5, 5, 10, 0]],
                                        flow_in=[[0, 0, 10, 0]], flow_out=[[10, 0, 0, 10]])],
             productions=[], links=[])
 

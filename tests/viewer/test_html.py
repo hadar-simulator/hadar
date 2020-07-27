@@ -90,8 +90,7 @@ class TestHTMLPlotting(unittest.TestCase):
                     .production(name='nuclear', cost=20, quantity=[10, 10, 10, 0]) \
                 .node('b')\
                     .consumption(name='load', cost=10 ** 6, quantity=[20, 10, 0, 10]) \
-                    .storage(name='cell', capacity=30, flow_in=10, flow_out=10, cost_in=-22, cost_out=30,
-                             init_capacity=20, eff=.5) \
+                    .storage(name='cell', capacity=30, flow_in=10, flow_out=10, init_capacity=15, eff=.5) \
             .link(src='a', dest='b', cost=1, quantity=10)\
             .build()
 
@@ -100,13 +99,13 @@ class TestHTMLPlotting(unittest.TestCase):
         plot = HTMLPlotting(agg=ResultAnalyzer(study, res), unit_symbol='MW', time_start='2020-02-01', time_end='2020-02-02')
 
         fig = plot.network().node('b').stack()
-        self.assert_fig_hash('e0dacd6b3acdae13f9623e91f122951ce4082be9', fig)
+        self.assert_fig_hash('94760e8b7d07704cfe4132a918b4075f5f594d69', fig)
 
         fig = plot.network().node('b').storage('cell').candles(scn=0)
-        self.assert_fig_hash('f53b5742f063d1bfd6242e56e5633afcbb41e645', fig)
+        self.assert_fig_hash('594ae603876c2d1bc91899e89d6de50bf37071ee', fig)
 
         fig = plot.network().node('b').storage('cell').monotone(scn=0)
-        self.assert_fig_hash('992352e7ef354ce54a99efb19d493e2fa85fcf96', fig)
+        self.assert_fig_hash('f020d7954b2fa2245001a4b34530d65ddbd87382', fig)
 
     def assert_fig_hash(self, expected: str, fig: go.Figure):
         actual = hashlib.sha1(TestHTMLPlotting.get_html(fig)).hexdigest()

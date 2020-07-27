@@ -74,13 +74,12 @@ class ObjectiveBuilder:
 
     def _add_storages(self, stors: List[LPStorage]):
         """
-        Add storage cost. Cost of unsustainable storage in and cost of use for storage out
+        Add storage cost. Cost of store for each time-step
         :param stors: list of storages
         :return:
         """
         for stor in stors:
-            self.objective.SetCoefficient(stor.var_flow_in, stor.cost_in)
-            self.objective.SetCoefficient(stor.var_flow_out, stor.cost_out)
+            self.objective.SetCoefficient(stor.var_capacity, stor.cost)
             self.logger.debug('Add storage %s into objective', stor.name)
 
     def _add_links(self, links: List[LPLink]):

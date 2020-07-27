@@ -374,7 +374,7 @@ class NodeFluentAPISelector(FluentAPISelector):
 
         # add  storage output flow
         if s > 0:
-            stor = self.agg.network(self.network).scn(scn).node(self.node).storage().time().sort_values('cost_out', ascending=False)
+            stor = self.agg.network(self.network).scn(scn).node(self.node).storage().time().sort_values('cost', ascending=False)
             for i, name in enumerate(stor.index.get_level_values('name').unique()):
                 areas.append((name, stor.loc[name]['flow_out'].sort_index().values))
 
@@ -393,7 +393,7 @@ class NodeFluentAPISelector(FluentAPISelector):
 
         # add  storage output intput
         if s > 0:
-            stor = self.agg.network(self.network).scn(scn).node(self.node).storage().time().sort_values('cost_in', ascending=False)
+            stor = self.agg.network(self.network).scn(scn).node(self.node).storage().time().sort_values('cost', ascending=False)
             for i, name in enumerate(stor.index.get_level_values('name').unique()):
                 lines.append((name, stor.loc[name]['flow_in'].sort_index().values))
 

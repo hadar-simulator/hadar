@@ -24,8 +24,7 @@ class TestInputMapper(unittest.TestCase):
                 .node('a')\
                     .consumption(name='load', quantity=[[10, 1], [20, 2]], cost=[[.01, .1], [.02, .2]])\
                     .production(name='nuclear', quantity=[[12, 2], [21, 20]], cost=[[0.12, 0.2], [0.21, 0.02]]) \
-                    .storage(name='cell', capacity=10, flow_in=1, flow_out=1, cost_in=[[1, 11], [22, 2]],
-                             cost_out=[[3, 33], [44, 4]], init_capacity=2, eff=.9) \
+                    .storage(name='cell', capacity=10, flow_in=1, flow_out=1, cost=1, init_capacity=2, eff=.9) \
             .node('be')\
                 .link(src='a', dest='be', quantity=[[10, 3], [20, 30]], cost=[[.01, .3], [.02, .03]])\
             .build()
@@ -42,7 +41,7 @@ class TestInputMapper(unittest.TestCase):
         out_stor_0 = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'storage_capacity=cell %s' % suffix),
                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'storage_flow_in=cell %s' % suffix),
                                 flow_out=1, var_flow_out=MockNumVar(0, 1, 'storage_flow_out=cell %s' % suffix),
-                                cost_in=1, cost_out=3, init_capacity=2, eff=.9)]
+                                cost=1, init_capacity=2, eff=.9)]
         out_link_0 = [LPLink(src='a', dest='be', cost=.01, quantity=10, variable=MockNumVar(0, 10.0, 'link=be %s' % suffix))]
         out_node_0 = LPNode(consumptions=out_cons_0, productions=out_prod_0, storages=out_stor_0, links=out_link_0)
 
@@ -55,7 +54,7 @@ class TestInputMapper(unittest.TestCase):
         out_stor_1 = [LPStorage(name='cell', capacity=10, var_capacity=MockNumVar(0, 10, 'storage_capacity=cell %s' % suffix),
                                 flow_in=1, var_flow_in=MockNumVar(0, 1, 'storage_flow_in=cell %s' % suffix),
                                 flow_out=1, var_flow_out=MockNumVar(0, 1, 'storage_flow_out=cell %s' % suffix),
-                                cost_in=2, cost_out=4, init_capacity=2, eff=.9)]
+                                cost=1, init_capacity=2, eff=.9)]
         out_link_1 = [LPLink(src='a', dest='be', cost=.03, quantity=30, variable=MockNumVar(0, 30.0, 'link=be %s' % suffix))]
         out_node_1 = LPNode(consumptions=out_cons_1, productions=out_prod_1, storages=out_stor_1,links=out_link_1)
 
@@ -70,8 +69,7 @@ class TestOutputMapper(unittest.TestCase):
                 .node('a')\
                     .consumption(name='load', quantity=[[10, 1], [20, 2]], cost=[[.01, .1], [.02, .2]])\
                     .production(name='nuclear', quantity=[[12, 2], [21, 20]], cost=[[0.12, 0.2], [0.21, 0.02]]) \
-                    .storage(name='cell', capacity=10, flow_in=1, flow_out=1, cost_in=[[1, 11], [22, 2]],
-                             cost_out=[[3, 33], [44, 4]], init_capacity=2, eff=.9) \
+                    .storage(name='cell', capacity=10, flow_in=1, flow_out=1, cost=1, init_capacity=2, eff=.9) \
             .node('be')\
                 .link(src='a', dest='be', quantity=[[10, 3], [20, 30]], cost=[[.01, .3], [.02, .03]])\
             .build()
@@ -81,8 +79,7 @@ class TestOutputMapper(unittest.TestCase):
 
         out_cons_0 = [LPConsumption(name='load', cost=.01, quantity=10, variable=MockNumVar(0, 5, ''))]
         out_prod_0 = [LPProduction(name='nuclear', cost=.12, quantity=12, variable=MockNumVar(0, 12, ''))]
-        out_stor_0 = [LPStorage(name='cell', capacity=10, flow_in=1, flow_out=1, init_capacity=2, eff=.9,
-                                cost_in=[[1, 11], [22, 2]], cost_out=[[3, 33], [44, 4]],
+        out_stor_0 = [LPStorage(name='cell', capacity=10, flow_in=1, flow_out=1, init_capacity=2, eff=.9, cost=1,
                                 var_capacity=MockNumVar(0, 5, ''),
                                 var_flow_in=MockNumVar(0, 2, ''),
                                 var_flow_out=MockNumVar(0, 4, ''))]
@@ -92,8 +89,7 @@ class TestOutputMapper(unittest.TestCase):
 
         out_cons_1 = [LPConsumption(name='load', cost=.2, quantity=20, variable=MockNumVar(0, 5, ''))]
         out_prod_1 = [LPProduction(name='nuclear', cost=.21, quantity=2, variable=MockNumVar(0, 112, ''))]
-        out_stor_1 = [LPStorage(name='cell', capacity=10, flow_in=1, flow_out=1, init_capacity=2, eff=.9,
-                                cost_in=[[1, 11], [22, 2]], cost_out=[[3, 33], [44, 4]],
+        out_stor_1 = [LPStorage(name='cell', capacity=10, flow_in=1, flow_out=1, init_capacity=2, eff=.9, cost=1,
                                 var_capacity=MockNumVar(0, 55, ''),
                                 var_flow_in=MockNumVar(0, 22, ''),
                                 var_flow_out=MockNumVar(0, 44, ''))]
