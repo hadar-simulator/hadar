@@ -245,11 +245,11 @@ class StorageFluentAPISelector(FluentAPISelector):
         self.node = node
         self.name = name
 
-    def candles(self, scn: int):
+    def candles(self, scn: int = 0):
         df = self.agg.network(self.network).node(self.node).storage(self.name).scn(scn).time()
         df.sort_index(ascending=True, inplace=True)
 
-        open = np.append(df['init_capacity'][0], (df['flow_in'] - df['flow_out']).values)
+        open = np.append(df['init_capacity'][0], (df['flow_in'] * df['eff'] - df['flow_out']).values)
         open = open.cumsum()
         close = open[1:]
         open = open[:-1]
