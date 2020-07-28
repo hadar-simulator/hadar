@@ -74,7 +74,7 @@ First constraint is from Kirschhoff law and describes balance between production
 
 .. math::
     \begin{array}{rcl}
-    \Pi_{kirschhoff} &:& \forall n &,& \sum^{C^n}_{c}{\underline{\overline{\Gamma_c}}} + \sum^{L^n_{\downarrow}}_{l}{ \Gamma_l } = \sum^{P^n}_{p}{ \Gamma_p } + \sum^{L^n_{\uparrow}}_{l}{ \Gamma_l }
+    \Pi_{kirschhoff} &:& \forall n &,& \underbrace{\sum^{C^n}_{c}{\underline{\overline{\Gamma_c}}} + \sum^{L^n_{\downarrow}}_{l}{ \Gamma_l }}_{Consuming\ Flow} = \underbrace{\sum^{P^n}_{p}{ \Gamma_p } + \sum^{L^n_{\uparrow}}_{l}{ \Gamma_l }}_{Producing\ Flow}
     \end{array}
 
 Then productions and edges need to be bounded
@@ -98,7 +98,7 @@ Variables
 
 Sometime, there are a lack of adequacy because there are not enough production, called *lost of load*.
 
-    Like :math:`\Gamma_x` means quantity present in network, :math:`\Lambda_x` represents a lack in network (consumption or production) to reach adequacy. Like for :math:`\Gamma_x`, lower case grec letter :math:`\lambda_x` is for cost associated to this lack.
+    Like :math:`\Gamma_x` means quantity present in network, :math:`\Lambda_x` represents a lack in network (consumption or production) to reach adequacy. Like for :math:`\Gamma_x` , lower case grec letter :math:`\lambda_x` is for cost associated to this lack.
 
 * :math:`\Lambda_c \in \mathbb{R}^T_+` lost of load for :math:`c` consumption
 
@@ -111,7 +111,7 @@ Objective has a new term
 
 .. math::
     \begin{array}{rcl}
-    objective & = & \min{\Omega_{transmission} + \Omega_{production}} + \underbrace{\Omega_{lol}}\\
+    objective & = & \min{\Omega_{...} + \Omega_{lol}}\\
     \Omega_{lol} & = & \sum^N_n \sum^{C^n}_{c}{\Lambda_c * {\lambda_c}}
     \end{array}
 
@@ -122,7 +122,7 @@ Kirschhoff law needs an update too. Lost of Load is represented like a *fantom* 
 
 .. math::
     \begin{array}{rcl}
-        \Pi_{kirschhoff} &:& \forall n &,& \sum^{C^n}_{c}{\underline{\overline{\Gamma_c}}} + \sum^{L^n_{\downarrow}}_{l}{ \Gamma_l } = \sum^{P^n}_{p}{ \Gamma_p } + \sum^{L^n_{\uparrow}}_{l}{ \Gamma_l } + \underbrace{\sum^{C^n}_{c}{ \Lambda_c }}
+        \Pi_{kirschhoff} &:& \forall n \in N &,& [Consuming\ Flow] = [Producing\ Flow] + \sum^{C^n}_{c}{ \Lambda_c }
     \end{array}
 
 Lost of load must be bounded
@@ -134,4 +134,76 @@ Lost of load must be bounded
     \forall n \in N \\
     \forall c \in C^n
     \end{array} \right. &,& 0 \le \Lambda_c \le \overline{\underline{\Gamma_c}}
+    \end{array}
+
+
+Storage
+-------
+
+Variables
+*********
+
+Storage is a element inside Hadar to store quantity on a node. We have:
+
+* :math:`S^n` : set of storage attached to node :math:`n`
+
+* :math:`s \in S^n` a storage element inside a set of storage attached to node :math:`n`
+
+* :math:`\Gamma_s` current capacity inside storage :math:`s`
+
+* :math:`\overline{ \Gamma_s }` max capacity for storage :math:`s`
+
+* :math:`\Gamma_s^0` initial capacity inside storage :math:`s`
+
+* :math:`\gamma_s` linear cost of capacity storage :math:`s` for one time step
+
+* :math:`\Gamma_s^\downarrow` input flow to storage :math:`s`
+
+* :math:`\overline{ \Gamma_s^\downarrow }` max input flow to storage :math:`s`
+
+* :math:`\Gamma_s^\uparrow` output flow to storage :math:`s`
+
+* :math:`\overline{ \Gamma_s^\uparrow }` max output flow to storage :math:`s`
+
+* :math:`\eta_s` storage efficiency for :math:`s`
+
+
+Objective
+*********
+
+.. math::
+    \begin{array}{rcl}
+    objective & = & \min{\Omega_{...} + \Omega_{storage}} \\
+    \Omega_{storage} & = & \sum^N_n \sum^{S^n}_{s}{\Gamma_s * {\gamma_s}}
+    \end{array}
+
+
+Constraints
+***********
+
+Kirschhoff law needs an update too. **Warning with naming** : Input flow for storage is a output flow for node, so goes into consuming flow. And as you assume output flow for storage is a input flow for node, and goes into production flow.
+
+.. math::
+    \begin{array}{rcl}
+        \Pi_{kirschhoff} &:& \forall n \in N &,& [Consuming\ Flow] + \sum^{S^n}_{s}{\Gamma_s^\downarrow} = [Producing\ Flow] + \sum^{S^n}_{s}{\Gamma_s^\uparrow}
+    \end{array}
+
+And all these things are bounded :
+
+.. math::
+    \begin{array}{rcl}
+    \Pi_{Store\ bound} &:& \left\{\begin{array}{cl} \forall n \in N \\ \forall s \in S^n \end{array} \right. &,&
+    \begin{array}{rcl}
+    0 &\le& \Gamma_s &\le& \overline{\Gamma_s} \\
+    0 &\le& \Gamma_s^\downarrow &\le& \overline{\Gamma_s^\downarrow} \\
+    0 &\le& \Gamma_s^\uparrow &\le& \overline{\Gamma_s^\uparrow}
+    \end{array}
+    \end{array}
+
+
+Storage has also a new constraint. This constraint applies over time to ensure capacity integrity.
+
+.. math::
+    \begin{array}{rcl}
+        \Pi_{kirschhoff} &:& \left\{\begin{array}{cl} \forall n \in N \\ \forall s \in S^n \\ \forall t \in T \end{array} \right. &,& \Gamma_s[t] = \left| \begin{array}{ll}\Gamma_s[t-1]\\ \Gamma_s^0\ ,\ t=0 \end{array} + \right.\Gamma_s^\downarrow[t] * \eta_s  - \Gamma_s^\uparrow[t]
     \end{array}
