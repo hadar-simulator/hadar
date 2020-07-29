@@ -9,7 +9,7 @@ import unittest
 
 import numpy as np
 
-from hadar.optimizer.input import Study, Consumption, Production, Link, Storage
+from hadar.optimizer.input import Study, Consumption, Production, Link, Storage, Converter
 
 
 class TestStudy(unittest.TestCase):
@@ -18,12 +18,15 @@ class TestStudy(unittest.TestCase):
         p = Production(name='nuclear', cost=20, quantity=10)
         s = Storage(name='store', capacity=100, flow_in=10, flow_out=10, cost=1, init_capacity=4, eff=0.1)
         l = Link(dest='a', cost=20, quantity=10)
+        v = Converter(name='converter', src_networks='default', src_nodes='a', src_ratios=1, dest_network='gas',
+                      dest_node='b', cost=10, max=10)
 
         study = Study(horizon=1) \
             .network() \
                 .node('a') \
                     .consumption(name='load', cost=20, quantity=10) \
                     .production(name='nuclear', cost=20, quantity=10) \
+                    .to_converter(name='converter', ratio=1)\
                 .node('b') \
                 .link(src='b', dest='a', cost=20, quantity=10) \
             .network('gas')\
@@ -32,7 +35,8 @@ class TestStudy(unittest.TestCase):
                     .storage(name='store', capacity=100, flow_in=10, flow_out=10, cost=1, init_capacity=4, eff=0.1)\
                 .node('a')\
                     .consumption(name='load', cost=20, quantity=10)\
-                .link(src='b', dest='a', cost=20, quantity=10)\
+                .link(src='b', dest='a', cost=20, quantity=10) \
+            .converter(name='converter', to_network='gas', to_node='b', cost=10, max=10) \
             .build()
 
         self.assertEqual(c, study.networks['default'].nodes['a'].consumptions[0])
@@ -43,6 +47,8 @@ class TestStudy(unittest.TestCase):
         self.assertEqual(p, study.networks['gas'].nodes['b'].productions[0])
         self.assertEqual(s, study.networks['gas'].nodes['b'].storages[0])
         self.assertEqual(l, study.networks['gas'].nodes['b'].links[0])
+
+        self.assertEqual(v, study.converters['converter'])
 
         self.assertEqual(1, study.horizon)
 
@@ -149,6 +155,36 @@ class TestStudy(unittest.TestCase):
                     .node('be') \
                     .link(src='fr', dest='be', cost=10, quantity=10) \
                     .link(src='fr', dest='be', cost=10, quantity=10) \
+                .build()
+
+        self.assertRaises(ValueError, test)
+
+    def test_wrong_converter_dest(self):
+        def test_network():
+            study = Study(horizon=1)\
+                .network('elec')\
+                    .node('a')\
+                .converter(name='conv', to_network='gas', to_node='a', max=1)\
+                .build()
+
+        def test_node():
+            study = Study(horizon=1)\
+                .network('gas')\
+                    .node('a')\
+                .converter(name='conv', to_network='gas', to_node='b', max=1)\
+                .build()
+
+        self.assertRaises(ValueError, test_network)
+        self.assertRaises(ValueError, test_node)
+
+    def test_wrong_converter_src(self):
+        def test():
+            study = Study(horizon=1)\
+                .network()\
+                    .node('a')\
+                        .to_converter(name='conv', ratio=1)\
+                        .to_converter(name='conv', ratio=2)\
+                .converter(name='conv', to_node='', to_network='', max=1)\
                 .build()
 
         self.assertRaises(ValueError, test)

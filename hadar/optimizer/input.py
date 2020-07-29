@@ -108,6 +108,34 @@ class Link(DTO):
         self.cost = cost
 
 
+class Converter(DTO):
+    """
+    Converter element
+    """
+    def __init__(self, name: str, src_networks: Union[List[str], str], src_nodes: Union[List[str], str],
+                 src_ratios: Union[List[float], float], dest_network: str, dest_node: str, cost: float, max: float,):
+        """
+        Create converter.
+
+        :param name: converter name
+        :param src_networks: network src, list or one element
+        :param src_nodes: node src, list or one element
+        :param src_ratios: if many src, ratio production between src. Some of ratio <
+        :param dest_network: destination network
+        :param dest_node: dsetination node
+        :param cost: cost applied on quantity through converter
+        :param max: max output flow
+        """
+        self.name = name
+        self.src_networks = src_networks if isinstance(src_networks, list) else [src_networks]
+        self.src_nodes = src_nodes if isinstance(src_nodes, list) else [src_nodes]
+        self.src_ratios = src_ratios if isinstance(src_ratios, list) else [src_ratios]
+        self.dest_network = dest_network
+        self.dest_node = dest_node
+        self.cost = cost
+        self.max = max
+
+
 class InputNode(DTO):
     """
     Node element
@@ -155,6 +183,7 @@ class Study(DTO):
         """
 
         self.networks = dict()
+        self.converters = dict()
         self.horizon = horizon
         self.nb_scn = nb_scn
 
@@ -236,6 +265,31 @@ class Study(DTO):
 
         self.networks[network].nodes[node].storages.append(store)
 
+    def _add_converter(self, name: str):
+        if name not in [v for v in self.converters]:
+            self.converters[name] = Converter(name=name, src_networks=[], src_nodes=[], src_ratios=[], dest_network='',
+                                              dest_node='', cost=0, max=0)
+
+    def _add_converter_src(self, name: str, network: str, node: str, ratio: float):
+        if (network in self.converters[name].src_networks) and \
+                (node in self.converters[name].src_nodes):
+            raise ValueError('converter input already has node %s on network %s' % (node, network))
+
+        self.converters[name].src_networks.append(network)
+        self.converters[name].src_nodes.append(node)
+        self.converters[name].src_ratios.append(ratio)
+
+    def _set_converter_dest(self, name: str, network: str, node: str, cost: float, max: float):
+        if self.converters[name].dest_network and self.converters[name].dest_node:
+            raise ValueError('converter has already output set')
+        if network not in self.networks or node not in self.networks[network].nodes.keys():
+            raise ValueError('Node %s is not present in network %s' % (node, network))
+
+        self.converters[name].dest_network = network
+        self.converters[name].dest_node = node
+        self.converters[name].cost = cost
+        self.converters[name].max = max
+
     def _standardize_array(self, array: Union[List[float], np.ndarray, float]) -> np.ndarray:
         array = np.array(array)
 
@@ -306,6 +360,21 @@ class NetworkFluentAPISelector:
         """
         self.study.add_network(name)
         return NetworkFluentAPISelector(selector={'network': name}, study=self.study)
+
+    def converter(self, name: str, to_network: str, to_node: str, max: float, cost: float = 0):
+        """
+        Add a converter element.
+
+        :param name: converter name
+        :param to_network: converter output network
+        :param to_node: converter output node on network
+        :param max: maximum quantity from converter
+        :param cost: cost for each quantity produce by converter
+        :return:
+        """
+        self.study._add_converter(name=name)
+        self.study._set_converter_dest(name=name, network=to_network, node=to_node, cost=cost, max=max)
+        return NetworkFluentAPISelector(selector={}, study=self.study)
 
     def build(self):
         """
@@ -396,8 +465,33 @@ class NodeFluentAPISelector:
         :param name: network level, 'default' as default name
         :return: NetworkAPISelector with selector set to 'default'
         """
-        self.study.add_network(name)
-        return NetworkFluentAPISelector(selector={'network': name}, study=self.study)
+        return NetworkFluentAPISelector(selector={}, study=self.study).network(name)
+
+    def converter(self, name: str, to_network: str, to_node: str, max: float, cost: float = 0):
+        """
+        Add a converter element.
+
+        :param name: converter name
+        :param to_network: converter output network
+        :param to_node: converter output node on network
+        :param max: maximum quantity from converter
+        :param cost: cost for each quantity produce by converter
+        :return:
+        """
+        return NetworkFluentAPISelector(selector={}, study=self.study)\
+            .converter(name=name, to_network=to_network, to_node=to_node, max=max, cost=cost)
+
+    def to_converter(self, name: str, ratio: float = 1):
+        """
+        Add an ouptput to converter.
+
+        :param name: converter name
+        :param ratio: ratio for output
+        :return:
+        """
+        self.study._add_converter(name=name)
+        self.study._add_converter_src(name=name, network=self.selector['network'], node=self.selector['node'], ratio=ratio)
+        return self
 
     def build(self):
         """
