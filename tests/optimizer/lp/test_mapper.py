@@ -8,16 +8,16 @@
 import unittest
 
 from hadar.optimizer.input import Production, Consumption, Study
-from hadar.optimizer.lp.domain import LPLink, LPConsumption, LPProduction, LPNode, LPStorage
+from hadar.optimizer.lp.domain import LPLink, LPConsumption, LPProduction, LPNode, LPStorage, LPConverter, LPNetwork
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
 from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result, OutputNetwork, \
-    OutputStorage
+    OutputStorage, OutputConverter
 from tests.optimizer.lp.ortools_mock import MockSolver, MockNumVar
 from tests.utils import assert_study
 
 
 class TestInputMapper(unittest.TestCase):
-    def test_map_input(self):
+    def test_map_inputnode(self):
         # Input
         study = Study(horizon=2, nb_scn=2) \
             .network()\
@@ -45,7 +45,7 @@ class TestInputMapper(unittest.TestCase):
         out_link_0 = [LPLink(src='a', dest='be', cost=.01, quantity=10, variable=MockNumVar(0, 10.0, 'link=be %s' % suffix))]
         out_node_0 = LPNode(consumptions=out_cons_0, productions=out_prod_0, storages=out_stor_0, links=out_link_0)
 
-        self.assertEqual(out_node_0, mapper.get_var(network='default', node='a', t=0, scn=0))
+        self.assertEqual(out_node_0, mapper.get_node_var(network='default', node='a', t=0, scn=0))
 
         suffix = 'inside network=default on node=a at t=1 for scn=1'
         out_cons_1 = [LPConsumption(name='load', cost=.2, quantity=2, variable=MockNumVar(0, 2, 'lol=load %s' % suffix))]
@@ -58,11 +58,36 @@ class TestInputMapper(unittest.TestCase):
         out_link_1 = [LPLink(src='a', dest='be', cost=.03, quantity=30, variable=MockNumVar(0, 30.0, 'link=be %s' % suffix))]
         out_node_1 = LPNode(consumptions=out_cons_1, productions=out_prod_1, storages=out_stor_1,links=out_link_1)
 
-        self.assertEqual(out_node_1, mapper.get_var(network='default', node='a', t=1, scn=1))
+        self.assertEqual(out_node_1, mapper.get_node_var(network='default', node='a', t=1, scn=1))
+
+    def test_map_converter(self):
+        # Mock
+        s = MockSolver()
+
+        # Input
+        study = Study(horizon=1)\
+            .network('gas')\
+                .node('a')\
+                    .to_converter(name='conv', ratio=.5)\
+            .network()\
+                .node('b')\
+            .converter(name='conv', to_network='default', to_node='b', max=100)\
+            .build()
+
+        mapper = InputMapper(solver=s, study=study)
+
+        # Expected
+        suffix = 'at t=0 for scn=0'
+        out_conv_0 = LPConverter(name='conv', src_ratios={('gas', 'a'): 0.5}, dest_network='default', dest_node='b',
+                                  cost=0, max=100,
+                                  var_flow_dest=MockNumVar(0, 100, 'flow_dest conv %s' % suffix),
+                                  var_flow_src={('gas', 'a'): MockNumVar(0, 200, 'flow_src conv gas:a %s' % suffix)})
+
+        self.assertEqual(out_conv_0, mapper.get_conv_var(name='conv', t=0, scn=0))
 
 
 class TestOutputMapper(unittest.TestCase):
-    def test_map_output(self):
+    def test_map_node(self):
         # Input
         study = Study(horizon=2, nb_scn=2) \
             .network()\
@@ -74,7 +99,6 @@ class TestOutputMapper(unittest.TestCase):
                 .link(src='a', dest='be', quantity=[[10, 3], [20, 30]], cost=[[.01, .3], [.02, .03]])\
             .build()
 
-        s = MockSolver()
         mapper = OutputMapper(study=study)
 
         out_cons_0 = [LPConsumption(name='load', cost=.01, quantity=10, variable=MockNumVar(0, 5, ''))]
@@ -84,8 +108,8 @@ class TestOutputMapper(unittest.TestCase):
                                 var_flow_in=MockNumVar(0, 2, ''),
                                 var_flow_out=MockNumVar(0, 4, ''))]
         out_link_0 = [LPLink(src='a', dest='be', cost=.01, quantity=10, variable=MockNumVar(0, 8, ''))]
-        mapper.set_var(network='default', node='a', t=0, scn=0,
-                       vars=LPNode(consumptions=out_cons_0, productions=out_prod_0, storages=out_stor_0, links=out_link_0))
+        mapper.set_node_var(network='default', node='a', t=0, scn=0,
+                            vars=LPNode(consumptions=out_cons_0, productions=out_prod_0, storages=out_stor_0, links=out_link_0))
 
         out_cons_1 = [LPConsumption(name='load', cost=.2, quantity=20, variable=MockNumVar(0, 5, ''))]
         out_prod_1 = [LPProduction(name='nuclear', cost=.21, quantity=2, variable=MockNumVar(0, 112, ''))]
@@ -94,8 +118,8 @@ class TestOutputMapper(unittest.TestCase):
                                 var_flow_in=MockNumVar(0, 22, ''),
                                 var_flow_out=MockNumVar(0, 44, ''))]
         out_link_1 = [LPLink(src='a', dest='be', cost=.02, quantity=10, variable=MockNumVar(0, 18, ''))]
-        mapper.set_var(network='default', node='a', t=1, scn=1,
-                       vars=LPNode(consumptions=out_cons_1, productions=out_prod_1, storages=out_stor_1, links=out_link_1))
+        mapper.set_node_var(network='default', node='a', t=1, scn=1,
+                            vars=LPNode(consumptions=out_cons_1, productions=out_prod_1, storages=out_stor_1, links=out_link_1))
 
         # Expected
         node = OutputNode(consumptions=[OutputConsumption(name='load', quantity=[[5, 0], [0, 15]], cost=[[.01, .1], [.02, .2]])],
@@ -104,6 +128,33 @@ class TestOutputMapper(unittest.TestCase):
                                                   flow_out=[[4, 0], [0, 44]])],
                           links=[OutputLink(dest='be', quantity=[[8, 0], [0, 18]], cost=[[.01, .3], [.02, .03]])])
         nodes = {'a': node, 'be': OutputNode(consumptions=[], productions=[], storages=[], links=[])}
-        expected = Result(networks={'default': OutputNetwork(nodes=nodes)})
+        expected = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
 
         assert_study(self, expected=expected, result=mapper.get_result())
+
+    def test_map_converter(self):
+        # Input
+        study = Study(horizon=1)\
+            .network('gas')\
+                .node('a')\
+                    .to_converter(name='conv', ratio=.5)\
+            .network()\
+                .node('b')\
+            .converter(name='conv', to_network='default', to_node='b', max=100)\
+            .build()
+
+        # Expected
+        exp = OutputConverter(name='conv', flow_src={('gas', 'a'): [[200]]}, flow_dest=[[100]])
+        blank_node = OutputNode(consumptions=[], productions=[], storages=[], links=[])
+        mapper = OutputMapper(study=study)
+        vars = LPConverter(name='conv', src_ratios={('gas', 'a'): 0.5}, dest_network='default', dest_node='b',
+                    cost=0, max=100,
+                    var_flow_dest=MockNumVar(0, 100, 'flow_dest conv %s'),
+                    var_flow_src={('gas', 'a'): MockNumVar(0, 200, 'flow_src conv gas:a %s')})
+        mapper.set_converter_var(name='conv', t=0, scn=0, vars=vars)
+
+        res = mapper.get_result()
+        self.assertEqual(Result(networks={'gas': OutputNetwork(nodes={'a': blank_node}),
+                                          'default': OutputNetwork(nodes={'b': blank_node})},
+                                converters={'conv': exp}), res)
+

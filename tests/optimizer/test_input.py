@@ -18,7 +18,7 @@ class TestStudy(unittest.TestCase):
         p = Production(name='nuclear', cost=20, quantity=10)
         s = Storage(name='store', capacity=100, flow_in=10, flow_out=10, cost=1, init_capacity=4, eff=0.1)
         l = Link(dest='a', cost=20, quantity=10)
-        v = Converter(name='converter', src_networks='default', src_nodes='a', src_ratios=1, dest_network='gas',
+        v = Converter(name='converter', src_ratios={('default', 'a'): 1}, dest_network='gas',
                       dest_node='b', cost=10, max=10)
 
         study = Study(horizon=1) \

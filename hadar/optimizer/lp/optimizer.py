@@ -16,7 +16,7 @@ from typing import List, Dict
 from ortools.linear_solver.pywraplp import Solver, Variable, Constraint
 
 from hadar.optimizer.input import Study
-from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPLink, LPStorage
+from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPLink, LPStorage, LPTimeStep, LPConverter
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
 from hadar.optimizer.output import Result
 
@@ -92,6 +92,16 @@ class ObjectiveBuilder:
         for link in links:
             self.objective.SetCoefficient(link.variable, link.cost)
             self.logger.debug('Add link %s->%s to objective', link.src, link.dest)
+
+    def add_converter(self, conv: LPConverter):
+        """
+        Add converter. Apply cost on output of converter.
+
+        :param conv: converter to cost
+        :return:
+        """
+        self.objective.SetCoefficient(conv.var_flow_dest, conv.cost)
+        self.logger.debug('Add converter %s to objective' % conv.name)
 
     def build(self):
         pass  # Currently nothing are need at the end. But we keep builder pattern syntax
@@ -192,6 +202,19 @@ class AdequacyBuilder:
             self.importations[(t, name_network, link.src, link.dest)] = link.variable  # Import to dest
             self.logger.debug('Add link %s for %s inside %s into adequacy constraint', link.dest, name_node, name_network)
 
+    def add_converter(self, conv: LPConverter, t: int):
+        """
+        Add converter element in equation. Sources are like consumptions, destination like production
+
+        :param conv: converter element to add
+        :param t: time index to use
+        :return:
+        """
+        self.constraints[(t, conv.dest_network, conv.dest_node)].SetCoefficient(conv.var_flow_dest, 1)
+        for (network, node), var in conv.var_flow_src.items():
+            self.constraints[(t, network, node)].SetCoefficient(var, -1)
+        self.logger.debug('Add converter %s' % conv.name)
+
     def build(self):
         """
         Call when all node are added. Apply all import flow for each node.
@@ -234,6 +257,28 @@ class StorageBuilder:
         pass  # Currently nothing are need at the end. But we keep builder pattern syntax
 
 
+class ConverterMixBuilder:
+    """
+    Build equation to determine ratio mix between sources converter.
+    """
+    def __init__(self, solver: Solver):
+        self.solver = solver
+        self.logger = logging.getLogger(__name__ + '.' + self.__class__.__name__)
+
+    def add_converter(self, conv: LPConverter):
+        return [ConverterMixBuilder._build_constraint(self.solver, r, conv.var_flow_dest, conv.var_flow_src[src])
+                for src, r in conv.src_ratios.items()]
+
+    @staticmethod
+    def _build_constraint(solver, r, var_dest, var_src):
+        const = solver.Constraint(0, 0)
+        const.SetCoefficient(var_src, r)
+        const.SetCoefficient(var_dest, -1)
+        return const
+
+    def build(self):
+        pass  # Currently nothing are need at the end. But we keep builder pattern syntax
+
 
 def _solve_batch(params) -> bytes:
     """
@@ -250,26 +295,38 @@ def _solve_batch(params) -> bytes:
         objective = ObjectiveBuilder(solver=solver)
         adequacy = AdequacyBuilder(solver=solver)
         storage = StorageBuilder(solver=solver)
+        mix = ConverterMixBuilder(solver=solver)
 
         in_mapper = InputMapper(solver=solver, study=study)
     else:  # Test purpose only
-        study, i_scn, solver, objective, adequacy, storage, in_mapper = params
+        study, i_scn, solver, objective, adequacy, storage, mix, in_mapper = params
 
-    variables = [{name: dict() for name in study.networks.keys()} for _ in range(study.horizon)]
+    variables = [LPTimeStep.create_like_study(study) for _ in range(study.horizon)]
 
     # Build equation
     for t in range(0, study.horizon):
+
+        # Build node constraints
         for name_network, network in study.networks.items():
             for name_node, node in network.nodes.items():
-                node = in_mapper.get_var(network=name_network, node=name_node, t=t, scn=i_scn)
-                variables[t][name_network][name_node] = node
+                node = in_mapper.get_node_var(network=name_network, node=name_node, t=t, scn=i_scn)
+                variables[t].networks[name_network].nodes[name_node] = node
                 adequacy.add_node(name_network=name_network, name_node=name_node, node=node, t=t)
                 storage.add_node(name_network=name_network, name_node=name_node, node=node, t=t)
                 objective.add_node(node=node)
 
+        # Build converter constraints
+        for name in study.converters:
+            conv = in_mapper.get_conv_var(name=name, t=t, scn=i_scn)
+            variables[t].converters[name] = conv
+            adequacy.add_converter(conv=conv, t=t)
+            mix.add_converter(conv=conv)
+            objective.add_converter(conv=conv)
+
     objective.build()
     adequacy .build()
     storage.build()
+    mix.build()
 
     logger.info('Problem build. Start solver')
     solver.EnableOutput()
@@ -302,7 +359,10 @@ def solve_lp(study: Study, out_mapper=None) -> Result:
         for t in range(0, study.horizon):
             for name_network, network in study.networks.items():
                 for name_node in network.nodes.keys():
-                    out_mapper.set_var(network=name_network, node=name_node, t=t, scn=scn,
-                                       vars=variables[scn][t][name_network][name_node])
+                    out_mapper.set_node_var(network=name_network, node=name_node, t=t, scn=scn,
+                                            vars=variables[scn][t].networks[name_network].nodes[name_node])
+
+            for name_conv in study.converters:
+                out_mapper.set_converter_var(name=name_conv, t=t, scn=scn, vars=variables[scn][t].converters[name_conv])
 
     return out_mapper.get_result()

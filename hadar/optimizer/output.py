@@ -7,7 +7,7 @@
 
 import numpy as np
 
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Tuple
 
 from hadar.optimizer.input import InputNode
 
@@ -113,6 +113,23 @@ class OutputLink(DTO):
         self.cost = cost
 
 
+class OutputConverter(DTO):
+    """
+    Converter element
+    """
+    def __init__(self, name: str, flow_src: Dict[Tuple[str, str], Union[np.ndarray, List]], flow_dest: Union[np.ndarray, List]):
+        """
+        Create instance.
+
+        :param name: converter name
+        :param flow_src: flow from sources
+        :param flow_dest: flow to destination
+        """
+        self.name = name
+        self.flow_src = {src: np.array(qt) for src, qt in flow_src.items()}
+        self.flow_dest = np.array(flow_dest)
+
+
 class OutputNode(DTO):
     """
     Node element
@@ -136,25 +153,23 @@ class OutputNode(DTO):
         self.links = links
 
     @staticmethod
-    def build_like_input(input: InputNode, h: int, scn: int):
+    def build_like_input(input: InputNode, fill: np.ndarray):
         """
         Use an input node to create an output node. Keep list elements fill quantity by zeros.
 
         :param input: InputNode to copy
-        :param h: time horizon size
-        :param scn: number of scnearios in study
+        :param fill: array to use to fill data
         :return: OutputNode like InputNode with all quantity at zero
         """
         output = OutputNode(consumptions=[], productions=[], storages=[], links=[])
-        shape = (scn, h)
-        output.consumptions = [OutputConsumption(name=i.name, cost=i.cost, quantity=np.zeros(shape))
+        output.consumptions = [OutputConsumption(name=i.name, cost=i.cost, quantity=fill)
                                for i in input.consumptions]
-        output.productions = [OutputProduction(name=i.name, cost=i.cost, quantity=np.zeros(shape))
+        output.productions = [OutputProduction(name=i.name, cost=i.cost, quantity=fill)
                               for i in input.productions]
-        output.storages = [OutputStorage(name=i.name, capacity=np.zeros(shape),
-                                         flow_out=np.zeros(shape), flow_in=np.zeros(shape))
+        output.storages = [OutputStorage(name=i.name, capacity=fill,
+                                         flow_out=fill, flow_in=fill)
                            for i in input.storages]
-        output.links = [OutputLink(dest=i.dest, cost=i.cost, quantity=np.zeros_like(i.quantity))
+        output.links = [OutputLink(dest=i.dest, cost=i.cost, quantity=fill)
                         for i in input.links]
         return output
 
@@ -176,13 +191,10 @@ class Result(DTO):
     """
     Result of study
     """
-    def __init__(self, networks: Dict[str, OutputNetwork]):
+    def __init__(self, networks: Dict[str, OutputNetwork], converters: Dict[str, OutputConverter]):
         """
         Create result
         :param networks: list of networks present in study
         """
-        self._networks = networks
-
-    @property
-    def networks(self):
-        return self._networks
+        self.networks = networks
+        self.converters = converters

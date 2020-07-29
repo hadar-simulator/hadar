@@ -5,11 +5,11 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 import numpy as np
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Tuple
 
 from ortools.linear_solver.pywraplp import Variable
 
-from hadar.optimizer.input import DTO
+from hadar.optimizer.input import DTO, InputNode, Study
 
 
 class SerializableVariable(DTO):
@@ -145,6 +145,46 @@ class LPLink(DTO):
         return self.__class__, (self.src, self.dest, self.quantity, SerializableVariable(self.variable), self.cost)
 
 
+class LPConverter(DTO):
+    """
+    Converter element for linear programming
+    """
+    def __init__(self, name: str, src_ratios: Dict[Tuple[str, str], float],
+                 var_flow_src: Dict[Tuple[str, str], Union[Variable, SerializableVariable]],
+                 dest_network: str, dest_node: str,
+                 var_flow_dest: Union[Variable, SerializableVariable],
+                 cost: float, max: float,):
+        """
+        Create converter.
+
+        :param name: converter name
+
+        :param src_ratios: ration conversion for each sources. data={(network, node): ratio}
+        :param var_flow_src: ortools variables represents quantity from sources
+        :param dest_network: destination network
+        :param dest_node: destination node
+        :param var_flow_dest: ortools variables represents quantity to destination
+        :param cost: cost applied on quantity through converter
+        :param max: max output flow
+        """
+        self.name = name
+        self.src_ratios = src_ratios
+        self.var_flow_src = var_flow_src
+        self.dest_network = dest_network
+        self.dest_node = dest_node
+        self.var_flow_dest = var_flow_dest
+        self.cost = cost
+        self.max = max
+
+    def __reduce__(self):
+        """
+        Help pickle to serialize object, specially variable object
+        :return: (constructor, values...)
+        """
+        return self.__class__, (self.name, self.src_ratios, {src: SerializableVariable(var) for src, var in self.var_flow_src.items()},
+                                self.dest_network, self.dest_node, SerializableVariable(self.var_flow_dest), self.cost, self.max)
+
+
 class LPNode(DTO):
     """
     Node element for linear programming
@@ -169,10 +209,22 @@ class LPNetwork(DTO):
     Network element for linear programming
     """
 
-    def __init__(self, nodes: Dict[str, LPNode]):
+    def __init__(self, nodes: Dict[str, LPNode] = None):
         """
         Instance network.
 
-        :param nodes: nodes belong to network name as key, LPNode as value
+        :param study: Study to use to generate blank network
         """
-        self.nodes = nodes
+        self.nodes = nodes if nodes else dict()
+
+
+class LPTimeStep(DTO):
+    def __init__(self, networks: Dict[str, LPNetwork], converters: Dict[str, LPConverter]):
+        self.networks = networks
+        self.converters = converters
+
+    @staticmethod
+    def create_like_study(study: Study):
+        networks = {name: LPNetwork() for name in study.networks}
+        converters = dict()
+        return LPTimeStep(networks=networks, converters=converters)

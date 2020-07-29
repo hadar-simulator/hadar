@@ -4,12 +4,13 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
+import numpy as np
 
 from ortools.linear_solver.pywraplp import Solver
 
 from hadar.optimizer.input import Study, InputNetwork
-from hadar.optimizer.lp.domain import LPLink, LPConsumption, LPNode, LPProduction, LPStorage
-from hadar.optimizer.output import OutputNode, Result, OutputNetwork
+from hadar.optimizer.lp.domain import LPLink, LPConsumption, LPNode, LPProduction, LPStorage, LPConverter
+from hadar.optimizer.output import OutputNode, Result, OutputNetwork, OutputConverter
 
 
 class InputMapper:
@@ -27,13 +28,13 @@ class InputMapper:
         self.solver = solver
         self.study = study
 
-    def get_var(self, network: str, node: str, t: int, scn: int) -> LPNode:
+    def get_node_var(self, network: str, node: str, t: int, scn: int) -> LPNode:
         """
         Map InputNode to LPNode.
 
         :param network: network name
         :param node: node name
-        :param t: timestamp
+        :param t: time step
         :param scn: scenario index
         :return: LPNode according to node name at t in study
         """
@@ -59,6 +60,24 @@ class InputMapper:
 
         return LPNode(consumptions=consumptions, productions=productions, links=links, storages=storages)
 
+    def get_conv_var(self, name: str, t: int, scn: int) -> LPConverter:
+        """
+        Map Converter to LPConverter.
+
+        :param name: converter name
+        :param t: time step
+        :param scn: scenario index
+        :return: LPConverter
+        """
+        suffix = 'at t=%d for scn=%d' % (t, scn)
+        v = self.study.converters[name]
+
+        return LPConverter(name=v.name, src_ratios=v.src_ratios, dest_network=v.dest_network, dest_node=v.dest_node,
+                           cost=v.cost, max=v.max,
+                           var_flow_src={src: self.solver.NumVar(0, float(v.max / r), 'flow_src %s %s %s' % (v.name, ':'.join(src), suffix))
+                                         for src, r in v.src_ratios.items()},
+                           var_flow_dest=self.solver.NumVar(0, float(v.max), 'flow_dest %s %s' % (v.name, suffix)))
+
 
 class OutputMapper:
     """
@@ -71,12 +90,15 @@ class OutputMapper:
         :param solver: ortools solver to use to fetch variable value
         :param study: input study to reproduce structure
         """
+        zeros = np.zeros((study.nb_scn, study.horizon))
         def build_nodes(network: InputNetwork):
-            return {name: OutputNode.build_like_input(input, h=study.horizon, scn=study.nb_scn) for name, input in network.nodes.items()}
+            return {name: OutputNode.build_like_input(input, fill=zeros) for name, input in network.nodes.items()}
 
         self.networks = {name: OutputNetwork(nodes=build_nodes(network)) for name, network in study.networks.items()}
+        self.converters = {name: OutputConverter(name=name, flow_src={src: zeros for src in conv.src_ratios}, flow_dest=zeros)
+                           for name, conv in study.converters.items()}
 
-    def set_var(self, network: str, node: str, t: int, scn: int, vars: LPNode):
+    def set_node_var(self, network: str, node: str, t: int, scn: int, vars: LPNode):
         """
         Map linear programming node to global node (set inside intern attribute).
 
@@ -101,10 +123,15 @@ class OutputMapper:
         for i in range(len(vars.links)):
             self.networks[network].nodes[node].links[i].quantity[scn, t] = vars.links[i].variable.solution_value()
 
+    def set_converter_var(self, name: str, t: int, scn: int, vars: LPConverter):
+        for src, var in vars.var_flow_src.items():
+            self.converters[name].flow_src[src][scn, t] = var.solution_value()
+        self.converters[name].flow_dest[scn, t] = vars.var_flow_dest.solution_value()
+
     def get_result(self) -> Result:
         """
         Get result.
 
         :return: final result after map all nodes
         """
-        return Result(networks=self.networks)
+        return Result(networks=self.networks, converters=self.converters)

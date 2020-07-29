@@ -5,7 +5,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Tuple
 
 import numpy as np
 
@@ -112,24 +112,21 @@ class Converter(DTO):
     """
     Converter element
     """
-    def __init__(self, name: str, src_networks: Union[List[str], str], src_nodes: Union[List[str], str],
-                 src_ratios: Union[List[float], float], dest_network: str, dest_node: str, cost: float, max: float,):
+    def __init__(self, name: str, src_ratios: Dict[Tuple[str, str], float], dest_network: str, dest_node: str,
+                 cost: float, max: float,):
         """
         Create converter.
 
         :param name: converter name
-        :param src_networks: network src, list or one element
-        :param src_nodes: node src, list or one element
-        :param src_ratios: if many src, ratio production between src. Some of ratio <
+
+        :param src_ratios: ration conversion for each sources. data={(network, node): ratio}
         :param dest_network: destination network
         :param dest_node: dsetination node
         :param cost: cost applied on quantity through converter
         :param max: max output flow
         """
         self.name = name
-        self.src_networks = src_networks if isinstance(src_networks, list) else [src_networks]
-        self.src_nodes = src_nodes if isinstance(src_nodes, list) else [src_nodes]
-        self.src_ratios = src_ratios if isinstance(src_ratios, list) else [src_ratios]
+        self.src_ratios = src_ratios
         self.dest_network = dest_network
         self.dest_node = dest_node
         self.cost = cost
@@ -267,17 +264,14 @@ class Study(DTO):
 
     def _add_converter(self, name: str):
         if name not in [v for v in self.converters]:
-            self.converters[name] = Converter(name=name, src_networks=[], src_nodes=[], src_ratios=[], dest_network='',
+            self.converters[name] = Converter(name=name, src_ratios={}, dest_network='',
                                               dest_node='', cost=0, max=0)
 
     def _add_converter_src(self, name: str, network: str, node: str, ratio: float):
-        if (network in self.converters[name].src_networks) and \
-                (node in self.converters[name].src_nodes):
+        if (network, node) in self.converters[name].src_ratios:
             raise ValueError('converter input already has node %s on network %s' % (node, network))
 
-        self.converters[name].src_networks.append(network)
-        self.converters[name].src_nodes.append(node)
-        self.converters[name].src_ratios.append(ratio)
+        self.converters[name].src_ratios[(network, node)] = ratio
 
     def _set_converter_dest(self, name: str, network: str, node: str, cost: float, max: float):
         if self.converters[name].dest_network and self.converters[name].dest_node:
