@@ -349,7 +349,7 @@ def solve_lp(study: Study, out_mapper=None) -> Result:
     :param out_mapper: use only for test purpose to inject mock. Keep None as default.
     :return: Result object with optimal solution
     """
-    out_mapper = OutputMapper(study) if out_mapper is None else out_mapper
+    out_mapper = out_mapper or OutputMapper(study)
 
     pool = multiprocessing.Pool()
     byte = pool.map(_solve_batch, ((study, i_scn) for i_scn in range(study.nb_scn)))

@@ -38,6 +38,17 @@ def assert_study(self, expected: Result, result: Result):
                 np.testing.assert_array_equal(prod_expected.cost, prod_res.cost,
                                  'Production {} for node {} has different cost'.format(prod_expected.name, name_node))
 
+            # Storage
+            for stor_expected, stor_res in zip(node.storages, res.storages):
+                self.assertEqual(stor_expected.name, stor_res.name,
+                                 'Storage for node {} has different name'.format(name_node))
+                np.testing.assert_array_almost_equal(stor_expected.flow_in, stor_res.flow_in, 4,
+                                'Storage {} for node {} has different flow in'.format(stor_res.name, name_node))
+                np.testing.assert_array_almost_equal(stor_expected.flow_out, stor_res.flow_out, 4,
+                                'Storage {} for node {} has different flow out'.format(stor_res.name, name_node))
+                np.testing.assert_array_almost_equal(stor_expected.capacity, stor_res.capacity, 4,
+                                'Storage {} for node {} has different capacity'.format(stor_res.name, name_node))
+
             # Links
             for link_expected, link_res in zip(node.links, res.links):
                 self.assertEqual(link_expected.dest, link_res.dest,
@@ -47,16 +58,13 @@ def assert_study(self, expected: Result, result: Result):
                 np.testing.assert_array_equal(link_expected.cost, link_res.cost,
                                  'Link {} for node {} has different cost'.format(link_expected.dest, name_node))
 
+    # Converter
+    for name, exp in expected.converters.items():
+        self.assertTrue(name in result.converters, 'Converter {} not in result'.format(name))
+        for src, flow in exp.flow_src.items():
+            self.assertTrue(src in result.converters[name].flow_src, 'Converter {} has not src {} in result'.format(name, src))
+            np.testing.assert_array_equal(flow, result.converters[name].flow_src[src],
+                                          'converter {} as different source {}'.format(name, src))
 
-def plot(d):
-
-    print('=============================================================================================')
-    print("Node ", d.state.name, 'rac=', d.state.rac, 'cost=', d.state.cost)
-    print('\nEvents')
-    print('\tname\tmes')
-    for event in d.events:
-        print('\t{name: <8}{mes}'.format(name=event.name, mes=event.message))
-
-    print(d.state.consumptions)
-    print(d.state.productions)
-    print(d.state.exchanges)
+        np.testing.assert_array_equal(exp.flow_dest, result.converters[name].flow_dest,
+                                      'Converter {} has different flow dest'.format(name))

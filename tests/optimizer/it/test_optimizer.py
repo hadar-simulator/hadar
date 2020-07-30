@@ -55,7 +55,7 @@ class TestOptimizer(unittest.TestCase):
             links=[])
 
         res = self.optimizer.solve(study)
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_exchange_two_nodes(self):
         """
@@ -98,7 +98,7 @@ class TestOptimizer(unittest.TestCase):
             links=[])
 
         res = self.optimizer.solve(study)
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_exchange_two_concurrent_nodes(self):
         """
@@ -158,7 +158,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_exchange_link_saturation(self):
         """
@@ -201,7 +201,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_consumer_cancel_exchange(self):
         """
@@ -255,7 +255,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
 
     def test_many_links_on_node(self):
@@ -316,7 +316,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_storage(self):
         """
@@ -345,10 +345,45 @@ class TestOptimizer(unittest.TestCase):
 
         nodes_expected['b'] = hd.OutputNode(
             consumptions=[hd.OutputConsumption(cost=10 ** 6, quantity=[[20, 10, 0, 10]], name='load')],
-            storages=[hd.OutputStorage(name='cell', capacity=[[15, 5, 5, 10, 0]],
+            storages=[hd.OutputStorage(name='cell', capacity=[[5, 5, 10, 0]],
                                        flow_in=[[0, 0, 10, 0]], flow_out=[[10, 0, 0, 10]])],
             productions=[], links=[])
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}), res)
+        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
+
+    def test_multi_energies(self):
+        study = hd.Study(horizon=1)\
+            .network('elec')\
+                .node('a')\
+                    .consumption(name='load', cost=10**6, quantity=10)\
+            .network('gas')\
+                .node('b')\
+                    .production(name='central', cost=10, quantity=50)\
+                    .to_converter(name='conv', ratio=0.8)\
+            .network('coat')\
+                .node('c')\
+                    .production(name='central', cost=10, quantity=50)\
+                    .to_converter(name='conv', ratio=0.5)\
+            .converter(name='conv', to_network='elec', to_node='a', max=50)\
+            .build()
+
+        networks_expected = dict()
+        networks_expected['elec'] = hd.OutputNetwork(nodes={'a': hd.OutputNode(
+            consumptions=[hd.OutputConsumption(cost=10**6, quantity=[[10]], name='load')],
+            storages=[], productions=[], links=[])})
+
+        networks_expected['gas'] = hd.OutputNetwork(nodes={'b': hd.OutputNode(
+            productions=[hd.OutputProduction(cost=10, quantity=[[12.5]], name='central')],
+            storages=[], consumptions=[], links=[])})
+
+        networks_expected['coat'] = hd.OutputNetwork(nodes={'c': hd.OutputNode(
+            productions=[hd.OutputProduction(cost=10, quantity=[[20]], name='central')],
+            storages=[], consumptions=[], links=[])})
+
+        converter_expected = hd.OutputConverter(name='conv', flow_src={('gas', 'b'): [[12.5]], ('coat', 'c'): [[20]]}, flow_dest=[[10]])
+
+        res = self.optimizer.solve(study)
+
+        assert_study(self, hd.Result(networks=networks_expected, converters={'conv': converter_expected}), res)

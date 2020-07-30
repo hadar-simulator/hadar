@@ -12,7 +12,8 @@ from typing import Union, List, Dict, Tuple
 from hadar.optimizer.input import InputNode
 
 
-__all__ = ['OutputProduction', 'OutputNode', 'OutputStorage', 'OutputLink', 'OutputConsumption', 'OutputNetwork', 'Result']
+__all__ = ['OutputProduction', 'OutputNode', 'OutputStorage', 'OutputLink', 'OutputConsumption', 'OutputNetwork',
+           'OutputConverter', 'Result']
 
 
 class DTO:

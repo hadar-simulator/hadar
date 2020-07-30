@@ -12,7 +12,7 @@ import sys
 from .workflow.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario, ToShuffler, Clip
 from .workflow.shuffler import Shuffler
 from .optimizer.input import Consumption, Link, Production, InputNode, Study
-from .optimizer.output import OutputProduction, OutputStorage, OutputNode, OutputLink, OutputConsumption, Result
+from .optimizer.output import OutputProduction, OutputStorage, OutputNode, OutputLink, OutputConsumption, OutputNetwork, OutputConverter, Result
 from .optimizer.optimizer import LPOptimizer, RemoteOptimizer
 from .viewer.html import HTMLPlotting
 from .analyzer.result import ResultAnalyzer
