@@ -581,7 +581,7 @@ class ResultAnalyzer:
 
         rac = (prod_avail - prod_used) - (cons_asked - cons_given)
 
-        return rac
+        return np.zeros((self.nb_scn, self.horizon)) if rac.size == 0 else rac
 
     @property
     def horizon(self) -> int:

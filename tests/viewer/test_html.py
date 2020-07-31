@@ -57,7 +57,7 @@ class TestHTMLPlotting(unittest.TestCase):
         self.assert_fig_hash('33baf5d01fda12b6a2d025abf8421905fc24abe1', fig)
 
         fig = self.plot.network().node('a').link('b').timeline()
-        self.assert_fig_hash('0c87d1283db5250858b14e2240d30f9059459e65', fig)
+        self.assert_fig_hash('97f413ea2fa9908abebf381ec588a7e60b906884', fig)
 
     def test_plot_monotone(self):
         fig = self.plot.network().node('a').consumption('load').monotone(scn=0)
@@ -67,7 +67,7 @@ class TestHTMLPlotting(unittest.TestCase):
         self.assert_fig_hash('e059878aac45330810578482df8c3d19261f7f75', fig)
 
         fig = self.plot.network().node('a').link('b').monotone(scn=0)
-        self.assert_fig_hash('1d5dba9e2189c741e5daa36d69ff1a879f169964', fig)
+        self.assert_fig_hash('08b0e0d8414bee2c5083a298af00fe86d0eba6b0', fig)
 
     def test_rac_heatmap(self):
         fig = self.plot.network().rac_matrix()
@@ -81,7 +81,7 @@ class TestHTMLPlotting(unittest.TestCase):
         # Fail devops self.assert_fig_hash('45ffe15df1d72829ebe2283c9c4b65ee8465c978', fig)
 
         fig = self.plot.network().node('a').link('b').gaussian(scn=0)
-        self.assert_fig_hash('52620565ce8ea670b18707cccf30594b5c3d58ea', fig)
+        self.assert_fig_hash('5151ade23440beeea9ff144245f81b057c0fa2cd', fig)
 
     def test_storage(self):
         study = Study(horizon=4)\
@@ -106,6 +106,39 @@ class TestHTMLPlotting(unittest.TestCase):
 
         fig = plot.network().node('b').storage('cell').monotone(scn=0)
         self.assert_fig_hash('f020d7954b2fa2245001a4b34530d65ddbd87382', fig)
+
+    def test_converter(self):
+        study = Study(horizon=2)\
+            .network('elec')\
+                .node('a')\
+                    .consumption(name='load', cost=10**6, quantity=[10, 30])\
+            .network('gas')\
+                .node('b')\
+                    .production(name='central', cost=10, quantity=50)\
+                    .to_converter(name='conv', ratio=0.8)\
+            .network('coat')\
+                .node('c')\
+                    .production(name='central', cost=10, quantity=60)\
+                    .to_converter(name='conv', ratio=0.5)\
+            .converter(name='conv', to_network='elec', to_node='a', max=50)\
+            .build()
+
+        optim = LPOptimizer()
+        res = optim.solve(study)
+        plot = HTMLPlotting(agg=ResultAnalyzer(study, res), unit_symbol='MW', time_start='2020-02-01',
+                            time_end='2020-02-02')
+
+        fig = plot.network('elec').node('a').from_converter('conv').timeline()
+        self.assert_fig_hash('5a42ce7a62c12c092631f0a9b63f807ada94ed79', fig)
+
+        fig = plot.network('gas').node('b').to_converter('conv').timeline()
+        self.assert_fig_hash('77de14a806dff91a118d395b3e0d998335d64cd7', fig)
+
+        fig = plot.network('gas').node('b').to_converter('conv').monotone(scn=0)
+        self.assert_fig_hash('3f6ac9f5e1c8ca611d39b7c62f527e4bfd5a573a', fig)
+
+        fig = plot.network('elec').node('a').from_converter('conv').gaussian(scn=0)
+        self.assert_fig_hash('32a6e175600822c833a9b7f3008aa35230b0b646', fig)
 
     def assert_fig_hash(self, expected: str, fig: go.Figure):
         actual = hashlib.sha1(TestHTMLPlotting.get_html(fig)).hexdigest()

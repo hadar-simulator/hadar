@@ -281,7 +281,6 @@ class StorageFluentAPISelector(FluentAPISelector):
         return self.plotting.monotone(y, title)
 
 
-
 class LinkFluentAPISelector(FluentAPISelector):
     """
     Link level of fluent api
@@ -335,11 +334,133 @@ class LinkFluentAPISelector(FluentAPISelector):
         if t is None:
             prod = self.agg.network(self.network).node(self.src).link(self.dest).scn(scn).time()[self.kind].values
             rac = self.agg.get_rac(network=self.network)[scn, :]
-            title = 'Gaussian link from %s to %s at t=%0d' % (self.src, self.dest, scn)
+            title = 'Gaussian link from %s to %s at scn=%0d' % (self.src, self.dest, scn)
         elif scn is None:
             prod = self.agg.network(self.network).node(self.src).link(self.dest).time(t).scn()[self.kind].values
             rac = self.agg.get_rac(network=self.network)[:, t]
             title = 'Gaussian link from %s to %s at t=%0d' % (self.src, self.dest, t)
+
+        return self.plotting.gaussian(rac=rac, qt=prod, title=title)
+
+
+class SrcConverterFluentAPISelector(FluentAPISelector):
+    """
+    Source converter level of fluent api
+    """
+    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer,
+                 network: str, node: str, name: str):
+        FluentAPISelector.__init__(self, plotting, agg)
+        self.node = node
+        self.name = name
+        self.network = network
+
+    def timeline(self):
+        """
+        Plot timeline graphics.
+        :return:
+        """
+        links = self.agg.network(self.network).node(self.node).to_converter(self.name).scn().time()['flow']
+        title = 'Timeline converter %s from node %s' % (self.name, self.node)
+        return self.plotting.timeline(links, title)
+
+    def monotone(self, t: int = None, scn: int = None):
+        """
+        Plot monotone graphics.
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
+        FluentAPISelector.not_both(t, scn)
+
+        if t is not None:
+            y = self.agg.network(self.network).node(self.node).to_converter(self.name).time(t).scn()['flow'].values
+            title = 'Timeline converter %s from node %s at t=%0d' % (self.name, self.node, t)
+        elif scn is not None:
+            y = self.agg.network(self.network).node(self.node).to_converter(self.name).scn(scn).time()['flow'].values
+            title = 'Timeline converter %s from node %s at scn=%0d' % (self.name, self.node, scn)
+
+        return self.plotting.monotone(y, title)
+
+    def gaussian(self, t: int = None, scn: int = None):
+        """
+        Plot gaussian graphics
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
+        FluentAPISelector.not_both(t, scn)
+
+        if t is None:
+            prod = self.agg.network(self.network).node(self.node).to_converter(self.name).time(t).scn()['flow'].values
+            rac = self.agg.get_rac(network=self.network)[scn, :]
+            title = 'Gaussian converter %s from node %s at scn=%0d' % (self.name, self.node, scn)
+        elif scn is None:
+            prod = self.agg.network(self.network).node(self.node).to_converter(self.name).time(t).scn()['flow'].values
+            rac = self.agg.get_rac(network=self.network)[:, t]
+            title = 'Gaussian converter %s from node %s at t=%0d' % (self.name, self.node, t)
+
+        return self.plotting.gaussian(rac=rac, qt=prod, title=title)
+
+
+class DestConverterFluentAPISelector(FluentAPISelector):
+    """
+    Source converter level of fluent api
+    """
+    def __init__(self, plotting: ABCElementPlotting, agg: ResultAnalyzer,
+                 network: str, node: str, name: str):
+        FluentAPISelector.__init__(self, plotting, agg)
+        self.node = node
+        self.name = name
+        self.network = network
+
+    def timeline(self):
+        """
+        Plot timeline graphics.
+        :return:
+        """
+        links = self.agg.network(self.network).node(self.node).from_converter(self.name).scn().time()['flow']
+        title = 'Timeline converter %s to node %s' % (self.name, self.node)
+        return self.plotting.timeline(links, title)
+
+    def monotone(self, t: int = None, scn: int = None):
+        """
+        Plot monotone graphics.
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
+        FluentAPISelector.not_both(t, scn)
+
+        if t is not None:
+            y = self.agg.network(self.network).node(self.node).from_converter(self.name).time(t).scn()['flow'].values
+            title = 'Timeline converter %s to node %s at t=%0d' % (self.name, self.node, t)
+        elif scn is not None:
+            y = self.agg.network(self.network).node(self.node).from_converter(self.name).scn(scn).time()['flow'].values
+            title = 'Timeline converter %s to node %s at scn=%0d' % (self.name, self.node, scn)
+
+        return self.plotting.monotone(y, title)
+
+    def gaussian(self, t: int = None, scn: int = None):
+        """
+        Plot gaussian graphics
+
+        :param t: focus on t index
+        :param scn: focus on scn index if t not given
+        :return:
+        """
+        FluentAPISelector.not_both(t, scn)
+
+        if t is None:
+            prod = self.agg.network(self.network).node(self.node).from_converter(self.name).time(t).scn()['flow'].values
+            rac = self.agg.get_rac(network=self.network)[scn, :]
+            title = 'Gaussian converter %s to node %s at scn=%0d' % (self.name, self.node, scn)
+        elif scn is None:
+            prod = self.agg.network(self.network).node(self.node).from_converter(self.name).time(t).scn()['flow'].values
+            rac = self.agg.get_rac(network=self.network)[:, t]
+            title = 'Gaussian converter %s to node %s at t=%0d' % (self.name, self.node, t)
 
         return self.plotting.gaussian(rac=rac, qt=prod, title=title)
 
@@ -363,7 +484,7 @@ class NodeFluentAPISelector(FluentAPISelector):
         :param cons_kind: select which cons to stack : 'asked' or 'given'
         :return: plotly figure or jupyter widget to plot
         """
-        c, p, s, b = self.agg.get_elements_inside(node=self.node, network=self.network)
+        c, p, s, b, ve, vi = self.agg.get_elements_inside(node=self.node, network=self.network)
 
         areas = []
         # stack production with area
@@ -377,6 +498,12 @@ class NodeFluentAPISelector(FluentAPISelector):
             stor = self.agg.network(self.network).scn(scn).node(self.node).storage().time().sort_values('cost', ascending=False)
             for i, name in enumerate(stor.index.get_level_values('name').unique()):
                 areas.append((name, stor.loc[name]['flow_out'].sort_index().values))
+
+        # Add converter importation
+        if ve > 0:
+            conv = self.agg.network(self.network).scn(scn).node(self.node).from_converter().time()
+            for i, name in enumerate(conv.index.get_level_values('name').unique()):
+                areas.append((name, conv.loc[name, 'flow'].sort_index().values))
 
         # add import in production stack
         balance = self.agg.get_balance(node=self.node, network=self.network)[scn]
@@ -396,6 +523,12 @@ class NodeFluentAPISelector(FluentAPISelector):
             stor = self.agg.network(self.network).scn(scn).node(self.node).storage().time().sort_values('cost', ascending=False)
             for i, name in enumerate(stor.index.get_level_values('name').unique()):
                 lines.append((name, stor.loc[name]['flow_in'].sort_index().values))
+
+        # Add converter exportation
+        if vi > 0:
+            conv = self.agg.network(self.network).scn(scn).node(self.node).to_converter().time()
+            for i, name in enumerate(conv.index.get_level_values('name').unique()):
+                lines.append((name, conv.loc[name, 'flow'].sort_index().values))
 
         # Add export in consumption stack
         exp = np.clip(balance, 0, None)
@@ -448,6 +581,24 @@ class NodeFluentAPISelector(FluentAPISelector):
          """
         return LinkFluentAPISelector(plotting=self.plotting, agg=self.agg,
                                      network=self.network, src=self.node, dest=dest, kind=kind)
+
+    def to_converter(self, name: str):
+        """
+        get a converter exportation level fluent API
+        :param name:
+        :return:
+        """
+        return SrcConverterFluentAPISelector(plotting=self.plotting, agg=self.agg, network=self.network,
+                                             node=self.node, name=name)
+
+    def from_converter(self, name: str):
+        """
+        get a converter importation level fluent API
+        :param name:
+        :return:
+        """
+        return DestConverterFluentAPISelector(plotting=self.plotting, agg=self.agg, network=self.network,
+                                              node=self.node, name=name)
 
 
 class NetworkFluentAPISelector(FluentAPISelector):
