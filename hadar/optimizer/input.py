@@ -285,7 +285,7 @@ class Study(DTO):
         self.converters[name].max = max
 
     def _standardize_array(self, array: Union[List[float], np.ndarray, float]) -> np.ndarray:
-        array = np.array(array)
+        array = np.array(array, dtype=float)
 
         # If scenario and horizon are not provided, expend on both side
         if array.size == 1:
