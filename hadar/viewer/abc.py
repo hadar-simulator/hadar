@@ -500,7 +500,7 @@ class NodeFluentAPISelector(FluentAPISelector):
                 areas.append((name, stor.loc[name]['flow_out'].sort_index().values))
 
         # Add converter importation
-        if ve > 0:
+        if vi > 0:
             conv = self.agg.network(self.network).scn(scn).node(self.node).from_converter().time()
             for i, name in enumerate(conv.index.get_level_values('name').unique()):
                 areas.append((name, conv.loc[name, 'flow'].sort_index().values))
@@ -525,7 +525,7 @@ class NodeFluentAPISelector(FluentAPISelector):
                 lines.append((name, stor.loc[name]['flow_in'].sort_index().values))
 
         # Add converter exportation
-        if vi > 0:
+        if ve > 0:
             conv = self.agg.network(self.network).scn(scn).node(self.node).to_converter().time()
             for i, name in enumerate(conv.index.get_level_values('name').unique()):
                 lines.append((name, conv.loc[name, 'flow'].sort_index().values))

@@ -128,6 +128,12 @@ class TestHTMLPlotting(unittest.TestCase):
         plot = HTMLPlotting(agg=ResultAnalyzer(study, res), unit_symbol='MW', time_start='2020-02-01',
                             time_end='2020-02-02')
 
+        fig = plot.network('elec').node('a').stack()
+        self.assert_fig_hash('0969b8b1bde6695a4c8cc78fdc5a42928f7af956', fig)
+
+        fig = plot.network('gas').node('b').stack()
+        self.assert_fig_hash('d9a5c9f13c932048f1bcb22ec849a7a4e79b577b', fig)
+
         fig = plot.network('elec').node('a').from_converter('conv').timeline()
         self.assert_fig_hash('5a42ce7a62c12c092631f0a9b63f807ada94ed79', fig)
 
