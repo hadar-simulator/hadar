@@ -357,11 +357,12 @@ def solve_lp(study: Study, out_mapper=None) -> Result:
 
     for scn in range(0, study.nb_scn):
         for t in range(0, study.horizon):
+            # Set node elements
             for name_network, network in study.networks.items():
                 for name_node in network.nodes.keys():
                     out_mapper.set_node_var(network=name_network, node=name_node, t=t, scn=scn,
                                             vars=variables[scn][t].networks[name_network].nodes[name_node])
-
+            # Set converters
             for name_conv in study.converters:
                 out_mapper.set_converter_var(name=name_conv, t=t, scn=scn, vars=variables[scn][t].converters[name_conv])
 

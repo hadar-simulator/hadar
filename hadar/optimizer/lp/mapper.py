@@ -39,24 +39,26 @@ class InputMapper:
         :return: LPNode according to node name at t in study
         """
         suffix = 'inside network=%s on node=%s at t=%d for scn=%d' % (network, node, t, scn)
+        in_node = self.study.networks[network].nodes[node]
+
         consumptions = [LPConsumption(name=c.name, cost=c.cost[scn, t], quantity=c.quantity[scn, t],
                                       variable=self.solver.NumVar(0, float(c.quantity[scn, t]), name='lol=%s %s' % (c.name, suffix)))
-                        for c in self.study.networks[network].nodes[node].consumptions]
+                        for c in in_node.consumptions]
 
         productions = [LPProduction(name=p.name, cost=p.cost[scn, t], quantity=p.quantity[scn, t],
                                     variable=self.solver.NumVar(0, float(p.quantity[scn, t]), 'prod=%s %s' % (p.name, suffix)))
-                       for p in self.study.networks[network].nodes[node].productions]
+                       for p in in_node.productions]
 
         storages = [LPStorage(name=s.name, capacity=s.capacity, flow_in=s.flow_in, flow_out=s.flow_out, eff=s.eff,
                               init_capacity=s.init_capacity, cost=s.cost,
                               var_capacity=self.solver.NumVar(0, float(s.capacity), 'storage_capacity=%s %s' % (s.name, suffix)),
                               var_flow_in=self.solver.NumVar(0, float(s.flow_in), 'storage_flow_in=%s %s' % (s.name, suffix)),
                               var_flow_out=self.solver.NumVar(0, float(s.flow_out), 'storage_flow_out=%s %s' % (s.name, suffix)))
-                    for s in self.study.networks[network].nodes[node].storages]
+                    for s in in_node.storages]
 
         links = [LPLink(dest=l.dest, cost=l.cost[scn, t], src=node, quantity=l.quantity[scn, t],
                         variable=self.solver.NumVar(0, float(l.quantity[scn, t]), 'link=%s %s' % (l.dest, suffix)))
-                 for l in self.study.networks[network].nodes[node].links]
+                 for l in in_node.links]
 
         return LPNode(consumptions=consumptions, productions=productions, links=links, storages=storages)
 
@@ -109,16 +111,17 @@ class OutputMapper:
         :param vars: linear programming node with ortools variables inside
         :return: None (use get_result)
         """
+        out_node = self.networks[network].nodes[node]
         for i in range(len(vars.consumptions)):
-            self.networks[network].nodes[node].consumptions[i].quantity[scn, t] = vars.consumptions[i].quantity - vars.consumptions[i].variable.solution_value()
+            out_node.consumptions[i].quantity[scn, t] = vars.consumptions[i].quantity - vars.consumptions[i].variable.solution_value()
 
         for i in range(len(vars.productions)):
-            self.networks[network].nodes[node].productions[i].quantity[scn, t] = vars.productions[i].variable.solution_value()
+            out_node.productions[i].quantity[scn, t] = vars.productions[i].variable.solution_value()
 
         for i in range(len(vars.storages)):
-            self.networks[network].nodes[node].storages[i].capacity[scn, t] = vars.storages[i].var_capacity.solution_value()
-            self.networks[network].nodes[node].storages[i].flow_in[scn, t] = vars.storages[i].var_flow_in.solution_value()
-            self.networks[network].nodes[node].storages[i].flow_out[scn, t] = vars.storages[i].var_flow_out.solution_value()
+            out_node.storages[i].capacity[scn, t] = vars.storages[i].var_capacity.solution_value()
+            out_node.storages[i].flow_in[scn, t] = vars.storages[i].var_flow_in.solution_value()
+            out_node.storages[i].flow_out[scn, t] = vars.storages[i].var_flow_out.solution_value()
 
         for i in range(len(vars.links)):
             self.networks[network].nodes[node].links[i].quantity[scn, t] = vars.links[i].variable.solution_value()
