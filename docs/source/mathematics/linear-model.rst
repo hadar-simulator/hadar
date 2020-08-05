@@ -205,5 +205,84 @@ Storage has also a new constraint. This constraint applies over time to ensure c
 
 .. math::
     \begin{array}{rcl}
-        \Pi_{kirschhoff} &:& \left\{\begin{array}{cl} \forall n \in N \\ \forall s \in S^n \\ \forall t \in T \end{array} \right. &,& \Gamma_s[t] = \left| \begin{array}{ll}\Gamma_s[t-1]\\ \Gamma_s^0\ ,\ t=0 \end{array} + \right.\Gamma_s^\downarrow[t] * \eta_s  - \Gamma_s^\uparrow[t]
+        \Pi_{storage} &:& \left\{\begin{array}{cl} \forall n \in N \\ \forall s \in S^n \\ \forall t \in T \end{array} \right. &,& \Gamma_s[t] = \left| \begin{array}{ll}\Gamma_s[t-1]\\ \Gamma_s^0\ ,\ t=0 \end{array} + \right.\Gamma_s^\downarrow[t] * \eta_s  - \Gamma_s^\uparrow[t]
+    \end{array}
+
+
+Multi-Energies
+--------------
+
+Hadar handle multi-energies. In the code, one energy lives inside one network. Multi-energies means multi-networks. Mathematically, there are all the same. That why we don't talk about multi graph, there are always one graph :math:`G`, nodes remains the same, with same equation for every kind of energies.
+
+The only difference is how we link node together. If nodes belongs to same network, we use *link (or edge)* seen before. When nodes belongs to different energies we need to use *converter*. All things above remains true, we just add now a new element :math:`V` converters ont this graph :math:`G(N, L, V)` .
+
+Converter can take energy form many nodes in different network. Each converter input has a ratio between output quantity and input quantity. Converter has only one output to only on node.
+
+.. image:: /_static/mathematics/linear/converter.png
+    :scale: 80%
+
+
+Variables
+*********
+
+* :math:`V` set of converters
+
+* :math:`v \in V` a converter in the set of converters
+
+* :math:`V^n_\uparrow \subset V` set of converters **to** node :math:`n`
+
+* :math:`V^n_\downarrow \subset V` set of converters **from** node :math:`n`
+
+* :math:`\Gamma_v^\uparrow` flow **from** converter :math:`v`.
+
+* :math:`\overline{\Gamma_v^\uparrow}` max flow from converter :math:`v`
+
+* :math:`\gamma_v` linear cost when :math:`\Gamma_v^\uparrow` is used
+
+* :math:`\Gamma_v^\downarrow` flow(s) **to** converter. They can have many flows for :math:`v \in V`, but only one for :math:`v \in V^n_\downarrow`
+
+* :math:`\overline{\Gamma_v^\downarrow}` max flow to converter
+
+* :math:`\alpha^n_v` ratio conversion for converter :math:`v` from node :math:`n`
+
+
+Objective
+*********
+
+.. math::
+    \begin{array}{rcl}
+    objective & = & \min{\Omega_{...} + \Omega_{converter}} \\
+    \Omega_{converter} & = & \sum^V_v {\Gamma_v^\uparrow * \gamma_v}
+    \end{array}
+
+
+Constraints
+***********
+
+Of course Kirschhoff need a little update. Like for storage **Warning with naming !** Converter input is a consuming flow for node, converter output is a production flow for node.
+
+.. math::
+    \begin{array}{rcl}
+        \Pi_{kirschhoff} &:& \forall n \in N &,& [Consuming\ Flow] + \sum^{V^n_\downarrow}_{v}{\Gamma_v^\downarrow} = [Producing\ Flow] + \sum^{V^n_\uparrow}_{v}{\Gamma_v^\uparrow}
+    \end{array}
+
+And all these things are bounded :
+
+.. math::
+    \begin{array}{rcl}
+    \Pi_{Conv\ bound} &:& \left\{\begin{array}{cl} \forall n \in N \\ \forall v \in V^n \end{array} \right. &,&
+    \begin{array}{rcl}
+    0 &\le& \Gamma_v^\downarrow &\le& \overline{\Gamma_v^\downarrow} \\
+    0 &\le& \Gamma_v^\uparrow &\le& \overline{\Gamma_v^\uparrow}
+    \end{array}
+    \end{array}
+
+Now, we need to fix ratios conversion by a new constraints
+
+.. math::
+    \begin{array}{rcl}
+    \Pi_{converter} &:& \left\{\begin{array}{cl} \forall n \in N \\ \forall v \in V^n_\downarrow \end{array} \right. &,&
+    \begin{array}{rcl}
+    \Gamma_v^\downarrow * \alpha^n_v &=& \Gamma_v^\uparrow
+    \end{array}
     \end{array}

@@ -416,8 +416,8 @@ class ResultAnalyzer:
         :return: pivot table
         """
         names = [i.column for i in indexes]
-        filtered = reduce(lambda a, b: a & b, (i.filter(df) for i in indexes))
-        pt = pd.pivot_table(data=df[filtered], index=names, aggfunc=lambda x: x.iloc[0])
+        mask = reduce(lambda a, b: a & b, (i.filter(df) for i in indexes))
+        pt = pd.pivot_table(data=df[mask], index=names, aggfunc=lambda x: x.iloc[0])
 
         return ResultAnalyzer._remove_useless_index_level(df=pt, indexes=indexes)
 
