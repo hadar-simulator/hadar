@@ -10,6 +10,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
+from hadar import LPOptimizer
 from hadar.analyzer.result import Index, ResultAnalyzer, IntIndex
 from hadar.optimizer.input import Production, Consumption, Study
 from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result, OutputNetwork, \
@@ -26,14 +27,8 @@ class TestIndex(unittest.TestCase):
         self.assertEqual(False, i.all)
         self.assertEqual(('fr',), i.index)
 
-    def test_list_1(self):
+    def test_list(self):
         i = Index(column='i', index=['fr', 'be'])
-        self.assertEqual(False, i.all)
-        self.assertEqual(('fr', 'be'), i.index)
-
-    def test_list_2(self):
-        l = ['fr', 'be']
-        i = Index(column='i', index=l)
         self.assertEqual(False, i.all)
         self.assertEqual(('fr', 'be'), i.index)
 
@@ -60,51 +55,25 @@ class TestIntIndex(unittest.TestCase):
         self.assertEqual((2, 6), i.index)
 
 
-class TestAnalyzer(unittest.TestCase):
+class TestConsumptionAnalyzer(unittest.TestCase):
     def setUp(self) -> None:
         self.study = Study(horizon=3, nb_scn=2)\
             .network()\
                 .node('a')\
                     .consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], name='load')\
                     .consumption(cost=10 ** 3, quantity=[[130, 13, 13], [13, 130, 130]], name='car')\
-                    .production(cost=10, quantity=[[130, 13, 13], [13, 130, 130]], name='prod')\
-                    .to_converter(name='conv', ratio=2)\
                 .node('b')\
                     .consumption(cost=10 ** 3, quantity=[[120, 12, 12], [12, 120, 120]], name='load')\
-                    .production(cost=20, quantity=[[110, 11, 11], [11, 110, 110]], name='prod')\
-                    .production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], name='nuclear') \
-                    .storage(name='store', capacity=100, flow_in=10, flow_out=20,
-                             cost=1) \
-                .node('c')\
-                .link(src='a', dest='b', quantity=[[110, 11, 11], [11, 110, 110]], cost=2)\
-                .link(src='a', dest='c', quantity=[[120, 12, 12], [12, 120, 120]], cost=2)\
-            .network('elec').node('a')\
-            .converter(name='conv', to_network='elec', to_node='a', max=10, cost=1)\
             .build()
 
         out = {
             'a': OutputNode(consumptions=[OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load'),
                                           OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[30, 3, 3], [3, 30, 30]], name='car')],
-                            productions=[OutputProduction(cost=np.ones((2, 3)) * 10, quantity=[[30, 3, 3], [3, 30, 30]], name='prod')],
-                            storages=[],
-                            links=[OutputLink(dest='b', quantity=[[10, 1, 1], [1, 10, 10]], cost=np.ones((2, 3)) * 2),
-                                   OutputLink(dest='c', quantity=[[20, 2, 2], [2, 20, 20]], cost=np.ones((2, 3)) * 2)]),
-
+                            productions=[], storages=[], links=[]),
             'b': OutputNode(consumptions=[OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load')],
-                            productions=[OutputProduction(cost=np.ones((2, 3)) * 20, quantity=[[10, 1, 1], [1, 10, 10]], name='prod'),
-                                         OutputProduction(cost=np.ones((2, 3)) * 20, quantity=[[20, 2, 2], [2, 20, 20]], name='nuclear')],
-                            storages=[OutputStorage(name='store', capacity=[[10, 1, 1], [1, 10, 10]],
-                                                    flow_out=[[20, 2, 2], [2, 20, 20]],
-                                                    flow_in=[[30, 3, 3], [3, 30, 30]])],
-                            links=[])
+                            productions=[], storages=[], links=[])
         }
-
-        conv = OutputConverter(name='conv', flow_src={('default', 'a'): [[10, 1, 1], [1, 10, 10]]}, flow_dest=[[20, 2, 2], [2, 20, 20]])
-
-        blank_node = OutputNode(consumptions=[], productions=[], storages=[], links=[])
-        self.result = Result(networks={'default': OutputNetwork(nodes=out),
-                                       'gas': OutputNetwork(nodes={'b': blank_node})},
-                             converters={'conv': conv})
+        self.result = Result(networks={'default': OutputNetwork(nodes=out)}, converters={})
 
     def test_build_consumption(self):
         # Expected
@@ -121,6 +90,47 @@ class TestAnalyzer(unittest.TestCase):
 
         pd.testing.assert_frame_equal(exp, cons)
 
+    def test_aggregate_cons(self):
+        # Expected
+        index = pd.Index(data=[0, 1, 2], dtype=float, name='t')
+        exp_cons = pd.DataFrame(data={'asked': [120, 12, 12],
+                                      'cost': [10 ** 3] * 3,
+                                      'given': [20, 2, 2]}, dtype=float, index=index)
+
+        # Test
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        cons = agg.network().scn(0).node('a').consumption('load').time()
+
+        pd.testing.assert_frame_equal(exp_cons, cons)
+
+    def test_get_elements_inside(self):
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        self.assertEqual((2, 0, 0, 0, 0, 0), agg.get_elements_inside('a'))
+        self.assertEqual((1, 0, 0, 0, 0, 0), agg.get_elements_inside('b'))
+
+
+class TestProductionAnalyzer(unittest.TestCase):
+    def setUp(self) -> None:
+        self.study = Study(horizon=3, nb_scn=2)\
+            .network()\
+                .node('a')\
+                    .production(cost=10, quantity=[[130, 13, 13], [13, 130, 130]], name='prod')\
+                .node('b')\
+                    .production(cost=20, quantity=[[110, 11, 11], [11, 110, 110]], name='prod')\
+                    .production(cost=20, quantity=[[120, 12, 12], [12, 120, 120]], name='nuclear') \
+            .build()
+
+        out = {
+            'a': OutputNode(productions=[OutputProduction(cost=np.ones((2, 3)) * 10, quantity=[[30, 3, 3], [3, 30, 30]], name='prod')],
+                            consumptions=[], storages=[], links=[]),
+
+            'b': OutputNode(productions=[OutputProduction(cost=np.ones((2, 3)) * 20, quantity=[[10, 1, 1], [1, 10, 10]], name='prod'),
+                                         OutputProduction(cost=np.ones((2, 3)) * 20, quantity=[[20, 2, 2], [2, 20, 20]], name='nuclear')],
+                            consumptions=[], storages=[], links=[])
+        }
+
+        self.result = Result(networks={'default': OutputNetwork(nodes=out)}, converters={})
+
     def test_build_production(self):
         # Expected
         exp = pd.DataFrame(data={'cost': [10] * 6 + [20] * 12,
@@ -135,6 +145,44 @@ class TestAnalyzer(unittest.TestCase):
         prod = ResultAnalyzer._build_production(self.study, self.result)
 
         pd.testing.assert_frame_equal(exp, prod)
+
+    def test_aggregate_prod(self):
+        # Expected
+        index = pd.MultiIndex.from_tuples((('a', 'prod', 0.0), ('a', 'prod', 1.0), ('a', 'prod', 2,0),
+                                           ('b', 'prod', 0.0), ('b', 'prod', 1.0), ('b', 'prod', 2,0)),
+                                          names=['node', 'name', 't'], )
+        exp_cons = pd.DataFrame(data={'avail': [130, 13, 13, 110, 11, 11],
+                                      'cost': [10, 10, 10, 20, 20, 20],
+                                      'used': [30, 3, 3, 10, 1, 1]}, dtype=float, index=index)
+
+        # Test
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        cons = agg.network().scn(0).node(['a', 'b']).production('prod').time()
+
+        pd.testing.assert_frame_equal(exp_cons, cons)
+
+    def test_get_elements_inside(self):
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        self.assertEqual((0, 1, 0, 0, 0, 0), agg.get_elements_inside('a'))
+        self.assertEqual((0, 2, 0, 0, 0, 0), agg.get_elements_inside('b'))
+
+
+class TestStorageAnalyzer(unittest.TestCase):
+    def setUp(self) -> None:
+        self.study = Study(horizon=3, nb_scn=2)\
+            .network()\
+                .node('b')\
+                    .storage(name='store', capacity=100, flow_in=10, flow_out=20, cost=1) \
+            .build()
+
+        out = {
+            'b': OutputNode(storages=[OutputStorage(name='store', capacity=[[10, 1, 1], [1, 10, 10]],
+                                                    flow_out=[[20, 2, 2], [2, 20, 20]],
+                                                    flow_in=[[30, 3, 3], [3, 30, 30]])],
+                            consumptions=[], productions=[], links=[])
+        }
+
+        self.result = Result(networks={'default': OutputNetwork(nodes=out)}, converters={})
 
     def test_build_storage(self):
         # Expected
@@ -156,6 +204,52 @@ class TestAnalyzer(unittest.TestCase):
         stor = ResultAnalyzer._build_storage(self.study, self.result)
         pd.testing.assert_frame_equal(exp, stor, check_dtype=False)
 
+    def test_aggregate_stor(self):
+        # Expected
+        index = pd.MultiIndex.from_tuples((('b', 'store', 0), ('b', 'store', 1), ('b', 'store', 2)),
+                                          names=['node', 'name', 't'], )
+        exp_stor = pd.DataFrame(data={'capacity': [10, 1, 1],
+                                      'cost': [1, 1, 1],
+                                      'eff': [.99] * 3,
+                                      'flow_in': [30, 3, 3],
+                                      'flow_out': [20, 2, 2],
+                                      'init_capacity': [0] * 3,
+                                      'max_capacity': [100] * 3,
+                                      'max_flow_in': [10] * 3,
+                                      'max_flow_out': [20] * 3}, index=index)
+
+        # Test
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        stor = agg.network().scn(0).node().storage('store').time()
+        pd.testing.assert_frame_equal(exp_stor, stor, check_dtype=False)
+
+    def test_get_elements_inside(self):
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        self.assertEqual((0, 0, 1, 0, 0, 0), agg.get_elements_inside('b'))
+
+
+class TestLinkAnalyzer(unittest.TestCase):
+    def setUp(self) -> None:
+        self.study = Study(horizon=3, nb_scn=2)\
+            .network()\
+                .node('a')\
+                .node('b')\
+                .node('c')\
+                .link(src='a', dest='b', quantity=[[110, 11, 11], [11, 110, 110]], cost=2)\
+                .link(src='a', dest='c', quantity=[[120, 12, 12], [12, 120, 120]], cost=2)\
+            .build()
+
+        blank_node = OutputNode(consumptions=[], productions=[], storages=[], links=[])
+        out = {
+            'a': OutputNode(consumptions=[], productions=[], storages=[],
+                            links=[OutputLink(dest='b', quantity=[[10, 1, 1], [1, 10, 10]], cost=np.ones((2, 3)) * 2),
+                                   OutputLink(dest='c', quantity=[[20, 2, 2], [2, 20, 20]], cost=np.ones((2, 3)) * 2)]),
+
+            'b': blank_node, 'c': blank_node
+        }
+
+        self.result = Result(networks={'default': OutputNetwork(nodes=out)}, converters={})
+
     def test_build_link(self):
         # Expected
         exp = pd.DataFrame(data={'cost': [2] * 12,
@@ -170,6 +264,47 @@ class TestAnalyzer(unittest.TestCase):
         link = ResultAnalyzer._build_link(self.study, self.result)
 
         pd.testing.assert_frame_equal(exp, link)
+
+    def test_aggregate_link(self):
+        # Expected
+        index = pd.MultiIndex.from_tuples((('b', 0.0), ('b', 1.0), ('b', 2,0),
+                                           ('c', 0.0), ('c', 1.0), ('c', 2,0)),
+                                          names=['dest', 't'], )
+        exp_link = pd.DataFrame(data={'avail': [110, 11, 11, 120, 12, 12],
+                                      'cost': [2, 2, 2, 2, 2, 2],
+                                      'used': [10, 1, 1, 20, 2, 2]}, dtype=float, index=index)
+
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        link = agg.network().scn(0).node('a').link(['b', 'c']).time()
+
+        pd.testing.assert_frame_equal(exp_link, link)
+
+    def test_balance(self):
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        np.testing.assert_array_equal([[30, 3, 3], [3, 30, 30]], agg.get_balance(node='a'))
+        np.testing.assert_array_equal([[-10, -1, -1], [-1, -10, -10]], agg.get_balance(node='b'))
+
+    def test_get_elements_inside(self):
+        agg = ResultAnalyzer(study=self.study, result=self.result)
+        self.assertEqual((0, 0, 0, 2, 0, 0), agg.get_elements_inside('a'))
+
+
+class TestConverterAnalyzer(unittest.TestCase):
+    def setUp(self) -> None:
+        self.study = Study(horizon=3, nb_scn=2)\
+            .network()\
+                .node('a')\
+                    .to_converter(name='conv', ratio=2)\
+            .network('elec').node('a')\
+            .converter(name='conv', to_network='elec', to_node='a', max=10, cost=1)\
+            .build()
+
+        conv = OutputConverter(name='conv', flow_src={('default', 'a'): [[10, 1, 1], [1, 10, 10]]}, flow_dest=[[20, 2, 2], [2, 20, 20]])
+
+        blank_node = OutputNode(consumptions=[], productions=[], storages=[], links=[])
+        self.result = Result(networks={'default': OutputNetwork(nodes={'a': blank_node}),
+                                       'elec': OutputNetwork(nodes={'a': blank_node})},
+                             converters={'conv': conv})
 
     def test_build_dest_converter(self):
         # Expected
@@ -201,66 +336,6 @@ class TestAnalyzer(unittest.TestCase):
 
         pd.testing.assert_frame_equal(exp, conv, check_dtype=False)
 
-    def test_aggregate_cons(self):
-        # Expected
-        index = pd.Index(data=[0, 1, 2], dtype=float, name='t')
-        exp_cons = pd.DataFrame(data={'asked': [120, 12, 12],
-                                      'cost': [10 ** 3] * 3,
-                                      'given': [20, 2, 2]}, dtype=float, index=index)
-
-        # Test
-        agg = ResultAnalyzer(study=self.study, result=self.result)
-        cons = agg.network().scn(0).node('a').consumption('load').time()
-
-        pd.testing.assert_frame_equal(exp_cons, cons)
-
-    def test_aggregate_prod(self):
-        # Expected
-        index = pd.MultiIndex.from_tuples((('a', 'prod', 0.0), ('a', 'prod', 1.0), ('a', 'prod', 2,0),
-                                           ('b', 'prod', 0.0), ('b', 'prod', 1.0), ('b', 'prod', 2,0)),
-                                          names=['node', 'name', 't'], )
-        exp_cons = pd.DataFrame(data={'avail': [130, 13, 13, 110, 11, 11],
-                                      'cost': [10, 10, 10, 20, 20, 20],
-                                      'used': [30, 3, 3, 10, 1, 1]}, dtype=float, index=index)
-
-        # Test
-        agg = ResultAnalyzer(study=self.study, result=self.result)
-        cons = agg.network().scn(0).node(['a', 'b']).production('prod').time()
-
-        pd.testing.assert_frame_equal(exp_cons, cons)
-
-    def test_aggregate_stor(self):
-        # Expected
-        index = pd.MultiIndex.from_tuples((('b', 'store', 0), ('b', 'store', 1), ('b', 'store', 2)),
-                                          names=['node', 'name', 't'], )
-        exp_stor = pd.DataFrame(data={'capacity': [10, 1, 1],
-                                      'cost': [1, 1, 1],
-                                      'eff': [.99] * 3,
-                                      'flow_in': [30, 3, 3],
-                                      'flow_out': [20, 2, 2],
-                                      'init_capacity': [0] * 3,
-                                      'max_capacity': [100] * 3,
-                                      'max_flow_in': [10] * 3,
-                                      'max_flow_out': [20] * 3}, index=index)
-
-        # Test
-        agg = ResultAnalyzer(study=self.study, result=self.result)
-        stor = agg.network().scn(0).node().storage('store').time()
-        pd.testing.assert_frame_equal(exp_stor, stor, check_dtype=False)
-
-    def test_aggregate_link(self):
-        # Expected
-        index = pd.MultiIndex.from_tuples((('b', 0.0), ('b', 1.0), ('b', 2,0),
-                                           ('c', 0.0), ('c', 1.0), ('c', 2,0)),
-                                          names=['dest', 't'], )
-        exp_link = pd.DataFrame(data={'avail': [110, 11, 11, 120, 12, 12],
-                                      'cost': [2, 2, 2, 2, 2, 2],
-                                      'used': [10, 1, 1, 20, 2, 2]}, dtype=float, index=index)
-
-        agg = ResultAnalyzer(study=self.study, result=self.result)
-        link = agg.network().scn(0).node('a').link(['b', 'c']).time()
-
-        pd.testing.assert_frame_equal(exp_link, link)
 
     def test_aggregate_to_conv(self):
         # Expected
@@ -286,21 +361,38 @@ class TestAnalyzer(unittest.TestCase):
 
     def test_get_elements_inside(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        self.assertEqual((2, 1, 0, 2, 1, 0), agg.get_elements_inside('a'))
-        self.assertEqual((1, 2, 1, 0, 0, 0), agg.get_elements_inside('b'))
-        self.assertEqual((0, 0, 0, 0, 0, 1), agg.get_elements_inside(node='a', network='elec'))
+        self.assertEqual((0, 0, 0, 0, 1, 0), agg.get_elements_inside('a'))
+        self.assertEqual((0, 0, 0, 0, 0, 1), agg.get_elements_inside('a', network='elec'))
 
-    def test_balance(self):
-        agg = ResultAnalyzer(study=self.study, result=self.result)
-        np.testing.assert_array_equal([[30, 3, 3], [3, 30, 30]], agg.get_balance(node='a'))
-        np.testing.assert_array_equal([[-10, -1, -1], [-1, -10, -10]], agg.get_balance(node='b'))
+
+class TestAnalyzer(unittest.TestCase):
+    def setUp(self) -> None:
+        self.study = Study(horizon=1)\
+            .network()\
+                .node('a')\
+                    .consumption(cost=10 ** 3, quantity=100, name='car')\
+                    .production(cost=10, quantity=70, name='prod')\
+                .node('b')\
+                    .production(cost=20, quantity=70, name='nuclear') \
+                    .storage(name='store', capacity=100, flow_in=10, flow_out=20, cost=-1) \
+                    .to_converter(name='conv', ratio=2) \
+                .link(src='b', dest='a', quantity=110, cost=2)\
+            .network('elec')\
+                .node('a')\
+                    .consumption(cost=10 ** 3, quantity=20, name='load')\
+            .converter(name='conv', to_network='elec', to_node='a', max=10, cost=1)\
+            .build()
+
+        optim = LPOptimizer()
+        self.result = optim.solve(self.study)
 
     def test_cost(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        np.testing.assert_array_equal([[200360, 20036, 20036], [20036, 200360, 200360]], agg.get_cost(node='a'))
-        np.testing.assert_array_equal([[100610, 10061, 10061], [10061, 100610, 100610]], agg.get_cost(node='b'))
-        np.testing.assert_array_equal([[20, 2, 2], [2, 20, 20]], agg.get_cost(node='a', network='elec'))
+        np.testing.assert_array_equal(700, agg.get_cost(node='a'))
+        np.testing.assert_array_equal(760, agg.get_cost(node='b'))
+        np.testing.assert_array_equal(10010, agg.get_cost(node='a', network='elec'))
 
     def test_rac(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        np.testing.assert_array_equal([[0, 0, 0], [0, 0, 0]], agg.get_rac())
+        np.testing.assert_array_equal(35, agg.get_rac())
+        np.testing.assert_array_equal(-10, agg.get_rac(network='elec'))

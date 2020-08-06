@@ -559,29 +559,33 @@ class ResultAnalyzer:
         :param network: selecto network to compute. Default is default.
         :return: matrix (scn, time)
         """
+        def fill_width_zeros(arr: np.ndarray) -> np.ndarray:
+            return np.zeros((self.nb_scn, self.horizon)) if arr.size == 0 else arr
         prod_used = self.production[self.production['network'] == network] \
             .drop(['avail', 'cost'], axis=1) \
             .pivot_table(index='scn', columns='t', aggfunc=np.sum) \
             .values
+        prod_used = fill_width_zeros(prod_used)
 
         prod_avail = self.production[self.production['network'] == network] \
             .drop(['used', 'cost'], axis=1) \
             .pivot_table(index='scn', columns='t', aggfunc=np.sum) \
             .values
+        prod_avail = fill_width_zeros(prod_avail)
 
-        cons_asked = self.consumption[self.production['network'] == network] \
+        cons_asked = self.consumption[self.consumption['network'] == network] \
             .drop(['given', 'cost'], axis=1) \
             .pivot_table(index='scn', columns='t', aggfunc=np.sum) \
             .values
+        cons_asked = fill_width_zeros(cons_asked)
 
-        cons_given = self.consumption[self.production['network'] == network] \
+        cons_given = self.consumption[self.consumption['network'] == network] \
             .drop(['asked', 'cost'], axis=1) \
             .pivot_table(index='scn', columns='t', aggfunc=np.sum) \
             .values
+        cons_given = fill_width_zeros(cons_given)
 
-        rac = (prod_avail - prod_used) - (cons_asked - cons_given)
-
-        return np.zeros((self.nb_scn, self.horizon)) if rac.size == 0 else rac
+        return (prod_avail - prod_used) - (cons_asked - cons_given)
 
     @property
     def horizon(self) -> int:
