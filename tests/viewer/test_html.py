@@ -40,45 +40,44 @@ class TestHTMLPlotting(unittest.TestCase):
 
         self.hash = hashlib.sha3_256()
 
-    def test_stack(self):
-        fig = self.plot.network().node('a').stack(scn=0)
-        self.assert_fig_hash('d9f9f004b98ca62be934d69d4fd0c1a302512242', fig)
-
-    def test_map_exchanges(self):
+    def test_network(self):
         fig = self.plot.network().map(t=0, scn=0, zoom=1.6)
         # Used this line to plot map: plot(fig)
         self.assert_fig_hash('49d81d1457b2ac78e1fc6ae4c1fc6215b8a0bbe4', fig)
 
-    def test_plot_timeline(self):
+        fig = self.plot.network().rac_matrix()
+        self.assert_fig_hash('2b87a4e781e9eeb532f5d2b091c474bb0de625fd', fig)
+
+    def test_node(self):
+        fig = self.plot.network().node('a').stack(scn=0)
+        self.assert_fig_hash('d9f9f004b98ca62be934d69d4fd0c1a302512242', fig)
+
+    def test_consumption(self):
         fig = self.plot.network().node('a').consumption('load').timeline()
         self.assert_fig_hash('ba776202b252c9df5c81ca869b2e2d85e56e5589', fig)
 
-        fig = self.plot.network().node('b').production('nuclear').timeline()
-        self.assert_fig_hash('33baf5d01fda12b6a2d025abf8421905fc24abe1', fig)
-
-        fig = self.plot.network().node('a').link('b').timeline()
-        self.assert_fig_hash('97f413ea2fa9908abebf381ec588a7e60b906884', fig)
-
-    def test_plot_monotone(self):
         fig = self.plot.network().node('a').consumption('load').monotone(scn=0)
         self.assert_fig_hash('1ffa51a52b066aab8cabb817c11fd1272549eb9d', fig)
+
+        fig = self.plot.network().node('a').consumption('load').gaussian(scn=0)
+        self.assert_fig_hash('4f3676a65cde6c268233679e1d0e6207df62764d', fig)
+
+    def test_production(self):
+        fig = self.plot.network().node('b').production('nuclear').timeline()
+        self.assert_fig_hash('33baf5d01fda12b6a2d025abf8421905fc24abe1', fig)
 
         fig = self.plot.network().node('b').production('nuclear').monotone(t=0)
         self.assert_fig_hash('e059878aac45330810578482df8c3d19261f7f75', fig)
 
-        fig = self.plot.network().node('a').link('b').monotone(scn=0)
-        self.assert_fig_hash('08b0e0d8414bee2c5083a298af00fe86d0eba6b0', fig)
-
-    def test_rac_heatmap(self):
-        fig = self.plot.network().rac_matrix()
-        self.assert_fig_hash('2b87a4e781e9eeb532f5d2b091c474bb0de625fd', fig)
-
-    def test_gaussian(self):
-        fig = self.plot.network().node('a').consumption('load').gaussian(scn=0)
-        self.assert_fig_hash('4f3676a65cde6c268233679e1d0e6207df62764d', fig)
-
         fig = self.plot.network().node('b').production('nuclear').gaussian(t=0)
         # Fail devops self.assert_fig_hash('45ffe15df1d72829ebe2283c9c4b65ee8465c978', fig)
+
+    def test_link(self):
+        fig = self.plot.network().node('a').link('b').timeline()
+        self.assert_fig_hash('97f413ea2fa9908abebf381ec588a7e60b906884', fig)
+
+        fig = self.plot.network().node('a').link('b').monotone(scn=0)
+        self.assert_fig_hash('08b0e0d8414bee2c5083a298af00fe86d0eba6b0', fig)
 
         fig = self.plot.network().node('a').link('b').gaussian(scn=0)
         self.assert_fig_hash('5151ade23440beeea9ff144245f81b057c0fa2cd', fig)
