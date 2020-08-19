@@ -4,24 +4,18 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-
+import json
 import unittest
 
 import numpy as np
 
 from hadar.optimizer.input import Study, Consumption, Production, Link, Storage, Converter
+from utils import assert_result
 
 
 class TestStudy(unittest.TestCase):
-    def test_create_study(self):
-        c = Consumption(name='load', cost=20, quantity=10)
-        p = Production(name='nuclear', cost=20, quantity=10)
-        s = Storage(name='store', capacity=100, flow_in=10, flow_out=10, cost=1, init_capacity=4, eff=0.1)
-        l = Link(dest='a', cost=20, quantity=10)
-        v = Converter(name='converter', src_ratios={('default', 'a'): 1}, dest_network='gas',
-                      dest_node='b', cost=10, max=10)
-
-        study = Study(horizon=1) \
+    def setUp(self) -> None:
+        self.study = Study(horizon=1) \
             .network() \
                 .node('a') \
                     .consumption(name='load', cost=20, quantity=10) \
@@ -39,18 +33,26 @@ class TestStudy(unittest.TestCase):
             .converter(name='converter', to_network='gas', to_node='b', cost=10, max=10) \
             .build()
 
-        self.assertEqual(c, study.networks['default'].nodes['a'].consumptions[0])
-        self.assertEqual(p, study.networks['default'].nodes['a'].productions[0])
-        self.assertEqual(l, study.networks['default'].nodes['b'].links[0])
+    def test_create_study(self):
+        c = Consumption(name='load', cost=20, quantity=10)
+        p = Production(name='nuclear', cost=20, quantity=10)
+        s = Storage(name='store', capacity=100, flow_in=10, flow_out=10, cost=1, init_capacity=4, eff=0.1)
+        l = Link(dest='a', cost=20, quantity=10)
+        v = Converter(name='converter', src_ratios={('default', 'a'): 1}, dest_network='gas',
+                      dest_node='b', cost=10, max=10)
 
-        self.assertEqual(c, study.networks['gas'].nodes['a'].consumptions[0])
-        self.assertEqual(p, study.networks['gas'].nodes['b'].productions[0])
-        self.assertEqual(s, study.networks['gas'].nodes['b'].storages[0])
-        self.assertEqual(l, study.networks['gas'].nodes['b'].links[0])
+        self.assertEqual(c, self.study.networks['default'].nodes['a'].consumptions[0])
+        self.assertEqual(p, self.study.networks['default'].nodes['a'].productions[0])
+        self.assertEqual(l, self.study.networks['default'].nodes['b'].links[0])
 
-        self.assertEqual(v, study.converters['converter'])
+        self.assertEqual(c, self.study.networks['gas'].nodes['a'].consumptions[0])
+        self.assertEqual(p, self.study.networks['gas'].nodes['b'].productions[0])
+        self.assertEqual(s, self.study.networks['gas'].nodes['b'].storages[0])
+        self.assertEqual(l, self.study.networks['gas'].nodes['b'].links[0])
 
-        self.assertEqual(1, study.horizon)
+        self.assertEqual(v, self.study.converters['converter'])
+
+        self.assertEqual(1, self.study.horizon)
 
     def test_wrong_production_quantity(self):
         def test():
@@ -243,3 +245,10 @@ class TestStudy(unittest.TestCase):
         # Input
         study = Study( horizon=2).network().build()
         self.assertRaises(ValueError, lambda: study._standardize_array([4, 5, 1]))
+
+    def test_serialization(self):
+        d = self.study.to_json()
+        j = json.dumps(d)
+        s = json.loads(j)
+        s = Study.from_json(s)
+        self.assertEqual(self.study, s)

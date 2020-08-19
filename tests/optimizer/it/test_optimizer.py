@@ -9,7 +9,7 @@ import unittest
 
 import hadar as hd
 from hadar.optimizer.output import OutputNetwork
-from tests.utils import assert_study
+from tests.utils import assert_result
 
 
 class TestOptimizer(unittest.TestCase):
@@ -55,7 +55,7 @@ class TestOptimizer(unittest.TestCase):
             links=[])
 
         res = self.optimizer.solve(study)
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
+        assert_result(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_exchange_two_nodes(self):
         """
@@ -98,7 +98,7 @@ class TestOptimizer(unittest.TestCase):
             links=[])
 
         res = self.optimizer.solve(study)
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
+        assert_result(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_exchange_two_concurrent_nodes(self):
         """
@@ -158,7 +158,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
+        assert_result(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_exchange_link_saturation(self):
         """
@@ -201,7 +201,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
+        assert_result(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_consumer_cancel_exchange(self):
         """
@@ -255,7 +255,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
+        assert_result(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
 
     def test_many_links_on_node(self):
@@ -316,7 +316,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
+        assert_result(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_storage(self):
         """
@@ -351,7 +351,7 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
+        assert_result(self, hd.Result(networks={'default': OutputNetwork(nodes_expected)}, converters={}), res)
 
     def test_multi_energies(self):
         study = hd.Study(horizon=1)\
@@ -386,4 +386,4 @@ class TestOptimizer(unittest.TestCase):
 
         res = self.optimizer.solve(study)
 
-        assert_study(self, hd.Result(networks=networks_expected, converters={'conv': converter_expected}), res)
+        assert_result(self, hd.Result(networks=networks_expected, converters={'conv': converter_expected}), res)

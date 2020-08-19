@@ -13,7 +13,7 @@ from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
 from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result, OutputNetwork, \
     OutputStorage, OutputConverter
 from tests.optimizer.lp.ortools_mock import MockSolver, MockNumVar
-from tests.utils import assert_study
+from tests.utils import assert_result
 
 
 class TestInputMapper(unittest.TestCase):
@@ -175,7 +175,7 @@ class TestOutputMapper(unittest.TestCase):
         nodes = {'a': OutputNode(consumptions=[cons], productions=[], storages=[], links=[])}
         expected = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
 
-        assert_study(self, expected=expected, result=mapper.get_result())
+        assert_result(self, expected=expected, result=mapper.get_result())
 
     def test_map_production(self):
         # Input
@@ -200,7 +200,7 @@ class TestOutputMapper(unittest.TestCase):
         nodes = {'a': OutputNode(consumptions=[], productions=[prod], storages=[], links=[])}
         expected = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
 
-        assert_study(self, expected=expected, result=mapper.get_result())
+        assert_result(self, expected=expected, result=mapper.get_result())
 
     def test_map_storage(self):
         # Input
@@ -231,7 +231,7 @@ class TestOutputMapper(unittest.TestCase):
         nodes = {'a': OutputNode(consumptions=[], productions=[], storages=[stor], links=[])}
         expected = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
 
-        assert_study(self, expected=expected, result=mapper.get_result())
+        assert_result(self, expected=expected, result=mapper.get_result())
 
     def test_map_link(self):
         # Input
@@ -258,7 +258,7 @@ class TestOutputMapper(unittest.TestCase):
                  'be': OutputNode(consumptions=[], productions=[], storages=[], links=[])}
         expected = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
 
-        assert_study(self, expected=expected, result=mapper.get_result())
+        assert_result(self, expected=expected, result=mapper.get_result())
 
     def test_map_converter(self):
         # Input

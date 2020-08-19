@@ -4,7 +4,7 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-
+import base64
 import logging
 import pickle
 import sys
@@ -47,7 +47,7 @@ def solve_remote(study: Study, url: str, token: str = 'none') -> Result:
     return _solve_remote_wrap(study, url, token, requests)
 
 
-def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) -> Result:
+def _solve_remote_wrap(study: Study, url: str, token: str, rqt) -> Result:
     """
     Same method than solve_remote but with with request library in parameter to inject mock during test.
 
@@ -58,11 +58,11 @@ def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) ->
     :return: result received from server
     """
     # Send study
-    resp = rqt.post(url='%s/study' % url, data=pickle.dumps(study), params={'token': token})
+    resp = rqt.post(url='%s/study' % url, json=study, params={'token': token})
     check_code(resp.status_code)
 
     # Deserialize
-    resp = pickle.loads(resp.content)
+    resp = resp.json()
     id = resp['job']
 
     Bar.check_tty = Spinner.check_tty = False
@@ -73,7 +73,7 @@ def _solve_remote_wrap(study: Study, url: str, token: str = 'none', rqt=None) ->
     while resp['status'] in ['QUEUED', 'COMPUTING']:
         resp = rqt.get(url='%s/result/%s' % (url, id), params={'token': token})
         check_code(resp.status_code)
-        resp = pickle.loads(resp.content)
+        resp = resp.json()
 
         if resp['status'] == 'QUEUED':
             bar.goto(resp['progress'])

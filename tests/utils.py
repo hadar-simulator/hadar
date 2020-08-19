@@ -10,7 +10,7 @@ import numpy as np
 from hadar.optimizer.output import Result
 
 
-def assert_study(self, expected: Result, result: Result):
+def assert_result(self, expected: Result, result: Result):
     for name_network, network in expected.networks.items():
         if name_network not in result.networks.keys():
             self.fail('Network {} expected but not'.format(name_network))

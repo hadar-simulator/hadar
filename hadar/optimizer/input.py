@@ -4,7 +4,8 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-
+from abc import ABC, abstractmethod
+from copy import deepcopy
 from typing import List, Union, Dict, Tuple
 
 import numpy as np
@@ -31,7 +32,29 @@ class DTO:
         return self.__str__()
 
 
-class Consumption(DTO):
+class JSON(DTO, ABC):
+
+    def to_json(self):
+        def convert(value):
+            if isinstance(value, JSON):
+                return value.to_json()
+            elif isinstance(value, dict):
+                return {k: convert(v) for k, v in value.items()}
+            elif isinstance(value, list) or isinstance(value, tuple):
+                return [convert(v) for v in value]
+            elif isinstance(value, np.ndarray):
+                return value.tolist()
+            return value
+
+        return {k: convert(v) for k, v in self.__dict__.items()}
+
+    @staticmethod
+    @abstractmethod
+    def from_json(dict):
+        pass
+
+
+class Consumption(JSON):
     """
     Consumption element.
     """
@@ -48,8 +71,12 @@ class Consumption(DTO):
         self.quantity = np.array(quantity)
         self.name = name
 
+    @staticmethod
+    def from_json(dict):
+        return Consumption(**dict)
 
-class Production(DTO):
+
+class Production(JSON):
     """
     Production element
     """
@@ -65,8 +92,12 @@ class Production(DTO):
         self.cost = cost
         self.quantity = np.array(quantity)
 
+    @staticmethod
+    def from_json(dict):
+        return Production(**dict)
 
-class Storage(DTO):
+
+class Storage(JSON):
     """
     Storage element
     """
@@ -90,8 +121,12 @@ class Storage(DTO):
         self.init_capacity = init_capacity
         self.eff = eff
 
+    @staticmethod
+    def from_json(dict):
+        return Storage(**dict)
 
-class Link(DTO):
+
+class Link(JSON):
     """
     Link element
     """
@@ -107,8 +142,12 @@ class Link(DTO):
         self.quantity = np.array(quantity)
         self.cost = cost
 
+    @staticmethod
+    def from_json(dict):
+        return Link(**dict)
 
-class Converter(DTO):
+
+class Converter(JSON):
     """
     Converter element
     """
@@ -132,8 +171,24 @@ class Converter(DTO):
         self.cost = cost
         self.max = max
 
+    def to_json(self) -> dict:
+        dict = deepcopy(self.__dict__)
+        # src_ratios has a tuple of two string as key. These forbidden by JSON.
+        # Therefore when serialized we join these two strings with '::' to create on string as key
+        # Ex: ('elec', 'a') --> 'elec::a'
+        dict['src_ratios'] = {'::'.join(k): v for k, v in self.src_ratios.items()}
+        return dict
 
-class InputNode(DTO):
+    @staticmethod
+    def from_json(dict: dict):
+        # When deserialize, we need to split key string of src_network.
+        # JSON doesn't accept tuple as key, so two string was joined for serialization
+        # Ex: 'elec::a' -> ('elec', 'a')
+        dict['src_ratios'] = {tuple(k.split('::')): v for k, v in dict['src_ratios'].items()}
+        return Converter(**dict)
+
+
+class InputNode(JSON):
     """
     Node element
     """
@@ -152,8 +207,16 @@ class InputNode(DTO):
         self.storages = storages
         self.links = links
 
+    @staticmethod
+    def from_json(dict):
+        dict['consumptions'] = [Consumption.from_json(v) for v in dict['consumptions']]
+        dict['productions'] = [Production.from_json(v) for v in dict['productions']]
+        dict['storages'] = [Storage.from_json(v) for v in dict['storages']]
+        dict['links'] = [Link.from_json(v) for v in dict['links']]
+        return InputNode(**dict)
 
-class InputNetwork(DTO):
+
+class InputNetwork(JSON):
     """
     Network element
     """
@@ -165,8 +228,13 @@ class InputNetwork(DTO):
         """
         self.nodes = nodes if nodes else {}
 
+    @staticmethod
+    def from_json(dict):
+        dict['nodes'] = {k: InputNode.from_json(v) for k, v in dict['nodes'].items()}
+        return InputNetwork(**dict)
 
-class Study(DTO):
+
+class Study(JSON):
     """
     Main object to facilitate to build a study
     """
@@ -183,6 +251,13 @@ class Study(DTO):
         self.converters = dict()
         self.horizon = horizon
         self.nb_scn = nb_scn
+
+    @staticmethod
+    def from_json(dict):
+        study = Study(horizon=dict['horizon'], nb_scn=dict['nb_scn'])
+        study.networks = {k: InputNetwork.from_json(v) for k, v in dict['networks'].items()}
+        study.converters = {k: Converter.from_json(v) for k, v in dict['converters'].items()}
+        return study
 
     def network(self, name='default'):
         """
