@@ -4,46 +4,19 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
+from copy import deepcopy
 
 import numpy as np
 
 from typing import Union, List, Dict, Tuple
 
-from hadar.optimizer.input import InputNode
-
+from hadar.optimizer.input import InputNode, JSON
 
 __all__ = ['OutputProduction', 'OutputNode', 'OutputStorage', 'OutputLink', 'OutputConsumption', 'OutputNetwork',
            'OutputConverter', 'Result']
 
 
-class DTO:
-    """
-    Implement basic method for DTO objects
-    """
-
-    def __hash__(self):
-        return hash(tuple(sorted(self.__dict__.items())))
-
-    def __eq__(self, other):
-        if not isinstance(other, type(self)):
-            return False
-        for name, att in self.__dict__.items():
-            if isinstance(att, (np.ndarray, np.generic)):
-                if not np.array_equal(self.__dict__[name], other.__dict__[name]):
-                    return False
-            elif self.__dict__[name] != other.__dict__[name]:
-                return False
-        return True
-
-    def __str__(self):
-        return "{}({})".format(type(self).__name__,
-                               ", ".join(["{}={}".format(k, str(self.__dict__[k])) for k in sorted(self.__dict__)]))
-
-    def __repr__(self):
-        return self.__str__()
-
-
-class OutputConsumption(DTO):
+class OutputConsumption(JSON):
     """
     Consumption element
     """
@@ -60,7 +33,12 @@ class OutputConsumption(DTO):
         self.name = name
 
 
-class OutputProduction(DTO):
+    @staticmethod
+    def from_json(dict):
+        return OutputConsumption(**dict)
+
+
+class OutputProduction(JSON):
     """
     Production element
     """
@@ -76,8 +54,12 @@ class OutputProduction(DTO):
         self.cost = cost
         self.quantity = np.array(quantity)
 
+    @staticmethod
+    def from_json(dict):
+        return OutputProduction(**dict)
 
-class OutputStorage(DTO):
+
+class OutputStorage(JSON):
     """
     Storage element
     """
@@ -96,8 +78,12 @@ class OutputStorage(DTO):
         self.flow_in = np.array(flow_in)
         self.flow_out = np.array(flow_out)
 
+    @staticmethod
+    def from_json(dict):
+        return OutputStorage(**dict)
 
-class OutputLink(DTO):
+
+class OutputLink(JSON):
     """
     Link element
     """
@@ -113,8 +99,12 @@ class OutputLink(DTO):
         self.quantity = np.array(quantity)
         self.cost = cost
 
+    @staticmethod
+    def from_json(dict):
+        return OutputLink(**dict)
 
-class OutputConverter(DTO):
+
+class OutputConverter(JSON):
     """
     Converter element
     """
@@ -130,8 +120,25 @@ class OutputConverter(DTO):
         self.flow_src = {src: np.array(qt) for src, qt in flow_src.items()}
         self.flow_dest = np.array(flow_dest)
 
+    def to_json(self) -> dict:
+        dict = deepcopy(self.__dict__)
+        # flow_src has a tuple of two string as key. These forbidden by JSON.
+        # Therefore when serialized we join these two strings with '::' to create on string as key
+        # Ex: ('elec', 'a') --> 'elec::a'
+        dict['flow_src'] = {'::'.join(k): v.tolist() for k, v in self.flow_src.items()}
+        dict['flow_dest'] = self.flow_dest.tolist()
+        return dict
 
-class OutputNode(DTO):
+    @staticmethod
+    def from_json(dict: dict):
+        # When deserialize, we need to split key string of src_network.
+        # JSON doesn't accept tuple as key, so two string was joined for serialization
+        # Ex: 'elec::a' -> ('elec', 'a')
+        dict['flow_src'] = {tuple(k.split('::')): v for k, v in dict['flow_src'].items()}
+        return OutputConverter(**dict)
+
+
+class OutputNode(JSON):
     """
     Node element
     """
@@ -174,8 +181,16 @@ class OutputNode(DTO):
                         for i in input.links]
         return output
 
+    @staticmethod
+    def from_json(dict):
+        dict['consumptions'] = [OutputConsumption.from_json(v) for v in dict['consumptions']]
+        dict['productions'] = [OutputProduction.from_json(v) for v in dict['productions']]
+        dict['storages'] = [OutputStorage.from_json(v) for v in dict['storages']]
+        dict['links'] = [OutputLink.from_json(v) for v in dict['links']]
+        return OutputNode(**dict)
 
-class OutputNetwork(DTO):
+
+class OutputNetwork(JSON):
     """
     Network element
     """
@@ -187,8 +202,13 @@ class OutputNetwork(DTO):
         """
         self.nodes = nodes
 
+    @staticmethod
+    def from_json(dict):
+        dict['nodes'] = {k: OutputNode.from_json(v) for k, v in dict['nodes'].items()}
+        return OutputNetwork(**dict)
 
-class Result(DTO):
+
+class Result(JSON):
     """
     Result of study
     """
@@ -199,3 +219,9 @@ class Result(DTO):
         """
         self.networks = networks
         self.converters = converters
+
+
+    @staticmethod
+    def from_json(dict):
+        return Result(networks={k: OutputNetwork.from_json(v) for k, v in dict['networks'].items()},
+                      converters={k: OutputConverter.from_json(v) for k, v in dict['converters'].items()})
