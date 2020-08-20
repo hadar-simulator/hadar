@@ -28,7 +28,7 @@ class OutputConsumption(JSON):
         :param cost: cost of unavailability
         :param name: consumption name (unique in a node)
         """
-        self.cost = cost
+        self.cost = np.array(cost)
         self.quantity = np.array(quantity)
         self.name = name
 
@@ -51,7 +51,7 @@ class OutputProduction(JSON):
         :param name: production name (unique in a node)
         """
         self.name = name
-        self.cost = cost
+        self.cost = np.array(cost)
         self.quantity = np.array(quantity)
 
     @staticmethod
@@ -97,7 +97,7 @@ class OutputLink(JSON):
         """
         self.dest = dest
         self.quantity = np.array(quantity)
-        self.cost = cost
+        self.cost = np.array(cost)
 
     @staticmethod
     def from_json(dict):

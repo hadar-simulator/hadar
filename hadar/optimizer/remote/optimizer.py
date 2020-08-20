@@ -44,21 +44,8 @@ def solve_remote(study: Study, url: str, token: str = 'none') -> Result:
     :param token: authorized token (default server config doesn't use token)
     :return: result received from server
     """
-    return _solve_remote_wrap(study, url, token, requests)
-
-
-def _solve_remote_wrap(study: Study, url: str, token: str, rqt) -> Result:
-    """
-    Same method than solve_remote but with with request library in parameter to inject mock during test.
-
-    :param study: study to resolve
-    :param url: server url
-    :param token: authorized token (default server config doesn't use token)
-    :param rqt: requests library, main requests when use by user, mock when testing.
-    :return: result received from server
-    """
     # Send study
-    resp = rqt.post(url='%s/study' % url, json=study, params={'token': token})
+    resp = requests.post(url='%s/study' % url, json=study.to_json(), params={'token': token})
     check_code(resp.status_code)
 
     # Deserialize
@@ -71,7 +58,7 @@ def _solve_remote_wrap(study: Study, url: str, token: str, rqt) -> Result:
     spinner = None
 
     while resp['status'] in ['QUEUED', 'COMPUTING']:
-        resp = rqt.get(url='%s/result/%s' % (url, id), params={'token': token})
+        resp = requests.get(url='%s/result/%s' % (url, id), params={'token': token})
         check_code(resp.status_code)
         resp = resp.json()
 
@@ -89,4 +76,4 @@ def _solve_remote_wrap(study: Study, url: str, token: str, rqt) -> Result:
     if resp['status'] == 'ERROR':
         raise ServerError(resp['message'])
 
-    return resp['result']
+    return Result.from_json(resp['result'])

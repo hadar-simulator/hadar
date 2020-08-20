@@ -67,7 +67,7 @@ class Consumption(JSON):
         :param cost: cost of unavailability
         :param name: name of consumption (unique for each node)
         """
-        self.cost = cost
+        self.cost = np.array(cost)
         self.quantity = np.array(quantity)
         self.name = name
 
@@ -89,7 +89,7 @@ class Production(JSON):
         :param name: name of production (unique for each node)
         """
         self.name = name
-        self.cost = cost
+        self.cost = np.array(cost)
         self.quantity = np.array(quantity)
 
     @staticmethod
@@ -140,7 +140,7 @@ class Link(JSON):
         """
         self.dest = dest
         self.quantity = np.array(quantity)
-        self.cost = cost
+        self.cost = np.array(cost)
 
     @staticmethod
     def from_json(dict):
@@ -254,6 +254,7 @@ class Study(JSON):
 
     @staticmethod
     def from_json(dict):
+        dict = deepcopy(dict)
         study = Study(horizon=dict['horizon'], nb_scn=dict['nb_scn'])
         study.networks = {k: InputNetwork.from_json(v) for k, v in dict['networks'].items()}
         study.converters = {k: Converter.from_json(v) for k, v in dict['converters'].items()}
