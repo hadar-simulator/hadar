@@ -14,6 +14,8 @@ import numpy as np
 __all__ = ['Consumption', 'Link', 'Production', 'Storage', 'InputNode', 'Study',
            'NetworkFluentAPISelector', 'NodeFluentAPISelector']
 
+import hadar
+
 
 class DTO:
     """
@@ -239,14 +241,14 @@ class Study(JSON):
     Main object to facilitate to build a study
     """
 
-    def __init__(self, horizon: int, nb_scn: int = 1):
+    def __init__(self, horizon: int, nb_scn: int = 1, version: str = None):
         """
         Instance study.
 
         :param horizon: simulation time horizon (i.e. number of time step in simulation)
         :param nb_scn: number of scenarios in study. Default is 1.
         """
-
+        self.version = version or hadar.__version__
         self.networks = dict()
         self.converters = dict()
         self.horizon = horizon
@@ -255,7 +257,7 @@ class Study(JSON):
     @staticmethod
     def from_json(dict):
         dict = deepcopy(dict)
-        study = Study(horizon=dict['horizon'], nb_scn=dict['nb_scn'])
+        study = Study(horizon=dict['horizon'], nb_scn=dict['nb_scn'], version=dict['version'])
         study.networks = {k: InputNetwork.from_json(v) for k, v in dict['networks'].items()}
         study.converters = {k: Converter.from_json(v) for k, v in dict['converters'].items()}
         return study
