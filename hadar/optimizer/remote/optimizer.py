@@ -45,7 +45,7 @@ def solve_remote(study: Study, url: str, token: str = 'none') -> Result:
     :return: result received from server
     """
     # Send study
-    resp = requests.post(url='%s/study' % url, json=study.to_json(), params={'token': token})
+    resp = requests.post(url='%s/api/v1/study' % url, json=study.to_json(), params={'token': token})
     check_code(resp.status_code)
 
     # Deserialize
@@ -58,7 +58,7 @@ def solve_remote(study: Study, url: str, token: str = 'none') -> Result:
     spinner = None
 
     while resp['status'] in ['QUEUED', 'COMPUTING']:
-        resp = requests.get(url='%s/result/%s' % (url, id), params={'token': token})
+        resp = requests.get(url='%s/api/v1/result/%s' % (url, id), params={'token': token})
         check_code(resp.status_code)
         resp = resp.json()
 

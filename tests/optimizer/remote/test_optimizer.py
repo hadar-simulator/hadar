@@ -17,7 +17,7 @@ from hadar.optimizer.remote.optimizer import check_code
 
 class MockSchedulerServer(BaseHTTPRequestHandler):
     def do_POST(self):
-        assert self.path == '/study?token='
+        assert self.path == '/api/v1/study?token='
 
         content_length = int(self.headers['Content-Length'])
         data = json.loads(self.rfile.read(content_length).decode())
@@ -30,7 +30,7 @@ class MockSchedulerServer(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        assert '/result/123?token=' == self.path
+        assert '/api/v1/result/123?token=' == self.path
 
         nodes = {'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
                                   productions=[], storages=[], links=[])}
