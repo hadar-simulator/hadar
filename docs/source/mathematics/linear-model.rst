@@ -74,7 +74,7 @@ First constraint is from Kirschhoff law and describes balance between production
 
 .. math::
     \begin{array}{rcl}
-    \Pi_{kirschhoff} &:& \forall n &,& \sum^{C^n}_{c}{\underline{\overline{\Gamma_c}}} + \sum^{L^n_{\downarrow}}_{l}{ \Gamma_l } = \sum^{P^n}_{p}{ \Gamma_p } + \sum^{L^n_{\uparrow}}_{l}{ \Gamma_l }
+    \Pi_{kirschhoff} &:& \forall n &,& \underbrace{\sum^{C^n}_{c}{\underline{\overline{\Gamma_c}}} + \sum^{L^n_{\downarrow}}_{l}{ \Gamma_l }}_{Consuming\ Flow} = \underbrace{\sum^{P^n}_{p}{ \Gamma_p } + \sum^{L^n_{\uparrow}}_{l}{ \Gamma_l }}_{Producing\ Flow}
     \end{array}
 
 Then productions and edges need to be bounded
@@ -98,7 +98,7 @@ Variables
 
 Sometime, there are a lack of adequacy because there are not enough production, called *lost of load*.
 
-    Like :math:`\Gamma_x` means quantity present in network, :math:`\Lambda_x` represents a lack in network (consumption or production) to reach adequacy. Like for :math:`\Gamma_x`, lower case grec letter :math:`\lambda_x` is for cost associated to this lack.
+    Like :math:`\Gamma_x` means quantity present in network, :math:`\Lambda_x` represents a lack in network (consumption or production) to reach adequacy. Like for :math:`\Gamma_x` , lower case grec letter :math:`\lambda_x` is for cost associated to this lack.
 
 * :math:`\Lambda_c \in \mathbb{R}^T_+` lost of load for :math:`c` consumption
 
@@ -111,7 +111,7 @@ Objective has a new term
 
 .. math::
     \begin{array}{rcl}
-    objective & = & \min{\Omega_{transmission} + \Omega_{production}} + \underbrace{\Omega_{lol}}\\
+    objective & = & \min{\Omega_{...} + \Omega_{lol}}\\
     \Omega_{lol} & = & \sum^N_n \sum^{C^n}_{c}{\Lambda_c * {\lambda_c}}
     \end{array}
 
@@ -122,7 +122,7 @@ Kirschhoff law needs an update too. Lost of Load is represented like a *fantom* 
 
 .. math::
     \begin{array}{rcl}
-        \Pi_{kirschhoff} &:& \forall n &,& \sum^{C^n}_{c}{\underline{\overline{\Gamma_c}}} + \sum^{L^n_{\downarrow}}_{l}{ \Gamma_l } = \sum^{P^n}_{p}{ \Gamma_p } + \sum^{L^n_{\uparrow}}_{l}{ \Gamma_l } + \underbrace{\sum^{C^n}_{c}{ \Lambda_c }}
+        \Pi_{kirschhoff} &:& \forall n \in N &,& [Consuming\ Flow] = [Producing\ Flow] + \sum^{C^n}_{c}{ \Lambda_c }
     \end{array}
 
 Lost of load must be bounded
@@ -134,4 +134,155 @@ Lost of load must be bounded
     \forall n \in N \\
     \forall c \in C^n
     \end{array} \right. &,& 0 \le \Lambda_c \le \overline{\underline{\Gamma_c}}
+    \end{array}
+
+
+Storage
+-------
+
+Variables
+*********
+
+Storage is a element inside Hadar to store quantity on a node. We have:
+
+* :math:`S^n` : set of storage attached to node :math:`n`
+
+* :math:`s \in S^n` a storage element inside a set of storage attached to node :math:`n`
+
+* :math:`\Gamma_s` current capacity inside storage :math:`s`
+
+* :math:`\overline{ \Gamma_s }` max capacity for storage :math:`s`
+
+* :math:`\Gamma_s^0` initial capacity inside storage :math:`s`
+
+* :math:`\gamma_s` linear cost of capacity storage :math:`s` for one time step
+
+* :math:`\Gamma_s^\downarrow` input flow to storage :math:`s`
+
+* :math:`\overline{ \Gamma_s^\downarrow }` max input flow to storage :math:`s`
+
+* :math:`\Gamma_s^\uparrow` output flow to storage :math:`s`
+
+* :math:`\overline{ \Gamma_s^\uparrow }` max output flow to storage :math:`s`
+
+* :math:`\eta_s` storage efficiency for :math:`s`
+
+
+Objective
+*********
+
+.. math::
+    \begin{array}{rcl}
+    objective & = & \min{\Omega_{...} + \Omega_{storage}} \\
+    \Omega_{storage} & = & \sum^N_n \sum^{S^n}_{s}{\Gamma_s * {\gamma_s}}
+    \end{array}
+
+
+Constraints
+***********
+
+Kirschhoff law needs an update too. **Warning with naming** : Input flow for storage is a output flow for node, so goes into consuming flow. And as you assume output flow for storage is a input flow for node, and goes into production flow.
+
+.. math::
+    \begin{array}{rcl}
+        \Pi_{kirschhoff} &:& \forall n \in N &,& [Consuming\ Flow] + \sum^{S^n}_{s}{\Gamma_s^\downarrow} = [Producing\ Flow] + \sum^{S^n}_{s}{\Gamma_s^\uparrow}
+    \end{array}
+
+And all these things are bounded :
+
+.. math::
+    \begin{array}{rcl}
+    \Pi_{Store\ bound} &:& \left\{\begin{array}{cl} \forall n \in N \\ \forall s \in S^n \end{array} \right. &,&
+    \begin{array}{rcl}
+    0 &\le& \Gamma_s &\le& \overline{\Gamma_s} \\
+    0 &\le& \Gamma_s^\downarrow &\le& \overline{\Gamma_s^\downarrow} \\
+    0 &\le& \Gamma_s^\uparrow &\le& \overline{\Gamma_s^\uparrow}
+    \end{array}
+    \end{array}
+
+
+Storage has also a new constraint. This constraint applies over time to ensure capacity integrity.
+
+.. math::
+    \begin{array}{rcl}
+        \Pi_{storage} &:& \left\{\begin{array}{cl} \forall n \in N \\ \forall s \in S^n \\ \forall t \in T \end{array} \right. &,& \Gamma_s[t] = \left| \begin{array}{ll}\Gamma_s[t-1]\\ \Gamma_s^0\ ,\ t=0 \end{array} + \right.\Gamma_s^\downarrow[t] * \eta_s  - \Gamma_s^\uparrow[t]
+    \end{array}
+
+
+Multi-Energies
+--------------
+
+Hadar handle multi-energies. In the code, one energy lives inside one network. Multi-energies means multi-networks. Mathematically, there are all the same. That why we don't talk about multi graph, there are always one graph :math:`G`, nodes remains the same, with same equation for every kind of energies.
+
+The only difference is how we link node together. If nodes belongs to same network, we use *link (or edge)* seen before. When nodes belongs to different energies we need to use *converter*. All things above remains true, we just add now a new element :math:`V` converters ont this graph :math:`G(N, L, V)` .
+
+Converter can take energy form many nodes in different network. Each converter input has a ratio between output quantity and input quantity. Converter has only one output to only on node.
+
+.. image:: /_static/mathematics/linear/converter.png
+    :scale: 80%
+
+
+Variables
+*********
+
+* :math:`V` set of converters
+
+* :math:`v \in V` a converter in the set of converters
+
+* :math:`V^n_\uparrow \subset V` set of converters **to** node :math:`n`
+
+* :math:`V^n_\downarrow \subset V` set of converters **from** node :math:`n`
+
+* :math:`\Gamma_v^\uparrow` flow **from** converter :math:`v`.
+
+* :math:`\overline{\Gamma_v^\uparrow}` max flow from converter :math:`v`
+
+* :math:`\gamma_v` linear cost when :math:`\Gamma_v^\uparrow` is used
+
+* :math:`\Gamma_v^\downarrow` flow(s) **to** converter. They can have many flows for :math:`v \in V`, but only one for :math:`v \in V^n_\downarrow`
+
+* :math:`\overline{\Gamma_v^\downarrow}` max flow to converter
+
+* :math:`\alpha^n_v` ratio conversion for converter :math:`v` from node :math:`n`
+
+
+Objective
+*********
+
+.. math::
+    \begin{array}{rcl}
+    objective & = & \min{\Omega_{...} + \Omega_{converter}} \\
+    \Omega_{converter} & = & \sum^V_v {\Gamma_v^\uparrow * \gamma_v}
+    \end{array}
+
+
+Constraints
+***********
+
+Of course Kirschhoff need a little update. Like for storage **Warning with naming !** Converter input is a consuming flow for node, converter output is a production flow for node.
+
+.. math::
+    \begin{array}{rcl}
+        \Pi_{kirschhoff} &:& \forall n \in N &,& [Consuming\ Flow] + \sum^{V^n_\downarrow}_{v}{\Gamma_v^\downarrow} = [Producing\ Flow] + \sum^{V^n_\uparrow}_{v}{\Gamma_v^\uparrow}
+    \end{array}
+
+And all these things are bounded :
+
+.. math::
+    \begin{array}{rcl}
+    \Pi_{Conv\ bound} &:& \left\{\begin{array}{cl} \forall n \in N \\ \forall v \in V^n \end{array} \right. &,&
+    \begin{array}{rcl}
+    0 &\le& \Gamma_v^\downarrow &\le& \overline{\Gamma_v^\downarrow} \\
+    0 &\le& \Gamma_v^\uparrow &\le& \overline{\Gamma_v^\uparrow}
+    \end{array}
+    \end{array}
+
+Now, we need to fix ratios conversion by a new constraints
+
+.. math::
+    \begin{array}{rcl}
+    \Pi_{converter} &:& \left\{\begin{array}{cl} \forall n \in N \\ \forall v \in V^n_\downarrow \end{array} \right. &,&
+    \begin{array}{rcl}
+    \Gamma_v^\downarrow * \alpha^n_v &=& \Gamma_v^\uparrow
+    \end{array}
     \end{array}

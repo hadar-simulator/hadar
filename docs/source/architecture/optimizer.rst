@@ -17,7 +17,7 @@ Today, two optimizers are present :code:`LPOptimizer` and :code:`RemoteOptimizer
 RemoteOptimizer
 ---------------
 
-Let's start by the simplest. :code:`RemoteOptimizer` is a client to hadar server. As you may know Hadar exist like a python library, but has also a tiny project to package hadar inside web server. You can find more details on this server in this `repository.  <https://github.com/hadar-simulator/simple-server>`_
+Let's start by the simplest. :code:`RemoteOptimizer` is a client to hadar server. As you may know Hadar exist like a python library, but has also a tiny project to package hadar inside web server. You can find more details on this server in this `repository.  <https://github.com/hadar-simulator/community-server>`_
 
 Client implements :code:`Optimizer` interface. Like that, to deploy compute on a data-center, only one line of code changes. ::
 
@@ -41,7 +41,7 @@ Analyze that in details.
 InputMapper
 ************
 
-If you look in code, you will see two domains. One at :code:`hadar.optimizer.[input/output]` and another at :code:`hadar.optimizer.lp.domain` . If you look carefully it seems the same :code:`Consumption` , :code:`OutputConsumption` in one hand, :code:`LPConsumption` in other hand. The only change is a new attribute in :code:`LP*` called :code:`variable` . Variables are the parameters of the problem. It's what or-tools has to find, i.e. power used for production, capacity used for border and lost of load for consumption.
+If you look in code, you will see three domains. One at :code:`hadar.optimizer.input`, :code:`hadar.optimizer.output` and another at :code:`hadar.optimizer.lp.domain` . If you look carefully it seems the same :code:`Consumption` , :code:`OutputConsumption` in one hand, :code:`LPConsumption` in other hand. The only change is a new attribute in :code:`LP*` called :code:`variable` . Variables are the parameters of the problem. It's what or-tools has to find, i.e. power used for production, capacity used for border and lost of load for consumption.
 
 Therefore, :code:`InputMapper` roles are just to create new object with ortools Variables initialized, like we can see in this code snippet. ::
 
@@ -58,7 +58,7 @@ Therefore, :code:`InputMapper` roles are just to create new object with ortools 
 OutputMapper
 ************
 
-At the end, :code:`OutputMapper` does the reverse thing. :code:`LP*` objects have computed :code:`Variables`. We need to extract result find by or-tool to :code:`Result` object.
+At the end, :code:`OutputMapper` does the reverse thing. :code:`LP*` objects have computed :code:`Variables`. We need to extract result found by or-tool to :code:`Result` object.
 
 Mapping of :code:`LPProduction` and :code:`LPLink` are straight forward. I propose you to look at :code:`LPConsumption` code ::
 
@@ -78,6 +78,10 @@ Modeler
 Hadar has to build problem optimization. These algorithms are encapsulated inside two builders.
 
 :code:`ObjectiveBuilder` takes node by its method :code:`add_node`. Then for all productions, consumptions, links, it adds :math:`variable * cost` into objective equation.
+
+:code:`StorageBuilder` build constraints for each storage element. Constraints care about a strict volume integrity (i.e. volume is the sum of last volume + input - output)
+
+:code:`ConverterBuilder` build ratio constraints between each inputs converter to output.
 
 :code:`AdequacyBuilder` is a bit more tricky. For each node, it will create a new adequacy constraint equation (c.f. :ref:`Linear Model <linear-model>`). Coefficients, here are 1 or -1 depending of *inner* power or *outer* power. Have you seen these line ? ::
 
@@ -136,13 +140,15 @@ It should work, but in fact not... I don't know why, when multiprocessing want t
 Study
 -----
 
-:code:`Study` is a *API object* I means it encapsulates all data needed to compute adequacy. It's the glue between workflow (or any other preprocessing) and optimizer. Study has an hierarchical structure of 3 levels :
+:code: Study` is a *API object* I means it encapsulates all data needed to compute adequacy. It's the glue between workflow (or any other preprocessing) and optimizer. Study has an hierarchical structure of 3 levels :
 
-#. node level with node name as key.
+#. study level with set of networks and converter (:code:`Converter`)
 
-#. type elements level with *consumption*, *production* and *link* entries. Represented by :code:`InputNode` object.
+#. network level (:code:`InputNetwork`) with set of nodes.
 
-#. element with index as key. Represented by :code:`Consumption`, :code:`Production`, :code:`Link` objects
+#. node level (:code:`InputNode`) with set of consumptions, productions, storages and links elements.
+
+#. element level (:code:`Consumption`, :code:`Production`, :code:`Storage`, :code:`Link`). According to element type, some attributes are numpy 2D matrix with shape(nb_scn, horizon)
 
 Most important attribute could be :code:`quantity` which represent quantity of power used in network. For link, is a transfert capacity. For production is a generation capacity. For consumption is a forced load to sustain.
 
@@ -175,9 +181,9 @@ In the case of optimizer, *Fluent API Selector* is represented by :code:`Network
 
 * You can only downstream deeper step by step (i.e. :code:`network()` then :code:`node()`, then :code:`consumption()` )
 
-* But you can upstream as you want (i.e. go direcly from :code:`consumption()` to :code:`network()` )
+* But you can upstream as you want (i.e. go direcly from :code:`consumption()` to :code:`network()` or :code:`converter()` )
 
-To help user, quantity field is flexible:
+To help user, quantity and cost fields are flexible:
 
 * lists are converted to numpy array
 

@@ -98,6 +98,17 @@ class HTMLElementPlotting(ABCElementPlotting):
 
         return fig
 
+    def candles(self, open: np.ndarray, close: np.ndarray, title: str):
+        fig = go.Figure()
+        text = ['%s<br>Begin=%d<br>End=%d<br>Flow=%d' % (t, o, c, c-o) for o, c, t in zip(open, close, self.time_index)]
+        fig.add_trace(go.Ohlc(x=self.time_index, open=open, high=open, low=close, close=close,
+                              hoverinfo='text', text=text))
+
+        fig.update_layout(title_text=title, yaxis_title='Quantity %s' % self.unit, xaxis_rangeslider_visible=False,
+                          xaxis_title='Time', showlegend=False)
+
+        return fig
+
     def stack(self, areas: List[Tuple[str, np.ndarray]], lines: List[Tuple[str, np.ndarray]], title: str):
         fig = go.Figure()
 
@@ -224,9 +235,7 @@ class HTMLPlotting(ABCPlotting):
         :param unit_symbol: symbol on quantity unit used. ex. MW, litter, Go, ...
         :param time_start: time to use as the start of study horizon
         :param time_end: time to use as the end of study horizon
-        :param cmap: matplotlib color map to use (coolwarm as default)
         :param node_coord: nodes coordinates to use for map plotting
-        :param map_element_size: size on element draw on map. default as 1.
         """
         ABCPlotting.__init__(self, agg, unit_symbol, time_start, time_end, node_coord)
         self.plotting = HTMLElementPlotting(self.unit, self.time_index, self.coord)

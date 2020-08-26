@@ -1,13 +1,13 @@
 Analyzer
 ========
 
-For a high abstraction and to be agnostic about technology, Hadar uses objects as glue for optimizer. Objects are cool, but are too complicated to manipulated for data analysis. Analyzer contains tools to help analyzing study result.
+For a high abstraction and to be agnostic about technology, Hadar uses objects as glue for optimizer. Objects are cool, but are too complicated to manipulated for data analysis. Analyzer contains tools to help analyzing study and result.
 
 Today, there is only :code:`ResultAnalyzer`, with two features level:
 
 * **high level** user asks directly to compute global cost and global remain capacity, etc.
 
-* **low level** user asks *raw* data represented inside pandas Dataframe.
+* **low level** user build query and get *raw* data represented inside pandas Dataframe.
 
 Before speaking about this features, let's see how data are transformed.
 
@@ -16,26 +16,26 @@ Flatten Data
 
 As said above, object is nice to encapsulate data and represent it into agnostic form. Objects can be serialized into JSON or something else to be used by another software maybe in another language. But keep object to analyze data is awful.
 
-Python has a very efficient tool for data analysis : pandas. Therefore challenge is to transform object into pandas Dataframe. Solution used is to flatten data to fill into table.
+Python has a very efficient tool for data analysis : pandas. Therefore challenge is to transform object into pandas Dataframe. Solution is to flatten data to fill into table.
 
 Consumption
 ***********
 
 For example with consumption. Data into :code:`Study` is cost and asked quantity. And in :code:`Result` it's cost (same) and given quantity. This tuple *(cost, asked, given)* is present for each node, each consumption attached on this node, each scenario and each timestep. If we want to flatten data, we need to fill this table
 
-+------+------+------+------+------+------+------+
-| cost | asked| given| node | name | scn  |  t   |
-+------+------+------+------+------+------+------+
-| 10   | 5    | 5    | fr   | load | 0    |  0   |
-+------+------+------+------+------+------+------+
-| 10   | 7    | 7    | fr   | load | 0    |  1   |
-+------+------+------+------+------+------+------+
-| 10   | 7    | 5    | fr   | load | 1    |  0   |
-+------+------+------+------+------+------+------+
-| 10   | 6    | 6    | fr   | load | 1    |  1   |
-+------+------+------+------+------+------+------+
-| ...  | ...  | ...  | ...  | ...  | ..   | ...  |
-+------+------+------+------+------+------+------+
++------+------+------+------+------+------+------+------------+
+| cost | asked| given| node | name | scn  |  t   |  network   |
++------+------+------+------+------+------+------+------------+
+| 10   | 5    | 5    | fr   | load | 0    |  0   |  default   |
++------+------+------+------+------+------+------+------------+
+| 10   | 7    | 7    | fr   | load | 0    |  1   |  default   |
++------+------+------+------+------+------+------+------------+
+| 10   | 7    | 5    | fr   | load | 1    |  0   |  default   |
++------+------+------+------+------+------+------+------------+
+| 10   | 6    | 6    | fr   | load | 1    |  1   |  default   |
++------+------+------+------+------+------+------+------------+
+| ...  | ...  | ...  | ...  | ...  | ..   | ...  | ...        |
++------+------+------+------+------+------+------+------------+
 
 It is the purpose of :code:`_build_consumption(study: Study, result: Result) -> pd.Dataframe` to build this array
 
@@ -44,21 +44,44 @@ Production
 
 Production follow the same pattern. However, they don't have *asked* and *given* but *available* and *used* quantity. Therefore table looks like
 
-+------+------+------+------+------+------+------+
-| cost | avail| used | node | name | scn  |  t   |
-+------+------+------+------+------+------+------+
-| 10   | 100  | 21   | fr   | coal | 0    |  0   |
-+------+------+------+------+------+------+------+
-| 10   | 100  | 36   | fr   | coal | 0    |  1   |
-+------+------+------+------+------+------+------+
-| 10   | 100  | 12   | fr   | coal | 1    |  0   |
-+------+------+------+------+------+------+------+
-| 10   | 100  | 81   | fr   | coal | 1    |  1   |
-+------+------+------+------+------+------+------+
-| ...  | ...  | ...  | ...  | ...  | ..   | ...  |
-+------+------+------+------+------+------+------+
++------+------+------+------+------+------+------+------------+
+| cost | avail| used | node | name | scn  |  t   |  network   |
++------+------+------+------+------+------+------+------------+
+| 10   | 100  | 21   | fr   | coal | 0    |  0   |  default   |
++------+------+------+------+------+------+------+------------+
+| 10   | 100  | 36   | fr   | coal | 0    |  1   |  default   |
++------+------+------+------+------+------+------+------------+
+| 10   | 100  | 12   | fr   | coal | 1    |  0   |  default   |
++------+------+------+------+------+------+------+------------+
+| 10   | 100  | 81   | fr   | coal | 1    |  1   |  default   |
++------+------+------+------+------+------+------+------------+
+| ...  | ...  | ...  | ...  | ...  | ..   | ...  | ...        |
++------+------+------+------+------+------+------+------------+
 
 It's done by :code:`_build_production(study: Study, result: Result) -> pd.Dataframe` method.
+
+
+Storage
+*******
+
+Storage follow the same pattern. Therefore table looks like.
+
++-------------+----------+-------------+---------+--------------+----------+------+---------------+-----+------+------+------+------+------------+
+|max_capacity | capacity | max_flow_in | flow_in | max_flow_out | flow_out | cost | init_capacity | eff | node | name | scn  |  t   |  network   |
++-------------+----------+-------------+---------+--------------+----------+------+---------------+-----+------+------+------+------+------------+
+| 12000       | 678      | 400         | 214     | 400          | 0        | 10   | 0             | .99 | fr   | cell | 0    |  0   |  default   |
++-------------+----------+-------------+---------+--------------+----------+------+---------------+-----+------+------+------+------+------------+
+| 12000       | 892      | 400         | 53      | 400          | 0        | 10   | 0             | .99 | fr   | cell | 0    |  1   |  default   |
++-------------+----------+-------------+---------+--------------+----------+------+---------------+-----+------+------+------+------+------------+
+| 12000       | 945      | 400         | 0       | 400          | 87       | 10   | 0             | .99 | fr   | cell | 1    |  0   |  default   |
++-------------+----------+-------------+---------+--------------+----------+------+---------------+-----+------+------+------+------+------------+
+| 12000       | 853      | 400         | 0       | 400          | 0        | 10   | 0             | .99 | fr   | cell | 1    |  1   |  default   |
++-------------+----------+-------------+---------+--------------+----------+------+---------------+-----+------+------+------+------+------------+
+| ...         | ...      | ...         | ...     | ...          | ...      | ...  | ...           | ... | ...  | ...  | ..   | ...  | ...        |
++-------------+----------+-------------+---------+--------------+----------+------+---------------+-----+------+------+------+------+------------+
+
+
+It's done by :code:`_build_storage(study: Study, result: Result) -> pd.Dataframe` method.
 
 
 Link
@@ -66,22 +89,61 @@ Link
 
 Link follow the same pattern. Hierarchical structure naming change. There are not *node* and *name* but *source* and *destination*. Therefore table looks like.
 
-+------+------+------+------+------+------+------+
-| cost | avail| used | src  | dest | scn  |  t   |
-+------+------+------+------+------+------+------+
-| 10   | 100  | 21   | fr   | uk   | 0    |  0   |
-+------+------+------+------+------+------+------+
-| 10   | 100  | 36   | fr   | uk   | 0    |  1   |
-+------+------+------+------+------+------+------+
-| 10   | 100  | 12   | fr   | uk   | 1    |  0   |
-+------+------+------+------+------+------+------+
-| 10   | 100  | 81   | fr   | uk   | 1    |  1   |
-+------+------+------+------+------+------+------+
-| ...  | ...  | ...  | ...  | ...  | ..   | ..   |
-+------+------+------+------+------+------+------+
++------+------+------+------+------+------+------+------------+
+| cost | avail| used | src  | dest | scn  |  t   |  network   |
++------+------+------+------+------+------+------+------------+
+| 10   | 100  | 21   | fr   | uk   | 0    |  0   |  default   |
++------+------+------+------+------+------+------+------------+
+| 10   | 100  | 36   | fr   | uk   | 0    |  1   |  default   |
++------+------+------+------+------+------+------+------------+
+| 10   | 100  | 12   | fr   | uk   | 1    |  0   |  default   |
++------+------+------+------+------+------+------+------------+
+| 10   | 100  | 81   | fr   | uk   | 1    |  1   |  default   |
++------+------+------+------+------+------+------+------------+
+| ...  | ...  | ...  | ...  | ...  | ..   | ..   | ...        |
++------+------+------+------+------+------+------+------------+
 
 It's done by :code:`_build_link(study: Study, result: Result) -> pd.Dataframe` method.
 
+
+Converter
+*********
+
+Converter follow the same pattern, it just split in two tables. One for source element:
+
++-----+-------+------+------+------+------+------+------------+
+| max | ratio | flow | node | name | scn  |  t   |  network   |
++-----+-------+------+------+------+------+------+------------+
+| 100 |   .4  |  52  | fr   | conv | 0    |  0   |  default   |
++-----+-------+------+------+------+------+------+------------+
+| 100 |   .4  |  87  | fr   | conv | 0    |  1   |  default   |
++-----+-------+------+------+------+------+------+------------+
+| 100 |   .4  |  23  | fr   | conv | 1    |  0   |  default   |
++-----+-------+------+------+------+------+------+------------+
+| 100 |   .4  |  58  | fr   | conv | 1    |  1   |  default   |
++-----+-------+------+------+------+------+------+------------+
+| ... |  ...  | ...  | ...  | ...  | ..   | ...  | ...        |
++-----+-------+------+------+------+------+------+------------+
+
+It's done by :code:`_build_src_converter(study: Study, result: Result) -> pd.Dataframe` method.
+
+And an other for destination element, tables are near identical. Source has special attributes called *ratio* and destintion has special attribute called *cost*:
+
++-----+-------+------+------+------+------+------+------------+
+| max | cost  | flow | node | name | scn  |  t   |  network   |
++-----+-------+------+------+------+------+------+------------+
+| 100 |  20   |  52  | fr   | conv | 0    |  0   |  default   |
++-----+-------+------+------+------+------+------+------------+
+| 100 |  20   |  87  | fr   | conv | 0    |  1   |  default   |
++-----+-------+------+------+------+------+------+------------+
+| 100 |  20   |  23  | fr   | conv | 1    |  0   |  default   |
++-----+-------+------+------+------+------+------+------------+
+| 100 |  20   |  58  | fr   | conv | 1    |  1   |  default   |
++-----+-------+------+------+------+------+------+------------+
+| ... |  ...  | ...  | ...  | ...  | ..   | ...  | ...        |
++-----+-------+------+------+------+------+------+------------+
+
+It's done by :code:`_build_dest_converter(study: Study, result: Result) -> pd.Dataframe` method.
 
 Low level analysis power with a *FluentAPISelector*
 ---------------------------------------------------
@@ -165,39 +227,3 @@ Unlike low level, high level focus on provides ready to use data. Unlike low lev
 * :code:`get_cost(self, node: str) -> np.ndarray:` method which according to node given returns a matrix (scenario, horizon) shape with summarize cost.
 
 * :code:`get_balance(self, node: str) -> np.ndarray` method which according to node given returns a matrix (scenario, horizon) shape with exchange balance (i.e. sum of exportation minus sum of importation)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-j

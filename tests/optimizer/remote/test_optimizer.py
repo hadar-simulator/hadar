@@ -4,121 +4,71 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-
-import pickle
+import json
+import threading
 import unittest
-from typing import Dict, List, Tuple
-from unittest.mock import MagicMock
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from hadar import RemoteOptimizer
-from hadar.optimizer.input import Study, Consumption
-from hadar.optimizer.output import Result, OutputConsumption, OutputNode
-from hadar.optimizer.remote.optimizer import _solve_remote_wrap, ServerError
+from hadar.optimizer.input import Study
+from hadar.optimizer.output import Result, OutputConsumption, OutputNode, OutputNetwork
+from hadar.optimizer.remote.optimizer import check_code
 
 
-class MockResponse:
-    def __init__(self, content, code=200):
-        self.content = pickle.dumps(content)
-        self.status_code = code
+class MockSchedulerServer(BaseHTTPRequestHandler):
+    def do_POST(self):
+        assert self.path == '/api/v1/study?token='
+
+        content_length = int(self.headers['Content-Length'])
+        data = json.loads(self.rfile.read(content_length).decode())
+        assert isinstance(Study.from_json(data), Study)
+
+        self.send_response(200)
+        body = json.dumps({'job': 123, 'status': 'QUEUED', 'progress': 1}).encode()
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        assert '/api/v1/result/123?token=' == self.path
+
+        nodes = {'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
+                                  productions=[], storages=[], links=[])}
+        res = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
+
+        self.send_response(200)
+        body = json.dumps({'job': 123, 'status': 'TERMINATED', 'result': res.to_json()}).encode()
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
 
-class MockRequest:
-    def __init__(self, unit: unittest.TestCase, post: List[Dict], get: List[Dict]):
-        self.unit = unit
-        self._post = post
-        self._get = get
-
-    @staticmethod
-    def cut_url(url):
-        return url[4:]  # Remove 'host at the beginning
-
-    def get(self, url, params):
-        self.unit.assertEqual(self._get[0]['url'], MockRequest.cut_url(url))
-        self.unit.assertEqual(self._get[0]['params'], params)
-        res = self._get[0]['res']
-        del self._get[0]
-        return res
-
-    def post(self, url, params, data):
-        self.unit.assertEqual(self._post[0]['url'], MockRequest.cut_url(url))
-        self.unit.assertEqual(self._post[0]['params'], params)
-        self.unit.assertEqual(pickle.dumps(self._post[0]['data']), data)
-        res = self._post[0]['res']
-        del self._post[0]
-        return res
+def handle_twice(handle_request):
+    handle_request()  # one for Post /study
+    handle_request()  # second for GET /result/123
 
 
 class RemoteOptimizerTest(unittest.TestCase):
-
     def setUp(self) -> None:
         self.study = Study(horizon=1) \
             .network().node('a').consumption(cost=0, quantity=[0], name='load').build()
 
-        self.result = Result(nodes={
-            'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
-                            productions=[], links=[])})
+        nodes = {'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
+                                  productions=[], storages=[], links=[])}
+        self.result = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
 
     def test_job_terminated(self):
-        requests = MockRequest(unit=self,
-                               post=[dict(url='/study', params={'token': 'pwd'}, data=self.study,
-                                          res=MockResponse({'job': 'myid', 'status': 'QUEUED', 'progress': 1}))
-                                     ],
-                               get=[dict(url='/result/myid', params={'token': 'pwd'},
-                                         res=MockResponse({'status': 'QUEUED', 'progress': 1})),
-                                    dict(url='/result/myid', params={'token': 'pwd'},
-                                         res=MockResponse({'status': 'COMPUTING', 'progress': 0})),
-                                    dict(url='/result/myid', params={'token': 'pwd'},
-                                         res=MockResponse({'status': 'TERMINATED', 'result': 'myresult'}))
-                                    ])
+        # Start server
+        httpd = HTTPServer(('localhost', 6964), MockSchedulerServer)
+        server = threading.Thread(None, handle_twice, None, (httpd.handle_request,))
+        server.start()
 
-        res = _solve_remote_wrap(study=self.study, url='host', token='pwd', rqt=requests)
-        self.assertEqual('myresult', res)
-
-    def test_job_error(self):
-        requests = MockRequest(unit=self,
-                               post=[dict(url='/study', params={'token': 'pwd'}, data=self.study,
-                                          res=MockResponse({'job': 'myid', 'status': 'QUEUED', 'progress': 1}))
-                                     ],
-                               get=[dict(url='/result/myid', params={'token': 'pwd'},
-                                         res=MockResponse({'status': 'QUEUED', 'progress': 1})),
-                                    dict(url='/result/myid', params={'token': 'pwd'},
-                                         res=MockResponse({'status': 'COMPUTING', 'progress': 0})),
-                                    dict(url='/result/myid', params={'token': 'pwd'},
-                                         res=MockResponse({'status': 'ERROR', 'message': 'HUGE ERROR'}))
-                                    ])
-
-        self.assertRaises(ServerError,
-                          lambda: _solve_remote_wrap(study=self.study, url='host', token='pwd', rqt=requests))
-
-    def test_404(self):
-        requests = MockRequest(unit=self,
-                               post=[dict(url='/study', params={'token': 'pwd'}, data=self.study,
-                                          res=MockResponse(None, 404))],
-                               get=[])
-        requests.post = MagicMock(return_value=MockResponse(content=None, code=404))
-
-        self.assertRaises(ValueError,
-                          lambda: _solve_remote_wrap(study=self.study, url='host', token='pwd', rqt=requests))
-
-    def test_403(self):
-        requests = MockRequest(unit=self,
-                               post=[dict(url='/study', params={'token': 'pwd'}, data=self.study,
-                                          res=MockResponse(None, 403))],
-                               get=[])
-
-        self.assertRaises(ValueError,
-                          lambda: _solve_remote_wrap(study=self.study, url='host', token='pwd', rqt=requests))
-
-    def test_500(self):
-        requests = MockRequest(unit=self,
-                               post=[dict(url='/study', params={'token': 'pwd'}, data=self.study,
-                                          res=MockResponse(None, 500))],
-                               get=[])
-
-        self.assertRaises(IOError,
-                          lambda: _solve_remote_wrap(study=self.study, url='host', token='pwd', rqt=requests))
-
-    def no_test_server(self):
-        optim = RemoteOptimizer(url='http://localhost:5000')
+        optim = RemoteOptimizer(url='http://localhost:6964')
         res = optim.solve(self.study)
-        print(res)
+
+        self.assertEqual(self.result, res)
+
+    def test_check_code(self):
+        self.assertRaises(ValueError, lambda: check_code(404))
+        self.assertRaises(ValueError, lambda: check_code(403))
+        self.assertRaises(IOError, lambda: check_code(500))
