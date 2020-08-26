@@ -612,7 +612,7 @@ class ResultAnalyzer:
         :param network: network selected
         :return: nodes name
         """
-        return self.result.networks[network].nodes.keys()
+        return list(self.result.networks[network].nodes.keys())
 
 
 class NetworkFluentAPISelector:

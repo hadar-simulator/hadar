@@ -101,7 +101,7 @@ def list_notebook(src: str) -> List[str]:
 @click.option('--export', nargs=1, help='export notebooks to directory given')
 def main(src: str, check: str, export: str):
     for name in list_notebook(src):
-        print(name, ':', end='')
+        print('{:30}'.format(name), ':', end='')
         nb = open_nb(name, src)
         nb = execute(nb, name, src)
         if check:
