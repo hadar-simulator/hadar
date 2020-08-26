@@ -5,7 +5,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 import numpy as np
-
 from ortools.linear_solver.pywraplp import Solver
 
 from hadar.optimizer.input import Study, InputNetwork

@@ -7,10 +7,10 @@
 import os
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import List, Tuple, Union, Dict
+from typing import List, Union
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from pandas import MultiIndex
 
 from hadar.optimizer.input import DTO

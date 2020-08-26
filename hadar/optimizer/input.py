@@ -10,8 +10,7 @@ from typing import List, Union, Dict, Tuple
 
 import numpy as np
 
-
-__all__ = ['Consumption', 'Link', 'Production', 'Storage', 'InputNode', 'Study',
+__all__ = ['Consumption', 'Link', 'Production', 'Storage', 'Converter', 'InputNetwork', 'InputNode', 'Study',
            'NetworkFluentAPISelector', 'NodeFluentAPISelector']
 
 import hadar

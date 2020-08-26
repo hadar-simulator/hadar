@@ -5,7 +5,6 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 import multiprocessing
-from typing import Dict, Union
 
 import numpy as np
 import pandas as pd

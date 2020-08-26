@@ -6,14 +6,11 @@
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 
 import logging
-import pickle
-from functools import reduce
-
-import numpy as np
 import multiprocessing
-from typing import List, Dict
+import pickle
+from typing import List
 
-from ortools.linear_solver.pywraplp import Solver, Variable, Constraint
+from ortools.linear_solver.pywraplp import Solver, Constraint
 
 from hadar.optimizer.input import Study
 from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPLink, LPStorage, LPTimeStep, LPConverter

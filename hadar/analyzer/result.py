@@ -5,13 +5,13 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 from functools import reduce
-from typing import Union, TypeVar, List, Generic, Type, Any, Dict
+from typing import TypeVar, List, Generic, Type
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from hadar.optimizer.output import Result, OutputNode
 from hadar.optimizer.input import Study
+from hadar.optimizer.output import Result
 
 __all__ = ['ResultAnalyzer', 'NetworkFluentAPISelector']
 
