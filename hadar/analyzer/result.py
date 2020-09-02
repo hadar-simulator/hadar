@@ -4,6 +4,7 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
+from copy import deepcopy
 from functools import reduce
 from typing import TypeVar, List, Generic, Type
 
@@ -667,4 +668,4 @@ class NetworkFluentAPISelector:
         if len(self.indexes) == NetworkFluentAPISelector.FULL_DESCRIPTION:
             return self.analyzer.filter(self.indexes)
         else:
-            return NetworkFluentAPISelector(self.indexes, self.analyzer)
+            return NetworkFluentAPISelector(deepcopy(self.indexes), self.analyzer)

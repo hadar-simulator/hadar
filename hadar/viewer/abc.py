@@ -5,7 +5,8 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Dict
+from copy import deepcopy
+from typing import List, Tuple, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -484,26 +485,21 @@ class NodeFluentAPISelector(FluentAPISelector):
         :param cons_kind: select which cons to stack : 'asked' or 'given'
         :return: plotly figure or jupyter widget to plot
         """
+        def extract(query, value_col: str, sort_col: Optional[str] = 'cost', id_col: str = 'name'):
+            data = query.time()
+            if sort_col:
+                data.sort_values(sort_col, ascending=False, inplace=True)
+            ids = data.index.get_level_values(id_col).unique()
+            return [(i, data.loc[i][value_col].sort_index().values) for i in ids]
+
         c, p, s, b, ve, vi = self.agg.get_elements_inside(node=self.node, network=self.network)
-
         areas = []
-        # stack production with area
-        if p > 0:
-            prod = self.agg.network(self.network).scn(scn).node(self.node).production().time().sort_values('cost', ascending=False)
-            for i, name in enumerate(prod.index.get_level_values('name').unique()):
-                areas.append((name, prod.loc[name][prod_kind].sort_index().values))
-
-        # add  storage output flow
-        if s > 0:
-            stor = self.agg.network(self.network).scn(scn).node(self.node).storage().time().sort_values('cost', ascending=False)
-            for i, name in enumerate(stor.index.get_level_values('name').unique()):
-                areas.append((name, stor.loc[name]['flow_out'].sort_index().values))
-
-        # Add converter importation
-        if vi > 0:
-            conv = self.agg.network(self.network).scn(scn).node(self.node).from_converter().time()
-            for i, name in enumerate(conv.index.get_level_values('name').unique()):
-                areas.append((name, conv.loc[name, 'flow'].sort_index().values))
+        areas += extract(query=self.agg.network(self.network).scn(scn).node(self.node).production(),
+                         value_col=prod_kind) if p > 0 else []
+        areas += extract(query=self.agg.network(self.network).scn(scn).node(self.node).storage(),
+                         value_col='flow_out') if s > 0 else []
+        areas += extract(query=self.agg.network(self.network).scn(scn).node(self.node).from_converter(),
+                         value_col='flow', sort_col=None) if vi > 0 else []
 
         # add import in production stack
         balance = self.agg.get_balance(node=self.node, network=self.network)[scn]
@@ -512,23 +508,12 @@ class NodeFluentAPISelector(FluentAPISelector):
             areas.append(('import', im))
 
         lines = []
-        # Stack consumptions with line
-        if c > 0:
-            cons = self.agg.network(self.network).scn(scn).node(self.node).consumption().time().sort_values('cost', ascending=False)
-            for i, name in enumerate(cons.index.get_level_values('name').unique()):
-                lines.append((name, cons.loc[name][cons_kind].sort_index().values))
-
-        # add  storage output intput
-        if s > 0:
-            stor = self.agg.network(self.network).scn(scn).node(self.node).storage().time().sort_values('cost', ascending=False)
-            for i, name in enumerate(stor.index.get_level_values('name').unique()):
-                lines.append((name, stor.loc[name]['flow_in'].sort_index().values))
-
-        # Add converter exportation
-        if ve > 0:
-            conv = self.agg.network(self.network).scn(scn).node(self.node).to_converter().time()
-            for i, name in enumerate(conv.index.get_level_values('name').unique()):
-                lines.append((name, conv.loc[name, 'flow'].sort_index().values))
+        lines += extract(query=self.agg.network(self.network).scn(scn).node(self.node).consumption(),
+                         value_col=cons_kind) if c > 0 else []
+        lines += extract(query=self.agg.network(self.network).scn(scn).node(self.node).storage(),
+                         value_col='flow_in') if s > 0 else []
+        lines += extract(query=self.agg.network(self.network).scn(scn).node(self.node).to_converter(),
+                         value_col='flow', sort_col=None) if ve > 0 else []
 
         # Add export in consumption stack
         exp = np.clip(balance, 0, None)
