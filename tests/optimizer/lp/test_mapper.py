@@ -171,7 +171,7 @@ class TestOutputMapper(unittest.TestCase):
                             vars=LPNode(consumptions=out_cons_1, productions=[], storages=[], links=[]))
 
         # Expected
-        cons = OutputConsumption(name='load', quantity=[[5, 0], [0, 15]], cost=[[.01, .1], [.02, .2]])
+        cons = OutputConsumption(name='load', quantity=[[5, 0], [0, 15]])
         nodes = {'a': OutputNode(consumptions=[cons], productions=[], storages=[], links=[])}
         expected = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
 
@@ -196,7 +196,7 @@ class TestOutputMapper(unittest.TestCase):
                             vars=LPNode(consumptions=[], productions=out_prod_1, storages=[], links=[]))
 
         # Expected
-        prod = OutputProduction(name='nuclear', quantity=[[12, 0], [0, 112]], cost=[[0.12, 0.2], [0.21, 0.02]])
+        prod = OutputProduction(name='nuclear', quantity=[[12, 0], [0, 112]])
         nodes = {'a': OutputNode(consumptions=[], productions=[prod], storages=[], links=[])}
         expected = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
 
@@ -253,7 +253,7 @@ class TestOutputMapper(unittest.TestCase):
                             vars=LPNode(consumptions=[], productions=[], storages=[], links=out_link_1))
 
         # Expected
-        link = OutputLink(dest='be', quantity=[[8, 0], [0, 18]], cost=[[.01, .3], [.02, .03]])
+        link = OutputLink(dest='be', quantity=[[8, 0], [0, 18]])
         nodes = {'a': OutputNode(consumptions=[], productions=[], storages=[], links=[link]),
                  'be': OutputNode(consumptions=[], productions=[], storages=[], links=[])}
         expected = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})

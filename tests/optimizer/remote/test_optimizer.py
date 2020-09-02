@@ -32,7 +32,7 @@ class MockSchedulerServer(BaseHTTPRequestHandler):
     def do_GET(self):
         assert '/api/v1/result/123?token=' == self.path
 
-        nodes = {'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
+        nodes = {'a': OutputNode(consumptions=[OutputConsumption(quantity=[0], name='load')],
                                   productions=[], storages=[], links=[])}
         res = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
 
@@ -53,7 +53,7 @@ class RemoteOptimizerTest(unittest.TestCase):
         self.study = Study(horizon=1) \
             .network().node('a').consumption(cost=0, quantity=[0], name='load').build()
 
-        nodes = {'a': OutputNode(consumptions=[OutputConsumption(cost=0, quantity=[0], name='load')],
+        nodes = {'a': OutputNode(consumptions=[OutputConsumption(quantity=[0], name='load')],
                                   productions=[], storages=[], links=[])}
         self.result = Result(networks={'default': OutputNetwork(nodes=nodes)}, converters={})
 

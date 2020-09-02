@@ -296,7 +296,7 @@ class TestSolve(unittest.TestCase):
             .build()
 
         # Expected
-        out_node = OutputNode(consumptions=[OutputConsumption(name='load', cost=10, quantity=[0])],
+        out_node = OutputNode(consumptions=[OutputConsumption(name='load', quantity=[0])],
                            productions=[], storages=[], links=[])
         out_conv = OutputConverter(name='conv', flow_src={('gas', 'a'): [0]}, flow_dest=[0])
         exp_result = Result(networks={'gas': OutputNetwork(nodes={'a': out_node})},

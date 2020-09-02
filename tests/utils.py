@@ -26,8 +26,6 @@ def assert_result(self, expected: Result, result: Result):
                                  "Consumption for node {} has different name".format(name_node))
                 np.testing.assert_array_equal(cons_expected.quantity, cons_res.quantity,
                                  'Consumption {} for node {} has different quantity'.format(cons_expected.name, name_node))
-                np.testing.assert_array_equal(cons_expected.cost, cons_res.cost,
-                                 'Consumption {} for node {} has different cost'.format(cons_expected.name, name_node))
 
             # Productions
             for prod_expected, prod_res in zip(node.productions, res.productions):
@@ -35,8 +33,6 @@ def assert_result(self, expected: Result, result: Result):
                                  "Production for node {} has different name".format(name_node))
                 np.testing.assert_array_equal(prod_expected.quantity, prod_res.quantity,
                                  'Production {} for node {} has different quantity'.format(prod_expected.name, name_node))
-                np.testing.assert_array_equal(prod_expected.cost, prod_res.cost,
-                                 'Production {} for node {} has different cost'.format(prod_expected.name, name_node))
 
             # Storage
             for stor_expected, stor_res in zip(node.storages, res.storages):
@@ -55,8 +51,6 @@ def assert_result(self, expected: Result, result: Result):
                                  "Link for node {} has different name".format(name_node))
                 np.testing.assert_array_equal(link_expected.quantity, link_res.quantity,
                                  'Link {} for node {} has different quantity'.format(link_expected.dest, name_node))
-                np.testing.assert_array_equal(link_expected.cost, link_res.cost,
-                                 'Link {} for node {} has different cost'.format(link_expected.dest, name_node))
 
     # Converter
     for name, exp in expected.converters.items():

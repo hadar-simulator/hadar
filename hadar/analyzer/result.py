@@ -196,14 +196,15 @@ class ResultAnalyzer:
         n_cons = 0
         for n, net in result.networks.items():
             for node in net.nodes.keys():
-                for i, c in enumerate(net.nodes[node].consumptions):
+                for i, rc in enumerate(net.nodes[node].consumptions):
                     slices = cons.index[n_cons * h * scn: (n_cons + 1) * h * scn]
-                    cons.loc[slices, 'cost'] = c.cost.flatten()
-                    cons.loc[slices, 'name'] = c.name
+                    sc = study.networks[n].nodes[node].consumptions[i]
+                    cons.loc[slices, 'cost'] = sc.cost.flatten()
+                    cons.loc[slices, 'name'] = rc.name
                     cons.loc[slices, 'node'] = node
                     cons.loc[slices, 'network'] = n
-                    cons.loc[slices, 'asked'] = study.networks[n].nodes[node].consumptions[i].quantity.flatten()
-                    cons.loc[slices, 'given'] = c.quantity.flatten()
+                    cons.loc[slices, 'asked'] = sc.quantity.flatten()
+                    cons.loc[slices, 'given'] = rc.quantity.flatten()
                     cons.loc[slices, 't'] = np.tile(np.arange(h), scn)
                     cons.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
 
@@ -231,14 +232,15 @@ class ResultAnalyzer:
         n_prod = 0
         for n, net in result.networks.items():
             for node in net.nodes.keys():
-                for i, c in enumerate(net.nodes[node].productions):
+                for i, rp in enumerate(net.nodes[node].productions):
                     slices = prod.index[n_prod * h * scn: (n_prod + 1) * h * scn]
-                    prod.loc[slices, 'cost'] = c.cost.flatten()
-                    prod.loc[slices, 'name'] = c.name
+                    sp = study.networks[n].nodes[node].productions[i]
+                    prod.loc[slices, 'cost'] = sp.cost.flatten()
+                    prod.loc[slices, 'name'] = rp.name
                     prod.loc[slices, 'node'] = node
                     prod.loc[slices, 'network'] = n
-                    prod.loc[slices, 'avail'] = study.networks[n].nodes[node].productions[i].quantity.flatten()
-                    prod.loc[slices, 'used'] = c.quantity.flatten()
+                    prod.loc[slices, 'avail'] = sp.quantity.flatten()
+                    prod.loc[slices, 'used'] = rp.quantity.flatten()
                     prod.loc[slices, 't'] = np.tile(np.arange(h), scn)
                     prod.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
 
@@ -315,14 +317,15 @@ class ResultAnalyzer:
         n_link = 0
         for n, net in result.networks.items():
             for node in net.nodes.keys():
-                for i, c in enumerate(net.nodes[node].links):
+                for i, rl in enumerate(net.nodes[node].links):
                     slices = link.index[n_link * h * scn: (n_link + 1) * h * scn]
-                    link.loc[slices, 'cost'] = c.cost.flatten()
-                    link.loc[slices, 'dest'] = c.dest
+                    sl = study.networks[n].nodes[node].links[i]
+                    link.loc[slices, 'cost'] = sl.cost.flatten()
+                    link.loc[slices, 'dest'] = rl.dest
                     link.loc[slices, 'node'] = node
                     link.loc[slices, 'network'] = n
-                    link.loc[slices, 'avail'] = study.networks[n].nodes[node].links[i].quantity.flatten()
-                    link.loc[slices, 'used'] = c.quantity.flatten()
+                    link.loc[slices, 'avail'] = sl.quantity.flatten()
+                    link.loc[slices, 'used'] = rl.quantity.flatten()
                     link.loc[slices, 't'] = np.tile(np.arange(h), scn)
                     link.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
 

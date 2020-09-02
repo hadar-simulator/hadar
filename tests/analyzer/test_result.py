@@ -67,10 +67,10 @@ class TestConsumptionAnalyzer(unittest.TestCase):
             .build()
 
         out = {
-            'a': OutputNode(consumptions=[OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load'),
-                                          OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[30, 3, 3], [3, 30, 30]], name='car')],
+            'a': OutputNode(consumptions=[OutputConsumption(quantity=[[20, 2, 2], [2, 20, 20]], name='load'),
+                                          OutputConsumption(quantity=[[30, 3, 3], [3, 30, 30]], name='car')],
                             productions=[], storages=[], links=[]),
-            'b': OutputNode(consumptions=[OutputConsumption(cost=np.ones((2, 3)) * 10 ** 3, quantity=[[20, 2, 2], [2, 20, 20]], name='load')],
+            'b': OutputNode(consumptions=[OutputConsumption(quantity=[[20, 2, 2], [2, 20, 20]], name='load')],
                             productions=[], storages=[], links=[])
         }
         self.result = Result(networks={'default': OutputNetwork(nodes=out)}, converters={})
@@ -121,11 +121,11 @@ class TestProductionAnalyzer(unittest.TestCase):
             .build()
 
         out = {
-            'a': OutputNode(productions=[OutputProduction(cost=np.ones((2, 3)) * 10, quantity=[[30, 3, 3], [3, 30, 30]], name='prod')],
+            'a': OutputNode(productions=[OutputProduction(quantity=[[30, 3, 3], [3, 30, 30]], name='prod')],
                             consumptions=[], storages=[], links=[]),
 
-            'b': OutputNode(productions=[OutputProduction(cost=np.ones((2, 3)) * 20, quantity=[[10, 1, 1], [1, 10, 10]], name='prod'),
-                                         OutputProduction(cost=np.ones((2, 3)) * 20, quantity=[[20, 2, 2], [2, 20, 20]], name='nuclear')],
+            'b': OutputNode(productions=[OutputProduction(quantity=[[10, 1, 1], [1, 10, 10]], name='prod'),
+                                         OutputProduction(quantity=[[20, 2, 2], [2, 20, 20]], name='nuclear')],
                             consumptions=[], storages=[], links=[])
         }
 
@@ -242,8 +242,8 @@ class TestLinkAnalyzer(unittest.TestCase):
         blank_node = OutputNode(consumptions=[], productions=[], storages=[], links=[])
         out = {
             'a': OutputNode(consumptions=[], productions=[], storages=[],
-                            links=[OutputLink(dest='b', quantity=[[10, 1, 1], [1, 10, 10]], cost=np.ones((2, 3)) * 2),
-                                   OutputLink(dest='c', quantity=[[20, 2, 2], [2, 20, 20]], cost=np.ones((2, 3)) * 2)]),
+                            links=[OutputLink(dest='b', quantity=[[10, 1, 1], [1, 10, 10]]),
+                                   OutputLink(dest='c', quantity=[[20, 2, 2], [2, 20, 20]])]),
 
             'b': blank_node, 'c': blank_node
         }

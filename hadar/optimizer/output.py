@@ -19,15 +19,13 @@ class OutputConsumption(JSON):
     """
     Consumption element
     """
-    def __init__(self, quantity: Union[np.ndarray, list], cost: Union[np.ndarray, list], name: str = ''):
+    def __init__(self, quantity: Union[np.ndarray, list], name: str = ''):
         """
         Create instance.
 
         :param quantity: quantity matched by node
-        :param cost: cost of unavailability
         :param name: consumption name (unique in a node)
         """
-        self.cost = np.array(cost)
         self.quantity = np.array(quantity)
         self.name = name
 
@@ -41,16 +39,14 @@ class OutputProduction(JSON):
     """
     Production element
     """
-    def __init__(self, quantity: Union[np.ndarray, list], cost: Union[np.ndarray, list], name: str = 'in'):
+    def __init__(self, quantity: Union[np.ndarray, list], name: str = 'in'):
         """
         Create instance.
 
         :param quantity: capacity used by node
-        :param cost: cost of use
         :param name: production name (unique in a node)
         """
         self.name = name
-        self.cost = np.array(cost)
         self.quantity = np.array(quantity)
 
     @staticmethod
@@ -86,17 +82,15 @@ class OutputLink(JSON):
     """
     Link element
     """
-    def __init__(self, dest: str, quantity: Union[np.ndarray, list], cost: Union[np.ndarray, list]):
+    def __init__(self, dest: str, quantity: Union[np.ndarray, list]):
         """
         Create instance.
 
         :param dest: destination node name
         :param quantity: capacity used
-        :param cost: cost of use
         """
         self.dest = dest
         self.quantity = np.array(quantity)
-        self.cost = np.array(cost)
 
     @staticmethod
     def from_json(dict):
@@ -169,15 +163,11 @@ class OutputNode(JSON):
         :return: OutputNode like InputNode with all quantity at zero
         """
         output = OutputNode(consumptions=[], productions=[], storages=[], links=[])
-        output.consumptions = [OutputConsumption(name=i.name, cost=i.cost, quantity=fill)
-                               for i in input.consumptions]
-        output.productions = [OutputProduction(name=i.name, cost=i.cost, quantity=fill)
-                              for i in input.productions]
-        output.storages = [OutputStorage(name=i.name, capacity=fill,
-                                         flow_out=fill, flow_in=fill)
+        output.consumptions = [OutputConsumption(name=i.name, quantity=fill) for i in input.consumptions]
+        output.productions = [OutputProduction(name=i.name, quantity=fill) for i in input.productions]
+        output.storages = [OutputStorage(name=i.name, capacity=fill, flow_out=fill, flow_in=fill)
                            for i in input.storages]
-        output.links = [OutputLink(dest=i.dest, cost=i.cost, quantity=fill)
-                        for i in input.links]
+        output.links = [OutputLink(dest=i.dest, quantity=fill) for i in input.links]
         return output
 
     @staticmethod
