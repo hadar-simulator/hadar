@@ -5,6 +5,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 import numpy as np
+import pandas as pd
 
 from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, Union, List
@@ -135,16 +136,16 @@ class NumericalValueFactory:
         if isinstance(value, NumericalValue):
             return value
 
-        # If data come from json serialized dictionnary, use value key as input
+        # If data come from json serialized dictionary, use 'value' key as input
         if isinstance(value, dict) and 'value' in value:
             value = value['value']
 
         # If data is just a scalar
-        if isinstance(value, int) or isinstance(value, float):
+        if type(value) in [float, int, complex]:
             return ScalarNumericalValue(value=value, horizon=self.horizon, nb_scn=self.nb_scn)
 
-        # If data is list convert to numpy array
-        if isinstance(value, List):
+        # If data is list or pandas object convert to numpy array
+        if type(value) in [List, list, pd.DataFrame, pd.Series]:
             value = np.array(value)
 
         if isinstance(value, np.ndarray):
@@ -159,3 +160,13 @@ class NumericalValueFactory:
             # If perfect size
             if value.shape == (self.nb_scn, self.horizon):
                 return MatrixNumericalValue(value=value, horizon=self.horizon, nb_scn=self.nb_scn)
+
+            # If any size pattern matches, raise error on quantity size given
+            horizon_given = value.shape[0] if len(value.shape) == 1 else value.shape[1]
+            sc_given = 1 if len(value.shape) == 1 else value.shape[0]
+            raise ValueError('Array must be: a number, an array like (horizon, ) or (nb_scn, 1) or (nb_scn, horizon). '
+                             'In your case horizon specified is %d and actual is %d. '
+                             'And nb_scn specified %d is whereas actual is %d' %
+                             (self.horizon, horizon_given, self.nb_scn, sc_given))
+
+        raise ValueError('Wrong source data for numerical value')
