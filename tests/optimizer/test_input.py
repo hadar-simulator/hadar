@@ -10,7 +10,8 @@ import unittest
 import numpy as np
 
 from hadar.optimizer.input import Study, Consumption, Production, Link, Storage, Converter
-from utils import assert_result
+from hadar.optimizer.numeric import NumericalValueFactory
+from tests.utils import assert_result
 
 
 class TestStudy(unittest.TestCase):
@@ -33,13 +34,16 @@ class TestStudy(unittest.TestCase):
             .converter(name='converter', to_network='gas', to_node='b', cost=10, max=10) \
             .build()
 
+        self.factory = NumericalValueFactory(horizon=self.study.horizon, nb_scn=self.study.nb_scn)
+
     def test_create_study(self):
-        c = Consumption(name='load', cost=20, quantity=10)
-        p = Production(name='nuclear', cost=20, quantity=10)
-        s = Storage(name='store', capacity=100, flow_in=10, flow_out=10, cost=1, init_capacity=4, eff=0.1)
-        l = Link(dest='a', cost=20, quantity=10)
-        v = Converter(name='converter', src_ratios={('default', 'a'): 1}, dest_network='gas',
-                      dest_node='b', cost=10, max=10)
+        c = Consumption(name='load', cost=self.factory.create(20), quantity=self.factory.create(10))
+        p = Production(name='nuclear', cost=self.factory.create(20), quantity=self.factory.create(10))
+        s = Storage(name='store', capacity=self.factory.create(100), flow_in=self.factory.create(10),
+                    flow_out=self.factory.create(10), cost=self.factory.create(1), init_capacity=4, eff=self.factory.create(0.1))
+        l = Link(dest='a', cost=self.factory.create(20), quantity=self.factory.create(10))
+        v = Converter(name='converter', src_ratios={('default', 'a'): self.factory.create(1)}, dest_network='gas',
+                      dest_node='b', cost=self.factory.create(10), max=self.factory.create(10))
 
         self.assertEqual(c, self.study.networks['default'].nodes['a'].consumptions[0])
         self.assertEqual(p, self.study.networks['default'].nodes['a'].productions[0])

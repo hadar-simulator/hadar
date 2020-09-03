@@ -21,6 +21,8 @@ class TestNumericalValue(unittest.TestCase):
         self.assertEqual(42, v[2, 3])
         self.assertRaises(IndexError, lambda: v[3, 1])
         self.assertRaises(IndexError, lambda: v[1, 5])
+        self.assertTrue(v < 50)
+        self.assertFalse(v < 30)
         np.testing.assert_array_equal([42] * 15, v.flatten())
 
     def test_matrix(self):
@@ -29,6 +31,8 @@ class TestNumericalValue(unittest.TestCase):
         self.assertEqual(13, v[2, 3])
         self.assertRaises(IndexError, lambda: v[3, 1])
         self.assertRaises(IndexError, lambda: v[1, 5])
+        self.assertTrue(v < 16)
+        self.assertFalse(v < 10)
         np.testing.assert_array_equal(range(15), v.flatten())
 
     def test_row(self):

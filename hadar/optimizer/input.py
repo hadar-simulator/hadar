@@ -6,7 +6,7 @@
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import List, Union, Dict, Tuple
+from typing import List, Union, Dict, Tuple, Type
 
 import numpy as np
 
@@ -14,45 +14,10 @@ __all__ = ['Consumption', 'Link', 'Production', 'Storage', 'Converter', 'InputNe
            'NetworkFluentAPISelector', 'NodeFluentAPISelector']
 
 import hadar
+from hadar.optimizer.numeric import NumericalValue, NumericalValueFactory
+from hadar.optimizer.utils import JSON
 
-
-class DTO:
-    """
-    Implement basic method for DTO objects
-    """
-    def __hash__(self):
-        return hash(tuple(sorted(self.__dict__.items())))
-
-    def __eq__(self, other):
-        return isinstance(other, type(self)) and self.__dict__ == other.__dict__
-
-    def __str__(self):
-        return "{}({})".format(type(self).__name__, ", ".join(["{}={}".format(k, str(self.__dict__[k])) for k in sorted(self.__dict__)]))
-
-    def __repr__(self):
-        return self.__str__()
-
-
-class JSON(DTO, ABC):
-
-    def to_json(self):
-        def convert(value):
-            if isinstance(value, JSON):
-                return value.to_json()
-            elif isinstance(value, dict):
-                return {k: convert(v) for k, v in value.items()}
-            elif isinstance(value, list) or isinstance(value, tuple):
-                return [convert(v) for v in value]
-            elif isinstance(value, np.ndarray):
-                return value.tolist()
-            return value
-
-        return {k: convert(v) for k, v in self.__dict__.items()}
-
-    @staticmethod
-    @abstractmethod
-    def from_json(dict):
-        pass
+NumericalValueType: Type = Union[List, np.ndarray, float]
 
 
 class Consumption(JSON):
@@ -60,7 +25,7 @@ class Consumption(JSON):
     Consumption element.
     """
 
-    def __init__(self, quantity: Union[List, np.ndarray, float], cost: Union[List, np.ndarray, float], name: str = ''):
+    def __init__(self, quantity: NumericalValue, cost: NumericalValue, name: str = ''):
         """
         Create consumption.
 
@@ -68,8 +33,8 @@ class Consumption(JSON):
         :param cost: cost of unavailability
         :param name: name of consumption (unique for each node)
         """
-        self.cost = np.array(cost)
-        self.quantity = np.array(quantity)
+        self.cost = cost
+        self.quantity = quantity
         self.name = name
 
     @staticmethod
@@ -81,7 +46,7 @@ class Production(JSON):
     """
     Production element
     """
-    def __init__(self, quantity: Union[List, np.ndarray, float], cost: Union[List, np.ndarray, float], name: str = 'in'):
+    def __init__(self, quantity: NumericalValue, cost: NumericalValue, name: str = 'in'):
         """
         Create production
 
@@ -90,8 +55,8 @@ class Production(JSON):
         :param name: name of production (unique for each node)
         """
         self.name = name
-        self.cost = np.array(cost)
-        self.quantity = np.array(quantity)
+        self.cost = cost
+        self.quantity = quantity
 
     @staticmethod
     def from_json(dict):
@@ -102,17 +67,17 @@ class Storage(JSON):
     """
     Storage element
     """
-    def __init__(self, name, capacity: int, flow_in: float, flow_out: float, cost: float = 0,
-                 init_capacity: int = 0,  eff: float = 0.99):
+    def __init__(self, name, capacity: NumericalValue, flow_in: NumericalValue, flow_out: NumericalValue,
+                 cost: NumericalValue, init_capacity: int,  eff: NumericalValue):
         """
         Create storage.
 
         :param capacity: maximum storage capacity (like of many quantity to use inside storage)
         :param flow_in: max flow into storage during on time step
         :param flow_out: max flow out storage during on time step
-        :param cost: unit cost of storage at each time-step. default 0
-        :param init_capacity: initial capacity level. default 0
-        :param eff: storage efficient (applied on input flow stored). default 0.99
+        :param cost: unit cost of storage at each time-step.
+        :param init_capacity: initial capacity level.
+        :param eff: storage efficient (applied on input flow stored).
         """
         self.name = name
         self.capacity = capacity
@@ -131,7 +96,7 @@ class Link(JSON):
     """
     Link element
     """
-    def __init__(self, dest: str, quantity: Union[List, np.ndarray, float], cost: Union[List, np.ndarray, float]):
+    def __init__(self, dest: str, quantity: NumericalValue, cost: NumericalValue):
         """
         Create link.
 
@@ -140,8 +105,8 @@ class Link(JSON):
         :param cost: cost of use
         """
         self.dest = dest
-        self.quantity = np.array(quantity)
-        self.cost = np.array(cost)
+        self.quantity = quantity
+        self.cost = cost
 
     @staticmethod
     def from_json(dict):
@@ -152,8 +117,8 @@ class Converter(JSON):
     """
     Converter element
     """
-    def __init__(self, name: str, src_ratios: Dict[Tuple[str, str], float], dest_network: str, dest_node: str,
-                 cost: float, max: float,):
+    def __init__(self, name: str, src_ratios: Dict[Tuple[str, str], NumericalValue], dest_network: str, dest_node: str,
+                 cost: NumericalValue, max: NumericalValue):
         """
         Create converter.
 
@@ -252,6 +217,7 @@ class Study(JSON):
         self.converters = dict()
         self.horizon = horizon
         self.nb_scn = nb_scn
+        self.factory = NumericalValueFactory(horizon=horizon, nb_scn=nb_scn)
 
     @staticmethod
     def from_json(dict):
@@ -270,7 +236,7 @@ class Study(JSON):
         self.add_network(name)
         return NetworkFluentAPISelector(selector={'network': name}, study=self)
 
-    def add_link(self, network: str, src: str, dest: str, cost: int, quantity: Union[List[float], np.ndarray, float]):
+    def add_link(self, network: str, src: str, dest: str, cost: NumericalValueType, quantity: NumericalValueType):
         """
         Add a link inside network.
 
@@ -288,11 +254,11 @@ class Study(JSON):
         if dest in [l.dest for l in self.networks[network].nodes[src].links]:
             raise ValueError('link destination must be unique on a node')
 
-        quantity = self._standardize_array(quantity)
-        if np.any(quantity < 0):
+        quantity = self.factory.create(quantity)
+        if quantity < 0:
             raise ValueError('Link quantity must be positive')
 
-        cost = self._standardize_array(cost)
+        cost = self.factory.create(cost)
         self.networks[network].nodes[src].links.append(Link(dest=dest, quantity=quantity, cost=cost))
 
         return self
@@ -309,31 +275,38 @@ class Study(JSON):
         if prod.name in [p.name for p in self.networks[network].nodes[node].productions]:
             raise ValueError('production name must be unique on a node')
 
-        prod.quantity = self._standardize_array(prod.quantity)
-        if np.any(prod.quantity < 0):
+        prod.quantity = self.factory.create(prod.quantity)
+        if prod.quantity < 0:
             raise ValueError('Production quantity must be positive')
 
-        prod.cost = self._standardize_array(prod.cost)
+        prod.cost = self.factory.create(prod.cost)
         self.networks[network].nodes[node].productions.append(prod)
 
     def _add_consumption(self, network: str, node: str, cons: Consumption):
         if cons.name in [c.name for c in self.networks[network].nodes[node].consumptions]:
             raise ValueError('consumption name must be unique on a node')
 
-        cons.quantity = self._standardize_array(cons.quantity)
-        if np.any(cons.quantity < 0):
+        cons.quantity = self.factory.create(cons.quantity)
+        if cons.quantity < 0:
             raise ValueError('Consumption quantity must be positive')
 
-        cons.cost = self._standardize_array(cons.cost)
+        cons.cost = self.factory.create(cons.cost)
         self.networks[network].nodes[node].consumptions.append(cons)
 
     def _add_storage(self, network: str, node: str, store: Storage):
         if store.name in [s.name for s in self.networks[network].nodes[node].storages]:
             raise ValueError('storage name must be unique on a node')
+
+        store.flow_in = self.factory.create(store.flow_in)
+        store.flow_out = self.factory.create(store.flow_out)
         if store.flow_in < 0 or store.flow_out < 0:
             raise ValueError('storage flow must be positive')
+
+        store.capacity = self.factory.create(store.capacity)
         if store.capacity < 0 or store.init_capacity < 0:
             raise ValueError('storage capacities must be positive')
+
+        store.eff = self.factory.create(store.eff)
         if store.eff < 0 or store.eff > 1:
             raise ValueError('storage efficiency must be in ]0, 1[')
 
@@ -344,13 +317,14 @@ class Study(JSON):
             self.converters[name] = Converter(name=name, src_ratios={}, dest_network='',
                                               dest_node='', cost=0, max=0)
 
-    def _add_converter_src(self, name: str, network: str, node: str, ratio: float):
+    def _add_converter_src(self, name: str, network: str, node: str, ratio: NumericalValueType):
         if (network, node) in self.converters[name].src_ratios:
             raise ValueError('converter input already has node %s on network %s' % (node, network))
 
+        ratio = self.factory.create(ratio)
         self.converters[name].src_ratios[(network, node)] = ratio
 
-    def _set_converter_dest(self, name: str, network: str, node: str, cost: float, max: float):
+    def _set_converter_dest(self, name: str, network: str, node: str, cost: NumericalValueType, max: NumericalValueType):
         if self.converters[name].dest_network and self.converters[name].dest_node:
             raise ValueError('converter has already output set')
         if network not in self.networks or node not in self.networks[network].nodes.keys():
@@ -358,35 +332,8 @@ class Study(JSON):
 
         self.converters[name].dest_network = network
         self.converters[name].dest_node = node
-        self.converters[name].cost = cost
-        self.converters[name].max = max
-
-    def _standardize_array(self, array: Union[List[float], np.ndarray, float]) -> np.ndarray:
-        array = np.array(array, dtype=float)
-
-        # If scenario and horizon are not provided, expend on both side
-        if array.size == 1:
-            return np.ones((self.nb_scn, self.horizon)) * array
-
-        # If scenario are not provided copy timeseries for each scenario
-        if array.shape == (self.horizon,):
-            return np.tile(array, (self.nb_scn, 1))
-
-        # If horizon are not provide extend each scenario to full horizon
-        if array.shape == (self.nb_scn, 1):
-            return np.tile(array, self.horizon)
-
-        # If perfect size
-        if array.shape == (self.nb_scn, self.horizon):
-            return array
-
-        # If any size pattern matches, raise error on quantity size given
-        horizon_given = array.shape[0] if len(array.shape) == 1 else array.shape[1]
-        sc_given = 1 if len(array.shape) == 1 else array.shape[0]
-        raise ValueError('Array must be: a number, an array like (horizon, ) or (nb_scn, 1) or (nb_scn, horizon). '
-                         'In your case horizon specified is %d and actual is %d. '
-                         'And nb_scn specified %d is whereas actual is %d' %
-                         (self.horizon, horizon_given, self.nb_scn, sc_given))
+        self.converters[name].cost = self.factory.create(cost)
+        self.converters[name].max = self.factory.create(max)
 
 
 class NetworkFluentAPISelector:
@@ -408,7 +355,7 @@ class NetworkFluentAPISelector:
         self.study.add_node(network=self.selector['network'], node=name)
         return NodeFluentAPISelector(self.study, self.selector)
 
-    def link(self, src: str, dest: str, cost: int, quantity: Union[List, np.ndarray, float]):
+    def link(self, src: str, dest: str, cost: NumericalValueType, quantity: NumericalValueType):
         """
         Add a link on network.
 
@@ -432,7 +379,7 @@ class NetworkFluentAPISelector:
         self.study.add_network(name)
         return NetworkFluentAPISelector(selector={'network': name}, study=self.study)
 
-    def converter(self, name: str, to_network: str, to_node: str, max: float, cost: float = 0):
+    def converter(self, name: str, to_network: str, to_node: str, max: NumericalValueType, cost: NumericalValueType = 0):
         """
         Add a converter element.
 
@@ -464,7 +411,7 @@ class NodeFluentAPISelector:
         self.study = study
         self.selector = selector
 
-    def consumption(self, name: str, cost: int, quantity: Union[List, np.ndarray, float]):
+    def consumption(self, name: str, cost: NumericalValueType, quantity: NumericalValueType):
         """
         Add consumption on node.
 
@@ -477,7 +424,7 @@ class NodeFluentAPISelector:
                                     cons=Consumption(name=name, cost=cost, quantity=quantity))
         return self
 
-    def production(self, name: str, cost: int, quantity: Union[List, np.ndarray, float]):
+    def production(self, name: str, cost: NumericalValueType, quantity: NumericalValueType):
         """
         Add production on node.
 
@@ -490,8 +437,8 @@ class NodeFluentAPISelector:
                                    prod=Production(name=name, cost=cost, quantity=quantity))
         return self
 
-    def storage(self, name, capacity: int, flow_in: float, flow_out: float, cost: float = 0,
-                 init_capacity: int = 0,  eff: int = 0.99):
+    def storage(self, name, capacity: NumericalValueType, flow_in: NumericalValueType, flow_out: NumericalValueType,
+                cost: NumericalValueType = 0, init_capacity: int = 0,  eff: NumericalValueType = 0.99):
         """
         Create storage.
 
@@ -516,7 +463,7 @@ class NodeFluentAPISelector:
         """
         return NetworkFluentAPISelector(self.study, self.selector).node(name)
 
-    def link(self, src: str, dest: str, cost: int, quantity: Union[List, np.ndarray, float]):
+    def link(self, src: str, dest: str, cost: int, quantity: NumericalValueType):
         """
         Add a link on network.
 
@@ -538,7 +485,7 @@ class NodeFluentAPISelector:
         """
         return NetworkFluentAPISelector(selector={}, study=self.study).network(name)
 
-    def converter(self, name: str, to_network: str, to_node: str, max: float, cost: float = 0):
+    def converter(self, name: str, to_network: str, to_node: str, max: NumericalValueType, cost: NumericalValueType = 0):
         """
         Add a converter element.
 
@@ -552,7 +499,7 @@ class NodeFluentAPISelector:
         return NetworkFluentAPISelector(selector={}, study=self.study)\
             .converter(name=name, to_network=to_network, to_node=to_node, max=max, cost=cost)
 
-    def to_converter(self, name: str, ratio: float = 1):
+    def to_converter(self, name: str, ratio: NumericalValueType = 1):
         """
         Add an ouptput to converter.
 

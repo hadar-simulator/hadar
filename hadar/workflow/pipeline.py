@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from pandas import MultiIndex
 
-from hadar.optimizer.input import DTO
+from hadar.optimizer.utils import DTO
 
 __all__ = ['RestrictedPlug', 'FreePlug', 'Stage', 'FocusStage', 'Drop', 'Rename', 'Fault', 'RepeatScenario',
            'ToShuffler', 'Pipeline', 'Clip']

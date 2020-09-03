@@ -9,7 +9,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, Union, List
 
-from hadar.optimizer.input import JSON
+from hadar.optimizer.utils import JSON
 
 T = TypeVar('T')
 
@@ -22,6 +22,10 @@ class NumericalValue(JSON, ABC, Generic[T]):
 
     @abstractmethod
     def __getitem__(self, item) -> float:
+        pass
+
+    @abstractmethod
+    def __lt__(self, other) -> bool:
         pass
 
     @abstractmethod
@@ -38,6 +42,9 @@ class ScalarNumericalValue(NumericalValue[float]):
             raise IndexError('There are %d time step you ask the %dth' % (self.horizon, j))
         return self.value
 
+    def __lt__(self, other):
+        return self.value < other
+
     def flatten(self) -> np.ndarray:
         return np.ones(self.horizon * self.nb_scn) * self.value
 
@@ -46,7 +53,12 @@ class ScalarNumericalValue(NumericalValue[float]):
         return ScalarNumericalValue(**dict)
 
 
-class MatrixNumericalValue(NumericalValue[np.ndarray]):
+class NumpyNumericalValue(NumericalValue[np.ndarray], ABC):
+    def __lt__(self, other) -> bool:
+        return np.all(self.value < other)
+
+
+class MatrixNumericalValue(NumpyNumericalValue):
     def __getitem__(self, item) -> float:
         i, j = item
         return self.value[i, j]
@@ -60,7 +72,7 @@ class MatrixNumericalValue(NumericalValue[np.ndarray]):
         MatrixNumericalValue(**dict)
 
 
-class RowNumericValue(NumericalValue[np.ndarray]):
+class RowNumericValue(NumpyNumericalValue):
     def __getitem__(self, item) -> float:
         i, j = item
         if i >= self.nb_scn:
@@ -76,7 +88,7 @@ class RowNumericValue(NumericalValue[np.ndarray]):
         MatrixNumericalValue(**dict)
 
 
-class ColumnNumericValue(NumericalValue[np.ndarray]):
+class ColumnNumericValue(NumpyNumericalValue):
     def __getitem__(self, item) -> float:
         i, j = item
         if j >= self.horizon:
@@ -98,7 +110,10 @@ class NumericalValueFactory:
         self.horizon = horizon
         self.nb_scn = nb_scn
 
-    def create(self, value: Union[float, List[float], str, np.ndarray]) -> NumericalValue:
+    def create(self, value: Union[float, List[float], str, np.ndarray, NumericalValue]) -> NumericalValue:
+        if isinstance(value, NumericalValue):
+            return value
+
         if isinstance(value, int):
             return ScalarNumericalValue(value=value, horizon=self.horizon, nb_scn=self.nb_scn)
 
