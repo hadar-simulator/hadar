@@ -5,6 +5,7 @@
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 from abc import ABC, abstractmethod
+import numpy as np
 
 
 class DTO:
@@ -28,21 +29,23 @@ class JSON(DTO, ABC):
     """
     Object to be serializer by json
     """
-    def to_json(self):
-        def convert(value):
-            if isinstance(value, JSON):
-                return value.to_json()
-            elif isinstance(value, dict):
-                return {k: convert(v) for k, v in value.items()}
-            elif isinstance(value, list) or isinstance(value, tuple):
-                return [convert(v) for v in value]
-            elif isinstance(value, np.ndarray):
-                return value.tolist()
-            return value
 
-        return {k: convert(v) for k, v in self.__dict__.items()}
+    @staticmethod
+    def _convert(value):
+        if isinstance(value, JSON):
+            return value.to_json()
+        elif isinstance(value, dict):
+            return {k: JSON._convert(v) for k, v in value.items()}
+        elif isinstance(value, list) or isinstance(value, tuple):
+            return [JSON._convert(v) for v in value]
+        elif isinstance(value, np.ndarray):
+            return value.tolist()
+        return value
+
+    def to_json(self):
+        return {k: JSON._convert(v) for k, v in self.__dict__.items()}
 
     @staticmethod
     @abstractmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
         pass

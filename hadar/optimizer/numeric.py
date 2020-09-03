@@ -9,7 +9,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, Union, List
 
-from hadar.optimizer.utils import JSON
+from hadar.optimizer.utils import JSON, DTO
 
 T = TypeVar('T')
 
@@ -28,6 +28,16 @@ class NumericalValue(JSON, ABC, Generic[T]):
     def __lt__(self, other) -> bool:
         pass
 
+    def __le__(self, other) -> bool:
+        return not self.__gt__(other)
+
+    @abstractmethod
+    def __gt__(self, other) -> bool:
+        pass
+
+    def __ge__(self, other) -> bool:
+        return not self.__lt__(other)
+
     @abstractmethod
     def flatten(self) -> np.ndarray:
         pass
@@ -45,6 +55,9 @@ class ScalarNumericalValue(NumericalValue[float]):
     def __lt__(self, other):
         return self.value < other
 
+    def __gt__(self, other):
+        return self.value > other
+
     def flatten(self) -> np.ndarray:
         return np.ones(self.horizon * self.nb_scn) * self.value
 
@@ -56,6 +69,9 @@ class ScalarNumericalValue(NumericalValue[float]):
 class NumpyNumericalValue(NumericalValue[np.ndarray], ABC):
     def __lt__(self, other) -> bool:
         return np.all(self.value < other)
+
+    def __gt__(self, other) -> bool:
+        return np.all(self.value > other)
 
 
 class MatrixNumericalValue(NumpyNumericalValue):
@@ -110,13 +126,24 @@ class NumericalValueFactory:
         self.horizon = horizon
         self.nb_scn = nb_scn
 
+    def __eq__(self, other):
+        if not isinstance(other, NumericalValueFactory):
+            return False
+        return other.horizon == self.horizon and other.nb_scn == self.nb_scn
+
     def create(self, value: Union[float, List[float], str, np.ndarray, NumericalValue]) -> NumericalValue:
         if isinstance(value, NumericalValue):
             return value
 
-        if isinstance(value, int):
+        # If data come from json serialized dictionnary, use value key as input
+        if isinstance(value, dict) and 'value' in value:
+            value = value['value']
+
+        # If data is just a scalar
+        if isinstance(value, int) or isinstance(value, float):
             return ScalarNumericalValue(value=value, horizon=self.horizon, nb_scn=self.nb_scn)
 
+        # If data is list convert to numpy array
         if isinstance(value, List):
             value = np.array(value)
 

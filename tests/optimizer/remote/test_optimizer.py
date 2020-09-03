@@ -59,11 +59,11 @@ class RemoteOptimizerTest(unittest.TestCase):
 
     def test_job_terminated(self):
         # Start server
-        httpd = HTTPServer(('localhost', 6964), MockSchedulerServer)
+        httpd = HTTPServer(('localhost', 6984), MockSchedulerServer)
         server = threading.Thread(None, handle_twice, None, (httpd.handle_request,))
         server.start()
 
-        optim = RemoteOptimizer(url='http://localhost:6964')
+        optim = RemoteOptimizer(url='http://localhost:6984')
         res = optim.solve(self.study)
 
         self.assertEqual(self.result, res)

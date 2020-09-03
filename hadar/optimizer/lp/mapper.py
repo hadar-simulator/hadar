@@ -48,11 +48,11 @@ class InputMapper:
                                     variable=self.solver.NumVar(0, float(p.quantity[scn, t]), 'prod=%s %s' % (p.name, suffix)))
                        for p in in_node.productions]
 
-        storages = [LPStorage(name=s.name, capacity=s.capacity, flow_in=s.flow_in, flow_out=s.flow_out, eff=s.eff,
-                              init_capacity=s.init_capacity, cost=s.cost,
-                              var_capacity=self.solver.NumVar(0, float(s.capacity), 'storage_capacity=%s %s' % (s.name, suffix)),
-                              var_flow_in=self.solver.NumVar(0, float(s.flow_in), 'storage_flow_in=%s %s' % (s.name, suffix)),
-                              var_flow_out=self.solver.NumVar(0, float(s.flow_out), 'storage_flow_out=%s %s' % (s.name, suffix)))
+        storages = [LPStorage(name=s.name, flow_in=s.flow_in[scn, t], flow_out=s.flow_out[scn, t], eff=s.eff[scn, t],
+                              capacity=s.capacity[scn, t], init_capacity=s.init_capacity, cost=s.cost[scn, t],
+                              var_capacity=self.solver.NumVar(0, float(s.capacity[scn, t]), 'storage_capacity=%s %s' % (s.name, suffix)),
+                              var_flow_in=self.solver.NumVar(0, float(s.flow_in[scn, t]), 'storage_flow_in=%s %s' % (s.name, suffix)),
+                              var_flow_out=self.solver.NumVar(0, float(s.flow_out[scn, t]), 'storage_flow_out=%s %s' % (s.name, suffix)))
                     for s in in_node.storages]
 
         links = [LPLink(dest=l.dest, cost=l.cost[scn, t], src=node, quantity=l.quantity[scn, t],
@@ -73,11 +73,12 @@ class InputMapper:
         suffix = 'at t=%d for scn=%d' % (t, scn)
         v = self.study.converters[name]
 
-        return LPConverter(name=v.name, src_ratios=v.src_ratios, dest_network=v.dest_network, dest_node=v.dest_node,
-                           cost=v.cost, max=v.max,
-                           var_flow_src={src: self.solver.NumVar(0, float(v.max / r), 'flow_src %s %s %s' % (v.name, ':'.join(src), suffix))
-                                         for src, r in v.src_ratios.items()},
-                           var_flow_dest=self.solver.NumVar(0, float(v.max), 'flow_dest %s %s' % (v.name, suffix)))
+        src_ratios = {k: v[scn, t] for k, v in v.src_ratios.items()}
+        return LPConverter(name=v.name, src_ratios=src_ratios, dest_network=v.dest_network, dest_node=v.dest_node,
+                           cost=v.cost[scn, t], max=v.max[scn, t],
+                           var_flow_src={src: self.solver.NumVar(0, float(v.max[scn, t] / r), 'flow_src %s %s %s' % (v.name, ':'.join(src), suffix))
+                                         for src, r in src_ratios.items()},
+                           var_flow_dest=self.solver.NumVar(0, float(v.max[scn, t]), 'flow_dest %s %s' % (v.name, suffix)))
 
 
 class OutputMapper:

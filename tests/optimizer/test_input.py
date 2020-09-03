@@ -195,61 +195,6 @@ class TestStudy(unittest.TestCase):
 
         self.assertRaises(ValueError, test)
 
-    def test_validate_quantity_perfect_size(self):
-        # Input
-        study = Study(horizon=10, nb_scn=2).network().build()
-        i = np.ones((2, 10))
-
-        # Test
-        r = study._standardize_array(i)
-        np.testing.assert_array_equal(i, r)
-
-    def test_validate_quantity_expend_scn(self):
-        # Input
-        study = Study(horizon=5, nb_scn=2).network().build()
-        i = [1, 2, 3, 4, 5]
-
-        # Expect
-        exp = np.array([[1, 2, 3, 4, 5],
-                        [1, 2, 3, 4, 5]])
-
-        # Test
-        res = study._standardize_array(i)
-        np.testing.assert_array_equal(exp, res)
-
-    def test_validate_quantity_expend_horizon(self):
-        # Input
-        study = Study(horizon=2, nb_scn=5).network().build()
-        i = [[1], [2], [3], [4], [5]]
-
-        # Expect
-        exp = np.array([[1, 1],
-                        [2, 2],
-                        [3, 3],
-                        [4, 4],
-                        [5, 5]])
-
-        # Test
-        res = study._standardize_array(i)
-        np.testing.assert_array_equal(exp, res)
-
-    def test_validate_quantity_expend_both(self):
-        # Input
-        study = Study(horizon=2, nb_scn=3).network().build()
-        i = 1
-
-        # Expect
-        exp = np.ones((3, 2))
-
-        # Test
-        res = study._standardize_array(i)
-        np.testing.assert_array_equal(exp, res)
-
-    def test_validate_quantity_wrong_size(self):
-        # Input
-        study = Study( horizon=2).network().build()
-        self.assertRaises(ValueError, lambda: study._standardize_array([4, 5, 1]))
-
     def test_serialization(self):
         d = self.study.to_json()
         j = json.dumps(d)

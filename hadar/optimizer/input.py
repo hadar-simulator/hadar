@@ -38,7 +38,9 @@ class Consumption(JSON):
         self.name = name
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
+        dict['cost'] = factory.create(dict['cost'])
+        dict['quantity'] = factory.create(dict['quantity'])
         return Consumption(**dict)
 
 
@@ -59,7 +61,9 @@ class Production(JSON):
         self.quantity = quantity
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
+        dict['cost'] = factory.create(dict['cost'])
+        dict['quantity'] = factory.create(dict['quantity'])
         return Production(**dict)
 
 
@@ -88,7 +92,13 @@ class Storage(JSON):
         self.eff = eff
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
+        dict['cost'] = factory.create(dict['cost'])
+        dict['capacity'] = factory.create(dict['capacity'])
+        dict['flow_in'] = factory.create(dict['flow_in'])
+        dict['flow_out'] = factory.create(dict['flow_out'])
+        dict['eff'] = factory.create(dict['eff'])
+
         return Storage(**dict)
 
 
@@ -109,7 +119,9 @@ class Link(JSON):
         self.cost = cost
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
+        dict['cost'] = factory.create(dict['cost'])
+        dict['quantity'] = factory.create(dict['quantity'])
         return Link(**dict)
 
 
@@ -142,17 +154,18 @@ class Converter(JSON):
         # src_ratios has a tuple of two string as key. These forbidden by JSON.
         # Therefore when serialized we join these two strings with '::' to create on string as key
         # Ex: ('elec', 'a') --> 'elec::a'
-        dict['src_ratios'] = {'::'.join(k): v for k, v in self.src_ratios.items()}
-        return dict
+        dict['src_ratios'] = {'::'.join(k): v.to_json() for k, v in self.src_ratios.items()}
+        return {k: JSON._convert(v) for k, v in dict.items()}
 
     @staticmethod
-    def from_json(dict: dict):
+    def from_json(dict: dict, factory=None):
         # When deserialize, we need to split key string of src_network.
         # JSON doesn't accept tuple as key, so two string was joined for serialization
         # Ex: 'elec::a' -> ('elec', 'a')
-        dict['src_ratios'] = {tuple(k.split('::')): v for k, v in dict['src_ratios'].items()}
+        dict['cost'] = factory.create(dict['cost'])
+        dict['max'] = factory.create(dict['max'])
+        dict['src_ratios'] = {tuple(k.split('::')): factory.create(v) for k, v in dict['src_ratios'].items()}
         return Converter(**dict)
-
 
 class InputNode(JSON):
     """
@@ -174,11 +187,11 @@ class InputNode(JSON):
         self.links = links
 
     @staticmethod
-    def from_json(dict):
-        dict['consumptions'] = [Consumption.from_json(v) for v in dict['consumptions']]
-        dict['productions'] = [Production.from_json(v) for v in dict['productions']]
-        dict['storages'] = [Storage.from_json(v) for v in dict['storages']]
-        dict['links'] = [Link.from_json(v) for v in dict['links']]
+    def from_json(dict, factory=None):
+        dict['consumptions'] = [Consumption.from_json(dict=v, factory=factory) for v in dict['consumptions']]
+        dict['productions'] = [Production.from_json(dict=v, factory=factory) for v in dict['productions']]
+        dict['storages'] = [Storage.from_json(dict=v, factory=factory) for v in dict['storages']]
+        dict['links'] = [Link.from_json(dict=v, factory=factory) for v in dict['links']]
         return InputNode(**dict)
 
 
@@ -195,8 +208,8 @@ class InputNetwork(JSON):
         self.nodes = nodes if nodes else {}
 
     @staticmethod
-    def from_json(dict):
-        dict['nodes'] = {k: InputNode.from_json(v) for k, v in dict['nodes'].items()}
+    def from_json(dict, factory=None):
+        dict['nodes'] = {k: InputNode.from_json(dict=v, factory=factory) for k, v in dict['nodes'].items()}
         return InputNetwork(**dict)
 
 
@@ -219,12 +232,17 @@ class Study(JSON):
         self.nb_scn = nb_scn
         self.factory = NumericalValueFactory(horizon=horizon, nb_scn=nb_scn)
 
+    def to_json(self):
+        # remove factory from serialization
+        return {k: JSON._convert(v) for k, v in self.__dict__.items() if k not in ['factory']}
+
+
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
         dict = deepcopy(dict)
         study = Study(horizon=dict['horizon'], nb_scn=dict['nb_scn'], version=dict['version'])
-        study.networks = {k: InputNetwork.from_json(v) for k, v in dict['networks'].items()}
-        study.converters = {k: Converter.from_json(v) for k, v in dict['converters'].items()}
+        study.networks = {k: InputNetwork.from_json(dict=v, factory=study.factory) for k, v in dict['networks'].items()}
+        study.converters = {k: Converter.from_json(dict=v, factory=study.factory) for k, v in dict['converters'].items()}
         return study
 
     def network(self, name='default'):
@@ -309,6 +327,8 @@ class Study(JSON):
         store.eff = self.factory.create(store.eff)
         if store.eff < 0 or store.eff > 1:
             raise ValueError('storage efficiency must be in ]0, 1[')
+
+        store.cost = self.factory.create(store.cost)
 
         self.networks[network].nodes[node].storages.append(store)
 
