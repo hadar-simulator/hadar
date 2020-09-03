@@ -279,15 +279,15 @@ class ResultAnalyzer:
                     slices = stor.index[n_stor * h * scn: (n_stor + 1) * h * scn]
                     study_stor = study.networks[n].nodes[node].storages[i]
 
-                    stor.loc[slices, 'max_capacity'] = study_stor.capacity
+                    stor.loc[slices, 'max_capacity'] = study_stor.capacity.flatten()
                     stor.loc[slices, 'capacity'] = c.capacity.flatten()
-                    stor.loc[slices, 'max_flow_in'] = study_stor.flow_in
+                    stor.loc[slices, 'max_flow_in'] = study_stor.flow_in.flatten()
                     stor.loc[slices, 'flow_in'] = c.flow_in.flatten()
-                    stor.loc[slices, 'max_flow_out'] = study_stor.flow_out
+                    stor.loc[slices, 'max_flow_out'] = study_stor.flow_out.flatten()
                     stor.loc[slices, 'flow_out'] = c.flow_out.flatten()
-                    stor.loc[slices, 'cost'] = study_stor.cost
+                    stor.loc[slices, 'cost'] = study_stor.cost.flatten()
                     stor.loc[slices, 'init_capacity'] = study_stor.init_capacity
-                    stor.loc[slices, 'eff'] = study_stor.eff
+                    stor.loc[slices, 'eff'] = study_stor.eff.flatten()
                     stor.loc[slices, 'network'] = n
                     stor.loc[slices, 'name'] = c.name
                     stor.loc[slices, 'node'] = node
@@ -348,8 +348,8 @@ class ResultAnalyzer:
         for i, (name, v) in enumerate(study.converters.items()):
             slices = dest_conv.index[i * h * scn: (i + 1) * h * scn]
             dest_conv.loc[slices, 'name'] = v.name
-            dest_conv.loc[slices, 'cost'] = v.cost
-            dest_conv.loc[slices, 'max'] = v.max
+            dest_conv.loc[slices, 'cost'] = v.cost.flatten()
+            dest_conv.loc[slices, 'max'] = v.max.flatten()
             dest_conv.loc[slices, 'network'] = v.dest_network
             dest_conv.loc[slices, 'node'] = v.dest_node
             dest_conv.loc[slices, 'flow'] = result.converters[name].flow_dest.flatten()
@@ -376,7 +376,6 @@ class ResultAnalyzer:
             e = s + h * scn * src_size
             slices = src_conv.index[s:e]
             src_conv.loc[slices, 'name'] = v.name
-            src_conv.loc[slices, 'max'] = v.max
             src_conv.loc[slices, 't'] = np.tile(np.arange(h), scn * src_size)
             src_conv.loc[slices, 'scn'] = np.repeat(np.arange(scn), h * src_size)
 
@@ -385,7 +384,8 @@ class ResultAnalyzer:
                 slices = src_conv.index[s:e]
                 src_conv.loc[slices, 'network'] = net
                 src_conv.loc[slices, 'node'] = node
-                src_conv.loc[slices, 'ratio'] = v.src_ratios[(net, node)]
+                src_conv.loc[slices, 'max'] = v.max.flatten()
+                src_conv.loc[slices, 'ratio'] = v.src_ratios[(net, node)].flatten()
                 src_conv.loc[slices, 'flow'] = result.converters[name].flow_src[(net, node)].flatten()
                 s = e
             s = e
