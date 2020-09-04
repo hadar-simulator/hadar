@@ -10,12 +10,15 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, Union, List
 
-from hadar.optimizer.utils import JSON, DTO
+from hadar.optimizer.utils import JSON
 
 T = TypeVar('T')
 
 
 class NumericalValue(JSON, ABC, Generic[T]):
+    """
+    Interface to handle numerical value in study
+    """
     def __init__(self, value: T, horizon: int, nb_scn: int):
         self.value = value
         self.horizon = horizon
@@ -41,10 +44,17 @@ class NumericalValue(JSON, ABC, Generic[T]):
 
     @abstractmethod
     def flatten(self) -> np.ndarray:
+        """
+        flat data into 1D matrix.
+        :return: [v[0, 0], v[0, 1], v[0, 2], ..., v[1, i], v[2, i], ..., v[j, i])
+        """
         pass
 
 
 class ScalarNumericalValue(NumericalValue[float]):
+    """
+    Implement one scalar numerical value i.e. float or int
+    """
     def __getitem__(self, item) -> float:
         i, j = item
         if i >= self.nb_scn:
@@ -64,10 +74,13 @@ class ScalarNumericalValue(NumericalValue[float]):
 
     @staticmethod
     def from_json(dict):
-        return ScalarNumericalValue(**dict)
+        pass  # not used. Deserialization is done by study elements themself
 
 
 class NumpyNumericalValue(NumericalValue[np.ndarray], ABC):
+    """
+    Half-implementation with numpy array as numerical value. Implement only compare methods.
+    """
     def __lt__(self, other) -> bool:
         return np.all(self.value < other)
 
@@ -76,6 +89,9 @@ class NumpyNumericalValue(NumericalValue[np.ndarray], ABC):
 
 
 class MatrixNumericalValue(NumpyNumericalValue):
+    """
+    Implementation with complex matrix with shape (nb_scn, horizon)
+    """
     def __getitem__(self, item) -> float:
         i, j = item
         return self.value[i, j]
@@ -85,11 +101,13 @@ class MatrixNumericalValue(NumpyNumericalValue):
 
     @staticmethod
     def from_json(dict):
-        dict['value'] = np.ndarray(dict['value'])
-        MatrixNumericalValue(**dict)
+        pass  # not used. Deserialization is done by study elements themself
 
 
 class RowNumericValue(NumpyNumericalValue):
+    """
+    Implementation with one scenario wiht shape (horizon, ).
+    """
     def __getitem__(self, item) -> float:
         i, j = item
         if i >= self.nb_scn:
@@ -101,11 +119,13 @@ class RowNumericValue(NumpyNumericalValue):
 
     @staticmethod
     def from_json(dict):
-        dict['value'] = np.ndarray(dict['value'])
-        MatrixNumericalValue(**dict)
+        pass  # not used. Deserialization is done by study elements themself
 
 
 class ColumnNumericValue(NumpyNumericalValue):
+    """
+    Implementation with one time step by scenario with shape (nb_scn, 1)
+    """
     def __getitem__(self, item) -> float:
         i, j = item
         if j >= self.horizon:
@@ -117,8 +137,7 @@ class ColumnNumericValue(NumpyNumericalValue):
 
     @staticmethod
     def from_json(dict):
-        dict['value'] = np.ndarray(dict['value'])
-        MatrixNumericalValue(**dict)
+        pass  # not used. Deserialization is done by study elements themself
 
 
 class NumericalValueFactory:

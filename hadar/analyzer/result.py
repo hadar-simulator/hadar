@@ -482,21 +482,40 @@ class ResultAnalyzer:
         """
         return NetworkFluentAPISelector([NetworkIndex(index=name)], self)
 
-    def get_elements_inside(self, node: str, network: str = 'default'):
+    def get_elements_inside(self, node: str = None, network: str = None):
         """
         Get numbers of elements by node.
 
-        :param network: network name
-        :param node: node name
+        :param node: node name. None by default to ask whole network.
+        :param network: network name, 'default' as default if node is provided or None to ask whole network.
         :return: (nb of consumptions, nb of productions, nb of storages, nb of links (export), nb of converters (export), nb of converters (import)
         """
+        size = np.zeros(6)
+        # Compute cost over study
+        if network is None and node is None:
+            for network in self.study.networks.keys():
+                size += self.get_elements_inside(network=network)
+            return size
+
+        # Compute cost over network
+        if network and node is None:
+            for node in self.study.networks[network].nodes.keys():
+                size += self.get_elements_inside(network=network, node=node)
+            return size
+
+        # If node is provided but no network set network as 'default'
+        if node and network is None:
+            network = 'default'
+
         n = self.study.networks[network].nodes[node]
-        return len(n.consumptions), \
-               len(n.productions), \
-               len(n.storages), \
-               len(n.links), \
-               sum((network, node) in conv.src_ratios for conv in self.study.converters.values()), \
-               sum((network == conv.dest_network) and (node == conv.dest_node) for conv in self.study.converters.values())
+        return np.array([
+            len(n.consumptions),
+            len(n.productions),
+            len(n.storages),
+            len(n.links),
+            sum((network, node) in conv.src_ratios for conv in self.study.converters.values()),
+            sum((network == conv.dest_network) and (node == conv.dest_node) for conv in self.study.converters.values())
+                         ])
 
     def get_balance(self, node: str, network: str = 'default') -> np.ndarray:
         """
@@ -519,39 +538,40 @@ class ResultAnalyzer:
             balance += exp['used'].values.reshape(self.nb_scn, self.horizon)
         return balance
 
-    def get_cost(self, node: str, network: str = 'default') -> np.ndarray:
+    def get_cost(self, node: str = None, network: str = None) -> np.ndarray:
         """
-        Compute adequacy cost on a node.
+        Compute adequacy cost on a node, network or whole study.
 
-        :param node: node name
-        :param network: network name, 'default' as default
+        :param node: node name. None by default to ask whole network.
+        :param network: network name, 'default' as default if node is provided or None to ask whole network.
         :return: matrix (scn, time)
         """
         cost = np.zeros((self.nb_scn, self.horizon))
         c, p, s, l, _, v = self.get_elements_inside(node, network)
+        network = 'default' if node and network is None else network
         if c:
             cons = self.network(network).node(node).scn().time().consumption()
-            cost += ((cons['asked'] - cons['given']) * cons['cost']).groupby(axis=0, level=(0, 1)) \
+            cost += ((cons['asked'] - cons['given']) * cons['cost']).groupby(axis=0, level=('scn', 't')) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if p:
             prod = self.network(network).node(node).scn().time().production()
-            cost += (prod['used'] * prod['cost']).groupby(axis=0, level=(0, 1)) \
+            cost += (prod['used'] * prod['cost']).groupby(axis=0, level=('scn', 't')) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if s:
             stor = self.network(network).node(node).scn().time().storage()
-            cost += (stor['capacity'] * stor['cost']).groupby(axis=0, level=(0, 1)) \
+            cost += (stor['capacity'] * stor['cost']).groupby(axis=0, level=('scn', 't')) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if l:
             link = self.network(network).node(node).scn().time().link()
-            cost += (link['used'] * link['cost']).groupby(axis=0, level=(0, 1)) \
+            cost += (link['used'] * link['cost']).groupby(axis=0, level=('scn', 't')) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         if v:
             conv = self.network(network).node(node).scn().time().from_converter()
-            cost += (conv['flow'] * conv['cost']).groupby(axis=0, level=(0, 1)) \
+            cost += (conv['flow'] * conv['cost']).groupby(axis=0, level=('scn', 't')) \
                 .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
 
         return cost

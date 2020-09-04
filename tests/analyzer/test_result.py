@@ -105,8 +105,8 @@ class TestConsumptionAnalyzer(unittest.TestCase):
 
     def test_get_elements_inside(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        self.assertEqual((2, 0, 0, 0, 0, 0), agg.get_elements_inside('a'))
-        self.assertEqual((1, 0, 0, 0, 0, 0), agg.get_elements_inside('b'))
+        np.testing.assert_array_equal((2, 0, 0, 0, 0, 0), agg.get_elements_inside('a'))
+        np.testing.assert_array_equal((1, 0, 0, 0, 0, 0), agg.get_elements_inside('b'))
 
 
 class TestProductionAnalyzer(unittest.TestCase):
@@ -163,8 +163,8 @@ class TestProductionAnalyzer(unittest.TestCase):
 
     def test_get_elements_inside(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        self.assertEqual((0, 1, 0, 0, 0, 0), agg.get_elements_inside('a'))
-        self.assertEqual((0, 2, 0, 0, 0, 0), agg.get_elements_inside('b'))
+        np.testing.assert_array_equal((0, 1, 0, 0, 0, 0), agg.get_elements_inside('a'))
+        np.testing.assert_array_equal((0, 2, 0, 0, 0, 0), agg.get_elements_inside('b'))
 
 
 class TestStorageAnalyzer(unittest.TestCase):
@@ -225,7 +225,7 @@ class TestStorageAnalyzer(unittest.TestCase):
 
     def test_get_elements_inside(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        self.assertEqual((0, 0, 1, 0, 0, 0), agg.get_elements_inside('b'))
+        np.testing.assert_array_equal((0, 0, 1, 0, 0, 0), agg.get_elements_inside('b'))
 
 
 class TestLinkAnalyzer(unittest.TestCase):
@@ -286,7 +286,7 @@ class TestLinkAnalyzer(unittest.TestCase):
 
     def test_get_elements_inside(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        self.assertEqual((0, 0, 0, 2, 0, 0), agg.get_elements_inside('a'))
+        np.testing.assert_array_equal((0, 0, 0, 2, 0, 0), agg.get_elements_inside('a'))
 
 
 class TestConverterAnalyzer(unittest.TestCase):
@@ -361,8 +361,8 @@ class TestConverterAnalyzer(unittest.TestCase):
 
     def test_get_elements_inside(self):
         agg = ResultAnalyzer(study=self.study, result=self.result)
-        self.assertEqual((0, 0, 0, 0, 1, 0), agg.get_elements_inside('a'))
-        self.assertEqual((0, 0, 0, 0, 0, 1), agg.get_elements_inside('a', network='elec'))
+        np.testing.assert_array_equal((0, 0, 0, 0, 1, 0), agg.get_elements_inside('a'))
+        np.testing.assert_array_equal((0, 0, 0, 0, 0, 1), agg.get_elements_inside('a', network='elec'))
 
 
 class TestAnalyzer(unittest.TestCase):

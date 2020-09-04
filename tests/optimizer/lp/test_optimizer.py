@@ -6,7 +6,7 @@
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 import pickle
 import unittest
-from unittest.mock import MagicMock, call, ANY
+from unittest.mock import MagicMock, call, ANY, Mock
 
 from hadar.optimizer.input import Study, Consumption
 from hadar.optimizer.lp.domain import LPConsumption, LPProduction, LPLink, LPNode, SerializableVariable, LPStorage, \
@@ -243,12 +243,12 @@ class TestSolve(unittest.TestCase):
         def side_effect(network, node, t, scn):
             return var_node if network == 'default' and node == 'a' else empty_node
         in_mapper = InputMapper(solver=solver, study=study)
-        in_mapper.get_node_var = MagicMock(side_effect=side_effect)
+        in_mapper.get_node_var = Mock(side_effect=side_effect)
 
         exp_var_conv = LPConverter(name='conv', src_ratios={('default', 'a'): .5}, max=10, cost=1,
                                            var_flow_src={('default', 'a'): MockNumVar(0, 10, 'conv src')},
                                            dest_network='gas', dest_node='b', var_flow_dest=MockNumVar(0, 10, 'conv dest'))
-        in_mapper.get_conv_var = MagicMock(return_value=exp_var_conv)
+        in_mapper.get_conv_var = Mock(return_value=exp_var_conv)
 
         # Expected
         in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, 'load')))
