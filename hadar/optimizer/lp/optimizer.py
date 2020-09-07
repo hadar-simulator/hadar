@@ -8,6 +8,7 @@
 import logging
 import multiprocessing
 import pickle
+import time
 from typing import List
 
 from ortools.linear_solver.pywraplp import Solver, Constraint
@@ -15,7 +16,7 @@ from ortools.linear_solver.pywraplp import Solver, Constraint
 from hadar.optimizer.domain.input import Study
 from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPLink, LPStorage, LPTimeStep, LPConverter
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
-from hadar.optimizer.domain.output import Result
+from hadar.optimizer.domain.output import Result, Benchmark
 
 logger = logging.getLogger(__name__)
 
@@ -284,6 +285,7 @@ def _solve_batch(params) -> bytes:
     , mock adequacy, mock input mapper) only for test purpose.
     :return: [t: {name: LPNode, ...},  ...]
     """
+    start = time.time()
     if len(params) == 2:  # Runtime
         study, i_scn = params
 
@@ -325,17 +327,20 @@ def _solve_batch(params) -> bytes:
     storage.build()
     mix.build()
 
+    problem_build = time.time()
+
     logger.info('Problem build. Start solver')
     solver.EnableOutput()
     solver.Solve()
 
+    problem_solved = time.time()
     logger.info('Solver finish cost=%d', solver.Objective().Value())
     logger.debug(solver.ExportModelAsLpFormat(False).replace('\\', '').replace(',_', ','))
 
     # When multiprocessing handle response and serialize it with pickle,
     # it's occur that ortools variables seem already erased.
     # To fix this situation, serialization is handle inside 'job scope'
-    return pickle.dumps(variables)
+    return pickle.dumps((variables, problem_build - start, problem_solved - start))
 
 
 def solve_lp(study: Study, out_mapper=None) -> Result:
@@ -346,21 +351,33 @@ def solve_lp(study: Study, out_mapper=None) -> Result:
     :param out_mapper: use only for test purpose to inject mock. Keep None as default.
     :return: Result object with optimal solution
     """
+    start = time.time()
+    benchmark = Benchmark()
+
     out_mapper = out_mapper or OutputMapper(study)
 
     pool = multiprocessing.Pool()
-    byte = pool.map(_solve_batch, ((study, i_scn) for i_scn in range(study.nb_scn)))
-    variables = [pickle.loads(b) for b in byte]
+    serialized_out = pool.map(_solve_batch, ((study, i_scn) for i_scn in range(study.nb_scn)))
 
+    compute_finished = time.time()
     for scn in range(0, study.nb_scn):
+        variables, modeler, solver = pickle.loads(serialized_out[scn])
+        benchmark.modeler.append(modeler)
+        benchmark.solver.append(solver)
+
         for t in range(0, study.horizon):
             # Set node elements
             for name_network, network in study.networks.items():
                 for name_node in network.nodes.keys():
                     out_mapper.set_node_var(network=name_network, node=name_node, t=t, scn=scn,
-                                            vars=variables[scn][t].networks[name_network].nodes[name_node])
+                                            vars=variables[t].networks[name_network].nodes[name_node])
             # Set converters
             for name_conv in study.converters:
-                out_mapper.set_converter_var(name=name_conv, t=t, scn=scn, vars=variables[scn][t].converters[name_conv])
+                out_mapper.set_converter_var(name=name_conv, t=t, scn=scn, vars=variables[t].converters[name_conv])
 
-    return out_mapper.get_result()
+    benchmark.total = time.time() - start
+    benchmark.mapper = time.time() - compute_finished
+
+    res = out_mapper.get_result()
+    res.benchmark = benchmark
+    return res

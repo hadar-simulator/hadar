@@ -31,7 +31,7 @@ class OutputConsumption(JSON):
 
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
         return OutputConsumption(**dict)
 
 
@@ -50,7 +50,7 @@ class OutputProduction(JSON):
         self.quantity = np.array(quantity)
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
         return OutputProduction(**dict)
 
 
@@ -74,7 +74,7 @@ class OutputStorage(JSON):
         self.flow_out = np.array(flow_out)
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
         return OutputStorage(**dict)
 
 
@@ -93,7 +93,7 @@ class OutputLink(JSON):
         self.quantity = np.array(quantity)
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
         return OutputLink(**dict)
 
 
@@ -123,7 +123,7 @@ class OutputConverter(JSON):
         return dict
 
     @staticmethod
-    def from_json(dict: dict):
+    def from_json(dict: dict, factory=None):
         # When deserialize, we need to split key string of src_network.
         # JSON doesn't accept tuple as key, so two string was joined for serialization
         # Ex: 'elec::a' -> ('elec', 'a')
@@ -171,7 +171,7 @@ class OutputNode(JSON):
         return output
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
         dict['consumptions'] = [OutputConsumption.from_json(v) for v in dict['consumptions']]
         dict['productions'] = [OutputProduction.from_json(v) for v in dict['productions']]
         dict['storages'] = [OutputStorage.from_json(v) for v in dict['storages']]
@@ -192,25 +192,41 @@ class OutputNetwork(JSON):
         self.nodes = nodes
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
         dict['nodes'] = {k: OutputNode.from_json(v) for k, v in dict['nodes'].items()}
         return OutputNetwork(**dict)
+
+
+class Benchmark(JSON):
+    def __init__(self, modeler: List[int] = None, solver: List[int] = None, mapper: int = 0, total: int = 0):
+        self.modeler = modeler or []
+        self.solver = solver or []
+        self.mapper = mapper
+        self.total = total
+
+    @staticmethod
+    def from_json(dict, factory=None):
+        return Benchmark(**dict)
 
 
 class Result(JSON):
     """
     Result of study
     """
-    def __init__(self, networks: Dict[str, OutputNetwork], converters: Dict[str, OutputConverter]):
+    def __init__(self, networks: Dict[str, OutputNetwork],
+                 converters: Dict[str, OutputConverter],
+                 benchmark: Benchmark = None):
         """
         Create result
         :param networks: list of networks present in study
         """
         self.networks = networks
         self.converters = converters
+        self.benchmark = benchmark or Benchmark()
 
 
     @staticmethod
-    def from_json(dict):
+    def from_json(dict, factory=None):
         return Result(networks={k: OutputNetwork.from_json(v) for k, v in dict['networks'].items()},
-                      converters={k: OutputConverter.from_json(v) for k, v in dict['converters'].items()})
+                      converters={k: OutputConverter.from_json(v) for k, v in dict['converters'].items()},
+                      benchmark=Benchmark.from_json(dict['benchmark']))
