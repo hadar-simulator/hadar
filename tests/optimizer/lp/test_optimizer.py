@@ -264,8 +264,10 @@ class TestSolve(unittest.TestCase):
 
         # Test
         res = _solve_batch((study, 0, solver, objective, adequacy, storage, mix, in_mapper))
-        res = pickle.loads(res)
+        res, t_mod, t_sol = pickle.loads(res)
         self.assertEqual([expected], res)
+        self.assertTrue(t_mod > 0)
+        self.assertTrue(t_sol > 0)
 
         in_mapper.get_node_var.assert_has_calls([call(network='default', node='a', t=0, scn=0),
                                                  call(network='gas', node='b', t=0, scn=0)])

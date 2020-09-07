@@ -385,6 +385,5 @@ class TestOptimizer(unittest.TestCase):
         converter_expected = OutputConverter(name='conv', flow_src={('gas', 'b'): [[12.5]], ('coat', 'c'): [[20]]}, flow_dest=[[10]])
 
         res = self.optimizer.solve(study)
-        print(res.benchmark)
 
         assert_result(self, Result(networks=networks_expected, converters={'conv': converter_expected}), res)
