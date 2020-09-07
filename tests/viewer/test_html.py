@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 from plotly.offline.offline import plot
 
 from hadar.analyzer.result import ResultAnalyzer
-from hadar.optimizer.input import Study, Production, Consumption
+from hadar.optimizer.domain.input import Study
 from hadar.optimizer.optimizer import LPOptimizer
 from hadar.viewer.html import HTMLPlotting
 

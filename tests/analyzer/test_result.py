@@ -12,8 +12,8 @@ import pandas as pd
 
 from hadar import LPOptimizer
 from hadar.analyzer.result import Index, ResultAnalyzer, IntIndex
-from hadar.optimizer.input import Production, Consumption, Study
-from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result, OutputNetwork, \
+from hadar.optimizer.domain.input import Study
+from hadar.optimizer.domain.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result, OutputNetwork, \
     OutputStorage, OutputConverter
 
 

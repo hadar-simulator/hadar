@@ -12,8 +12,8 @@ import requests
 from progress.bar import Bar
 from progress.spinner import Spinner
 
-from hadar.optimizer.input import Study
-from hadar.optimizer.output import Result
+from hadar.optimizer.domain.input import Study
+from hadar.optimizer.domain.output import Result
 
 logger = logging.getLogger(__name__)
 

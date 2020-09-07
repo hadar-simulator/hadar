@@ -7,7 +7,7 @@
 
 import numpy as np
 
-from hadar.optimizer.output import Result
+from hadar.optimizer.domain.output import Result
 
 
 def assert_result(self, expected: Result, result: Result):

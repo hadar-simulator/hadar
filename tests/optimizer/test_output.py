@@ -7,7 +7,7 @@
 import json
 import unittest
 
-from hadar.optimizer.output import *
+from hadar.optimizer.domain.output import *
 
 
 class TestResult(unittest.TestCase):

@@ -11,8 +11,8 @@ from typing import TypeVar, List, Generic, Type
 import numpy as np
 import pandas as pd
 
-from hadar.optimizer.input import Study
-from hadar.optimizer.output import Result
+from hadar.optimizer.domain.input import Study
+from hadar.optimizer.domain.output import Result
 
 __all__ = ['ResultAnalyzer', 'NetworkFluentAPISelector']
 

@@ -8,7 +8,7 @@
 import unittest
 import numpy as np
 
-from hadar.optimizer.numeric import NumericalValueFactory, ScalarNumericalValue, MatrixNumericalValue, RowNumericValue, ColumnNumericValue
+from hadar.optimizer.domain.numeric import NumericalValueFactory, ScalarNumericalValue, MatrixNumericalValue, RowNumericValue, ColumnNumericValue
 
 
 class TestNumericalValue(unittest.TestCase):

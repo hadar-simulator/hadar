@@ -9,7 +9,7 @@ from typing import Union, List, Dict, Tuple
 
 import numpy as np
 
-from hadar.optimizer.input import InputNode, JSON
+from hadar.optimizer.domain.input import InputNode, JSON
 
 __all__ = ['OutputProduction', 'OutputNode', 'OutputStorage', 'OutputLink', 'OutputConsumption', 'OutputNetwork',
            'OutputConverter', 'Result']

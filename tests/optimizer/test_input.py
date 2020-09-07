@@ -7,11 +7,8 @@
 import json
 import unittest
 
-import numpy as np
-
-from hadar.optimizer.input import Study, Consumption, Production, Link, Storage, Converter
-from hadar.optimizer.numeric import NumericalValueFactory
-from tests.utils import assert_result
+from hadar.optimizer.domain.input import Study, Consumption, Production, Link, Storage, Converter
+from hadar.optimizer.domain.numeric import NumericalValueFactory
 
 
 class TestStudy(unittest.TestCase):

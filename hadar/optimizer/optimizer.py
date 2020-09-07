@@ -7,9 +7,9 @@
 
 from abc import ABC, abstractmethod
 
-from hadar.optimizer.input import Study
+from hadar.optimizer.domain.input import Study
 from hadar.optimizer.lp.optimizer import solve_lp
-from hadar.optimizer.output import Result
+from hadar.optimizer.domain.output import Result
 from hadar.optimizer.remote.optimizer import solve_remote
 
 __all__ = ['LPOptimizer', 'RemoteOptimizer']

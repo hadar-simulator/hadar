@@ -8,7 +8,7 @@ from typing import List, Union, Dict, Tuple
 
 from ortools.linear_solver.pywraplp import Variable
 
-from hadar.optimizer.input import Study
+from hadar.optimizer.domain.input import Study
 from hadar.optimizer.utils import DTO
 
 

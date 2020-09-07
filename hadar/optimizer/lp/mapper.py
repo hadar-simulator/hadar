@@ -7,9 +7,9 @@
 import numpy as np
 from ortools.linear_solver.pywraplp import Solver
 
-from hadar.optimizer.input import Study, InputNetwork
+from hadar.optimizer.domain.input import Study, InputNetwork
 from hadar.optimizer.lp.domain import LPLink, LPConsumption, LPNode, LPProduction, LPStorage, LPConverter
-from hadar.optimizer.output import OutputNode, Result, OutputNetwork, OutputConverter
+from hadar.optimizer.domain.output import OutputNode, Result, OutputNetwork, OutputConverter
 
 
 class InputMapper:

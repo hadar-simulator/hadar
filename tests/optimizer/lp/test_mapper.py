@@ -7,10 +7,10 @@
 
 import unittest
 
-from hadar.optimizer.input import Production, Consumption, Study
-from hadar.optimizer.lp.domain import LPLink, LPConsumption, LPProduction, LPNode, LPStorage, LPConverter, LPNetwork
+from hadar.optimizer.domain.input import Study
+from hadar.optimizer.lp.domain import LPLink, LPConsumption, LPProduction, LPNode, LPStorage, LPConverter
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
-from hadar.optimizer.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result, OutputNetwork, \
+from hadar.optimizer.domain.output import OutputConsumption, OutputLink, OutputNode, OutputProduction, Result, OutputNetwork, \
     OutputStorage, OutputConverter
 from tests.optimizer.lp.ortools_mock import MockSolver, MockNumVar
 from tests.utils import assert_result

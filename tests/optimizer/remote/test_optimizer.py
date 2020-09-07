@@ -10,8 +10,8 @@ import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from hadar import RemoteOptimizer
-from hadar.optimizer.input import Study
-from hadar.optimizer.output import Result, OutputConsumption, OutputNode, OutputNetwork
+from hadar.optimizer.domain.input import Study
+from hadar.optimizer.domain.output import Result, OutputConsumption, OutputNode, OutputNetwork
 from hadar.optimizer.remote.optimizer import check_code
 
 

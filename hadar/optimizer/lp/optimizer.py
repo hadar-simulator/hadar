@@ -12,10 +12,10 @@ from typing import List
 
 from ortools.linear_solver.pywraplp import Solver, Constraint
 
-from hadar.optimizer.input import Study
+from hadar.optimizer.domain.input import Study
 from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPLink, LPStorage, LPTimeStep, LPConverter
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
-from hadar.optimizer.output import Result
+from hadar.optimizer.domain.output import Result
 
 logger = logging.getLogger(__name__)
 

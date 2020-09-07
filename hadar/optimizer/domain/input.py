@@ -14,7 +14,7 @@ __all__ = ['Consumption', 'Link', 'Production', 'Storage', 'Converter', 'InputNe
            'NetworkFluentAPISelector', 'NodeFluentAPISelector']
 
 import hadar
-from hadar.optimizer.numeric import NumericalValue, NumericalValueFactory
+from hadar.optimizer.domain.numeric import NumericalValue, NumericalValueFactory
 from hadar.optimizer.utils import JSON
 
 NumericalValueType: Type = Union[List, np.ndarray, float]

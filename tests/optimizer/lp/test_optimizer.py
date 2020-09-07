@@ -8,14 +8,14 @@ import pickle
 import unittest
 from unittest.mock import MagicMock, call, ANY, Mock
 
-from hadar.optimizer.input import Study, Consumption
+from hadar.optimizer.domain.input import Study
 from hadar.optimizer.lp.domain import LPConsumption, LPProduction, LPLink, LPNode, SerializableVariable, LPStorage, \
     LPConverter, LPTimeStep, LPNetwork
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
 from hadar.optimizer.lp.optimizer import ObjectiveBuilder, AdequacyBuilder, _solve_batch, StorageBuilder, \
     ConverterMixBuilder
 from hadar.optimizer.lp.optimizer import solve_lp
-from hadar.optimizer.output import OutputConsumption, OutputNode, Result, OutputNetwork, OutputConverter
+from hadar.optimizer.domain.output import OutputConsumption, OutputNode, Result, OutputNetwork, OutputConverter
 from tests.optimizer.lp.ortools_mock import MockConstraint, MockNumVar, MockObjective, MockSolver
 
 
