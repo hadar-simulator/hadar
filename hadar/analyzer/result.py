@@ -421,7 +421,7 @@ class ResultAnalyzer:
         """
         names = [i.column for i in indexes]
         mask = reduce(lambda a, b: a & b, (i.filter(df) for i in indexes))
-        pt = pd.pivot_table(data=df[mask], index=names, aggfunc=lambda x: x.iloc[0])
+        pt = pd.pivot_table(data=df[mask], index=names)
 
         return ResultAnalyzer._remove_useless_index_level(df=pt, indexes=indexes)
 

@@ -4,7 +4,7 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-
+import cProfile
 import logging
 import multiprocessing
 import pickle
@@ -341,6 +341,17 @@ def _solve_batch(params) -> bytes:
     # it's occur that ortools variables seem already erased.
     # To fix this situation, serialization is handle inside 'job scope'
     return pickle.dumps((variables, problem_build - start, problem_solved - start))
+
+
+def _wrap_profiler(param):
+    """
+    Wrapper to start cprofile on _solve_batch.
+    DON'T USE IN PRODUCTION.
+    To use it, in solve_lp >> ... pool.map(_wrap_profiler, ...)
+    :param param:
+    :return:
+    """
+    return cProfile.runctx('_solve_batch(param)', globals(), locals(), 'prof%d.prof' % param[1])
 
 
 def solve_lp(study: Study, out_mapper=None) -> Result:
