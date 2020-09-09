@@ -113,23 +113,23 @@ class OutputMapper:
         """
         out_node = self.networks[network].nodes[node]
         for i in range(len(vars.consumptions)):
-            out_node.consumptions[i].quantity[scn, t] = vars.consumptions[i].quantity - vars.consumptions[i].variable.solution_value()
+            out_node.consumptions[i].quantity[scn, t] = vars.consumptions[i].quantity - vars.consumptions[i].variable
 
         for i in range(len(vars.productions)):
-            out_node.productions[i].quantity[scn, t] = vars.productions[i].variable.solution_value()
+            out_node.productions[i].quantity[scn, t] = vars.productions[i].variable
 
         for i in range(len(vars.storages)):
-            out_node.storages[i].capacity[scn, t] = vars.storages[i].var_capacity.solution_value()
-            out_node.storages[i].flow_in[scn, t] = vars.storages[i].var_flow_in.solution_value()
-            out_node.storages[i].flow_out[scn, t] = vars.storages[i].var_flow_out.solution_value()
+            out_node.storages[i].capacity[scn, t] = vars.storages[i].var_capacity
+            out_node.storages[i].flow_in[scn, t] = vars.storages[i].var_flow_in
+            out_node.storages[i].flow_out[scn, t] = vars.storages[i].var_flow_out
 
         for i in range(len(vars.links)):
-            self.networks[network].nodes[node].links[i].quantity[scn, t] = vars.links[i].variable.solution_value()
+            self.networks[network].nodes[node].links[i].quantity[scn, t] = vars.links[i].variable
 
     def set_converter_var(self, name: str, t: int, scn: int, vars: LPConverter):
         for src, var in vars.var_flow_src.items():
-            self.converters[name].flow_src[src][scn, t] = var.solution_value()
-        self.converters[name].flow_dest[scn, t] = vars.var_flow_dest.solution_value()
+            self.converters[name].flow_src[src][scn, t] = var
+        self.converters[name].flow_dest[scn, t] = vars.var_flow_dest
 
     def get_result(self) -> Result:
         """

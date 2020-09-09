@@ -31,19 +31,23 @@ class JSON(DTO, ABC):
     """
 
     @staticmethod
-    def _convert(value):
+    def convert(value):
         if isinstance(value, JSON):
             return value.to_json()
         elif isinstance(value, dict):
-            return {k: JSON._convert(v) for k, v in value.items()}
+            return {k: JSON.convert(v) for k, v in value.items()}
         elif isinstance(value, list) or isinstance(value, tuple):
-            return [JSON._convert(v) for v in value]
+            return [JSON.convert(v) for v in value]
+        elif isinstance(value, np.int64):
+            return int(value)
+        elif isinstance(value, np.float64):
+            return float(value)
         elif isinstance(value, np.ndarray):
             return value.tolist()
         return value
 
     def to_json(self):
-        return {k: JSON._convert(v) for k, v in self.__dict__.items()}
+        return {k: JSON.convert(v) for k, v in self.__dict__.items()}
 
     @staticmethod
     @abstractmethod

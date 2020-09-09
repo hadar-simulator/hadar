@@ -162,11 +162,11 @@ class TestOutputMapper(unittest.TestCase):
 
         mapper = OutputMapper(study=study)
 
-        out_cons_0 = [LPConsumption(name='load', cost=.01, quantity=10, variable=MockNumVar(0, 5, ''))]
+        out_cons_0 = [LPConsumption(name='load', cost=.01, quantity=10, variable=5)]
         mapper.set_node_var(network='default', node='a', t=0, scn=0,
                             vars=LPNode(consumptions=out_cons_0, productions=[], storages=[], links=[]))
 
-        out_cons_1 = [LPConsumption(name='load', cost=.2, quantity=20, variable=MockNumVar(0, 5, ''))]
+        out_cons_1 = [LPConsumption(name='load', cost=.2, quantity=20, variable=5)]
         mapper.set_node_var(network='default', node='a', t=1, scn=1,
                             vars=LPNode(consumptions=out_cons_1, productions=[], storages=[], links=[]))
 
@@ -187,11 +187,11 @@ class TestOutputMapper(unittest.TestCase):
 
         mapper = OutputMapper(study=study)
 
-        out_prod_0 = [LPProduction(name='nuclear', cost=.12, quantity=12, variable=MockNumVar(0, 12, ''))]
+        out_prod_0 = [LPProduction(name='nuclear', cost=.12, quantity=12, variable=12)]
         mapper.set_node_var(network='default', node='a', t=0, scn=0,
                             vars=LPNode(consumptions=[], productions=out_prod_0, storages=[], links=[]))
 
-        out_prod_1 = [LPProduction(name='nuclear', cost=.21, quantity=2, variable=MockNumVar(0, 112, ''))]
+        out_prod_1 = [LPProduction(name='nuclear', cost=.21, quantity=2, variable=112)]
         mapper.set_node_var(network='default', node='a', t=1, scn=1,
                             vars=LPNode(consumptions=[], productions=out_prod_1, storages=[], links=[]))
 
@@ -213,16 +213,12 @@ class TestOutputMapper(unittest.TestCase):
         mapper = OutputMapper(study=study)
 
         out_stor_0 = [LPStorage(name='cell', capacity=10, flow_in=1, flow_out=1, init_capacity=2, eff=.9, cost=1,
-                                var_capacity=MockNumVar(0, 5, ''),
-                                var_flow_in=MockNumVar(0, 2, ''),
-                                var_flow_out=MockNumVar(0, 4, ''))]
+                                var_capacity=5, var_flow_in=2, var_flow_out=4)]
         mapper.set_node_var(network='default', node='a', t=0, scn=0,
                             vars=LPNode(consumptions=[], productions=[], storages=out_stor_0, links=[]))
 
         out_stor_1 = [LPStorage(name='cell', capacity=10, flow_in=1, flow_out=1, init_capacity=2, eff=.9, cost=1,
-                                var_capacity=MockNumVar(0, 55, ''),
-                                var_flow_in=MockNumVar(0, 22, ''),
-                                var_flow_out=MockNumVar(0, 44, ''))]
+                                var_capacity=55, var_flow_in=22, var_flow_out=44)]
         mapper.set_node_var(network='default', node='a', t=1, scn=1,
                             vars=LPNode(consumptions=[], productions=[], storages=out_stor_1, links=[]))
 
@@ -244,11 +240,11 @@ class TestOutputMapper(unittest.TestCase):
 
         mapper = OutputMapper(study=study)
 
-        out_link_0 = [LPLink(src='a', dest='be', cost=.01, quantity=10, variable=MockNumVar(0, 8, ''))]
+        out_link_0 = [LPLink(src='a', dest='be', cost=.01, quantity=10, variable=8)]
         mapper.set_node_var(network='default', node='a', t=0, scn=0,
                             vars=LPNode(consumptions=[], productions=[], storages=[], links=out_link_0))
 
-        out_link_1 = [LPLink(src='a', dest='be', cost=.02, quantity=10, variable=MockNumVar(0, 18, ''))]
+        out_link_1 = [LPLink(src='a', dest='be', cost=.02, quantity=10, variable=18)]
         mapper.set_node_var(network='default', node='a', t=1, scn=1,
                             vars=LPNode(consumptions=[], productions=[], storages=[], links=out_link_1))
 
@@ -276,9 +272,7 @@ class TestOutputMapper(unittest.TestCase):
         blank_node = OutputNode(consumptions=[], productions=[], storages=[], links=[])
         mapper = OutputMapper(study=study)
         vars = LPConverter(name='conv', src_ratios={('gas', 'a'): 0.5}, dest_network='default', dest_node='b',
-                    cost=0, max=100,
-                    var_flow_dest=MockNumVar(0, 100, 'flow_dest conv %s'),
-                    var_flow_src={('gas', 'a'): MockNumVar(0, 200, 'flow_src conv gas:a %s')})
+                           cost=0, max=100, var_flow_dest=100, var_flow_src={('gas', 'a'): 200})
         mapper.set_converter_var(name='conv', t=0, scn=0, vars=vars)
 
         res = mapper.get_result()

@@ -155,7 +155,7 @@ class Converter(JSON):
         # Therefore when serialized we join these two strings with '::' to create on string as key
         # Ex: ('elec', 'a') --> 'elec::a'
         dict['src_ratios'] = {'::'.join(k): v.to_json() for k, v in self.src_ratios.items()}
-        return {k: JSON._convert(v) for k, v in dict.items()}
+        return {k: JSON.convert(v) for k, v in dict.items()}
 
     @staticmethod
     def from_json(dict: dict, factory=None):
@@ -234,7 +234,7 @@ class Study(JSON):
 
     def to_json(self):
         # remove factory from serialization
-        return {k: JSON._convert(v) for k, v in self.__dict__.items() if k not in ['factory']}
+        return {k: JSON.convert(v) for k, v in self.__dict__.items() if k not in ['factory']}
 
 
     @staticmethod

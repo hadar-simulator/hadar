@@ -4,12 +4,13 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
-import pickle
 import unittest
 from unittest.mock import MagicMock, call, ANY, Mock
 
+import msgpack
+
 from hadar.optimizer.domain.input import Study
-from hadar.optimizer.lp.domain import LPConsumption, LPProduction, LPLink, LPNode, SerializableVariable, LPStorage, \
+from hadar.optimizer.lp.domain import LPConsumption, LPProduction, LPLink, LPNode, LPStorage, \
     LPConverter, LPTimeStep, LPNetwork
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
 from hadar.optimizer.lp.optimizer import ObjectiveBuilder, AdequacyBuilder, _solve_batch, StorageBuilder, \
@@ -251,12 +252,12 @@ class TestSolve(unittest.TestCase):
         in_mapper.get_conv_var = Mock(return_value=exp_var_conv)
 
         # Expected
-        in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=SerializableVariable(MockNumVar(0, 10, 'load')))
+        in_cons = LPConsumption(name='load', quantity=10, cost=10, variable=10)
         exp_var_node = LPNode(consumptions=[in_cons], productions=[], storages=[], links=[])
         exp_var_conv = LPConverter(name='conv', src_ratios={('default', 'a'): .5},
-                               var_flow_src={('default', 'a'): SerializableVariable(MockNumVar(0, 10, 'conv src'))},
-                               dest_network='gas', dest_node='b', max=10, cost=1,
-                               var_flow_dest=SerializableVariable(MockNumVar(0, 10, 'conv dest')))
+                                   var_flow_src={('default', 'a'): 10},
+                                   dest_network='gas', dest_node='b', max=10, cost=1,
+                                   var_flow_dest=10)
 
         expected = LPTimeStep(networks={'default': LPNetwork(nodes={'a': exp_var_node}),
                                         'gas': LPNetwork(nodes={'b': empty_node})},
@@ -264,8 +265,8 @@ class TestSolve(unittest.TestCase):
 
         # Test
         res = _solve_batch((study, 0, solver, objective, adequacy, storage, mix, in_mapper))
-        res, t_mod, t_sol = pickle.loads(res)
-        self.assertEqual([expected], res)
+        res, t_mod, t_sol = msgpack.unpackb(res,  use_list=False, raw=False)
+        self.assertEqual([expected], [LPTimeStep.from_json(r) for r in res])
         self.assertTrue(t_mod > 0)
         self.assertTrue(t_sol > 0)
 

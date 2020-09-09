@@ -7,16 +7,17 @@
 import cProfile
 import logging
 import multiprocessing
-import pickle
 import time
 from typing import List
 
+import msgpack
 from ortools.linear_solver.pywraplp import Solver, Constraint
 
 from hadar.optimizer.domain.input import Study
 from hadar.optimizer.lp.domain import LPNode, LPProduction, LPConsumption, LPLink, LPStorage, LPTimeStep, LPConverter
 from hadar.optimizer.lp.mapper import InputMapper, OutputMapper
 from hadar.optimizer.domain.output import Result, Benchmark
+from hadar.optimizer.utils import JSON
 
 logger = logging.getLogger(__name__)
 
@@ -340,7 +341,7 @@ def _solve_batch(params) -> bytes:
     # When multiprocessing handle response and serialize it with pickle,
     # it's occur that ortools variables seem already erased.
     # To fix this situation, serialization is handle inside 'job scope'
-    return pickle.dumps((variables, problem_build - start, problem_solved - start))
+    return msgpack.packb((JSON.convert(variables), problem_build - start, problem_solved - start), use_bin_type=True)
 
 
 def _wrap_profiler(param):
@@ -372,10 +373,11 @@ def solve_lp(study: Study, out_mapper=None) -> Result:
 
     compute_finished = time.time()
     for scn in range(0, study.nb_scn):
-        variables, modeler, solver = pickle.loads(serialized_out[scn])
+        variables, modeler, solver = msgpack.unpackb(serialized_out[scn], use_list=False, raw=False)
         benchmark.modeler.append(modeler)
         benchmark.solver.append(solver)
 
+        variables = [LPTimeStep.from_json(v) for v in variables]
         for t in range(0, study.horizon):
             # Set node elements
             for name_network, network in study.networks.items():
