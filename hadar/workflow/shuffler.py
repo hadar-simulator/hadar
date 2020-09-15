@@ -8,7 +8,7 @@ import multiprocessing
 
 import numpy as np
 import pandas as pd
-from numpy.random.mtrand import randint
+from numpy.random import randint
 
 from hadar.workflow.pipeline import Pipeline, TO_SHUFFLER, Stage
 

@@ -28,7 +28,6 @@ hadar.optimizer.lp.optimizer module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

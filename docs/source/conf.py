@@ -12,7 +12,16 @@
 #
 import os
 import sys
+from unittest.mock import Mock
+
 sys.path.insert(0, os.path.abspath('../..'))
+
+with open('../../requirements.txt') as f:
+    imports = f.read().split('\n') + ['numpy.random', 'ortools.linear_solver.pywraplp', 'progress.bar',
+                                      'progress.spinner', 'plotly.graph_objects', 'matplotlib.cm', 'requests.exceptions']
+    for i in imports:
+        sys.modules[i] = Mock()
+print(imports)
 
 import hadar
 
@@ -58,5 +67,3 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 nbsphinx_execute = 'never'
-
-autodoc_mock_imports = ['pandas', 'numpy', 'ortools', 'plotly', 'jupyter', 'matplotlib', 'requests', 'progress']
