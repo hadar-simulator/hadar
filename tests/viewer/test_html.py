@@ -149,8 +149,8 @@ class TestHTMLPlotting(unittest.TestCase):
         self.assert_fig_hash('32a6e175600822c833a9b7f3008aa35230b0b646', fig)
 
     def assert_fig_hash(self, expected: str, fig: go.Figure):
-        if sys.platform != 'darwin' or (ma, mi) != (3, 7):  # We only test graphics for MacOS, there are little change with other distrib
-            return self.assertTrue(True)
+        # if sys.platform != 'darwin' or (ma, mi) != (3, 7):  # We only test graphics for MacOS, there are little change with other distrib
+        #    return self.assertTrue(True)
 
         actual = hashlib.sha1(TestHTMLPlotting.get_html(fig)).hexdigest()
         if expected != actual:
