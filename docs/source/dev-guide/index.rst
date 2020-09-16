@@ -1,6 +1,8 @@
-=========
-Dev Guide
-=========
+.. _dev-guide:
+
+============
+Contributing
+============
 
 
 .. toctree::
