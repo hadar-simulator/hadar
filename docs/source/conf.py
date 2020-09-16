@@ -57,7 +57,8 @@ release = hadar.__version__
 extensions = [
     'sphinx_rtd_theme',
     'sphinx.ext.autodoc',
-    'nbsphinx'
+    'nbsphinx',
+    'IPython.sphinxext.ipython_console_highlighting'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

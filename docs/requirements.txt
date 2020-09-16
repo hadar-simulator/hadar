@@ -2,3 +2,5 @@ sphinx
 sphinx-autobuild
 pydata-sphinx-theme
 nbsphinx
+Pygments==2.6.1
+jupyter
