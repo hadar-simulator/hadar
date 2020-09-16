@@ -30,39 +30,28 @@ You are in the technical documentation.
 
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Architecture:
+   :maxdepth: 2
 
-   architecture/overview.rst
-   architecture/workflow.rst
-   architecture/optimizer.rst
-   architecture/analyzer.rst
-   architecture/viewer.rst
+   architecture/index.rst
+
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Mathematics:
+   :maxdepth: 2
 
-   mathematics/linear-model.rst
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Dev Guide:
-
-   dev-guide/repository.rst
-   dev-guide/contributing.rst
+   mathematics/index.rst
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Reference:
+   :maxdepth: 2
 
-   reference/hadar.workflow.rst
-   reference/hadar.optimizer.rst
-   reference/hadar.analyzer.rst
-   reference/hadar.viewer.rst
+   dev-guide/index.rst
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Legal Terms
+   :maxdepth: 2
+
+   reference/modules
+
+.. toctree::
+   :maxdepth: 2
 
    terms/terms.rst
+
