@@ -12,30 +12,9 @@
 #
 import os
 import sys
-from unittest.mock import Mock
 
 sys.path.insert(0, os.path.abspath('../..'))
 
-
-def remove_version(req: str):
-    """
-    Remove version in string like 'package==4.3.1' or 'package>=8.4.7'
-    :param req:
-    :return:
-    """
-    for sep in ['>=', '==']:
-        if sep in req:
-            return req.split(sep)[0]
-    return req
-
-
-with open('../../requirements.txt') as f:
-    imports = [remove_version(r) for r in f.read().split('\n')] +\
-              ['numpy.random', 'ortools.linear_solver.pywraplp', 'progress.bar', 'progress.spinner',
-               'plotly.graph_objects', 'matplotlib.cm', 'requests.exceptions']
-    for i in imports:
-        sys.modules[i] = Mock()
-print(imports)
 
 import hadar
 
