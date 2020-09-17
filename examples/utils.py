@@ -11,10 +11,10 @@ from typing import List
 
 import nbformat
 import os
-from nbconvert import HTMLExporter
+from nbconvert import RSTExporter
 from nbconvert.preprocessors import ExecutePreprocessor
 
-exporter = HTMLExporter()
+exporter = RSTExporter()
 ep = ExecutePreprocessor(timeout=600, kernel_name='python3', store_widget_state=True)
 
 
@@ -73,14 +73,14 @@ def to_export(nb: nbformat, name: str, export: str):
     :return: None
     """
     print('Exporting...', end=' ')
-    html, _ = exporter.from_notebook_node(nb)
+    rst, _ = exporter.from_notebook_node(nb)
 
     path = '%s/%s' % (export, name)
     if not os.path.exists(path):
         os.makedirs(path)
 
-    with open('%s/index.html' % path, 'w') as f:
-        f.write(html)
+    with open('%s/%s.rst' % (path, name), 'w') as f:
+        f.write(rst)
 
     print('OK', end=' ')
 
