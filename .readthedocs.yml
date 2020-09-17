@@ -1,6 +1,8 @@
 version: 2
 build:
   image: latest
+sphinx:
+  builder: html
 python:
   version: 3
   install:
