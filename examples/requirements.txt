@@ -3,4 +3,3 @@ pandas
 hadar
 plotly
 jupyter
-click

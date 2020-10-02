@@ -1,0 +1,6 @@
+-e requirements.txt
+jupyter
+click
+setuptools
+wheel
+twine
