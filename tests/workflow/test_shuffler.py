@@ -23,7 +23,7 @@ def range_sampler(low, high, size):
 
 class MockPipeline(Pipeline):
     def __init__(self, return_value):
-        Pipeline.__init__(self, stages=[ToShuffler('')])
+        Pipeline.__init__(self, stages=[ToShuffler("")])
         self.return_value = return_value
         self.input = None
 
@@ -44,13 +44,17 @@ class TestTimeline(unittest.TestCase):
         tl = Timeline(np.arange(0, 15).reshape(5, 3), sampler=range_sampler)
 
         # Expected
-        exp = np.array([[0, 1, 2],
-                        [3, 4, 5],
-                        [6, 7, 8],
-                        [9, 10, 11],
-                        [12, 13, 14],
-                        [0, 1, 2],
-                        [3, 4, 5]])
+        exp = np.array(
+            [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [9, 10, 11],
+                [12, 13, 14],
+                [0, 1, 2],
+                [3, 4, 5],
+            ]
+        )
 
         # Test & Verify
         res = tl.sample(7)
@@ -63,14 +67,19 @@ class TestTimelinePipeline(unittest.TestCase):
         i = pd.DataFrame()
 
         # Mock
-        o = pd.DataFrame({(0, TO_SHUFFLER): [1, 2, 3], (0, 'b'): [4, 5, 6],
-                          (1, TO_SHUFFLER): [10, 20, 30], (1, 'b'): [40, 50, 60]})
+        o = pd.DataFrame(
+            {
+                (0, TO_SHUFFLER): [1, 2, 3],
+                (0, "b"): [4, 5, 6],
+                (1, TO_SHUFFLER): [10, 20, 30],
+                (1, "b"): [40, 50, 60],
+            }
+        )
 
         mock_pipe = MockPipeline(return_value=o)
 
         # Expected
-        exp = np.array([[1, 2, 3],
-                        [10, 20, 30]])
+        exp = np.array([[1, 2, 3], [10, 20, 30]])
 
         # Test & Verify
         tl = TimelinePipeline(i, mock_pipe)
@@ -83,21 +92,27 @@ class TestShuffler(unittest.TestCase):
     def test_shuffle(self):
         # Input
         shuffler = Shuffler(sampler=range_sampler)
-        shuffler.add_data(name='solar', data=np.array([[1, 2, 3], [5, 6, 7]]))
+        shuffler.add_data(name="solar", data=np.array([[1, 2, 3], [5, 6, 7]]))
 
-        i = pd.DataFrame({(0, 'a'): [3, 4, 5], (1, 'a'): [7, 8, 9]})
+        i = pd.DataFrame({(0, "a"): [3, 4, 5], (1, "a"): [7, 8, 9]})
 
         # Mock
-        o = pd.DataFrame({(0, TO_SHUFFLER): [3, 4, 5],
-                          (1, TO_SHUFFLER): [7, 8, 9],
-                          (0, TO_SHUFFLER): [3, 4, 5],
-                          (1, TO_SHUFFLER): [7, 8, 9]})
+        o = pd.DataFrame(
+            {
+                (0, TO_SHUFFLER): [3, 4, 5],
+                (1, TO_SHUFFLER): [7, 8, 9],
+                (0, TO_SHUFFLER): [3, 4, 5],
+                (1, TO_SHUFFLER): [7, 8, 9],
+            }
+        )
         mock_pipe = MockPipeline(return_value=o)
-        shuffler.add_pipeline(name='load', data=i, pipeline=mock_pipe)
+        shuffler.add_pipeline(name="load", data=i, pipeline=mock_pipe)
 
         # Expected
-        exp = {'solar': np.array([[1, 2, 3], [5, 6, 7], [1, 2, 3]]),
-               'load': np.array([[3, 4, 5], [7, 8, 9], [3, 4, 5]])}
+        exp = {
+            "solar": np.array([[1, 2, 3], [5, 6, 7], [1, 2, 3]]),
+            "load": np.array([[3, 4, 5], [7, 8, 9], [3, 4, 5]]),
+        }
 
         # Test & Verify
         res = shuffler.shuffle(3)

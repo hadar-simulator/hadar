@@ -4,8 +4,8 @@ import hadar
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-with open('requirements.txt', 'r') as f:
-    dependencies = f.read().split('\n')
+with open("requirements.txt", "r") as f:
+    dependencies = f.read().split("\n")
 
 setuptools.setup(
     name="hadar",
@@ -23,5 +23,5 @@ setuptools.setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires=">=3.6",
 )

@@ -8,7 +8,13 @@
 import unittest
 import numpy as np
 
-from hadar.optimizer.domain.numeric import NumericalValueFactory, ScalarNumericalValue, MatrixNumericalValue, RowNumericValue, ColumnNumericValue
+from hadar.optimizer.domain.numeric import (
+    NumericalValueFactory,
+    ScalarNumericalValue,
+    MatrixNumericalValue,
+    RowNumericValue,
+    ColumnNumericValue,
+)
 
 
 class TestNumericalValue(unittest.TestCase):
@@ -49,4 +55,6 @@ class TestNumericalValue(unittest.TestCase):
         self.assertEqual(2, v[2, 3])
         self.assertRaises(IndexError, lambda: v[3, 1])
         self.assertRaises(IndexError, lambda: v[1, 5])
-        np.testing.assert_array_equal([0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2], v.flatten())
+        np.testing.assert_array_equal(
+            [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2], v.flatten()
+        )
