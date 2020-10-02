@@ -1,4 +1,4 @@
--e requirements.dev.txt
+-r requirements.dev.txt
 sphinx
 sphinx-autobuild
 pydata-sphinx-theme
