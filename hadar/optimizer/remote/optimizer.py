@@ -32,7 +32,7 @@ def check_code(code):
         raise IOError("Error has occurred on remote server")
 
 
-def solve_remote(study: Study, url: str, token: str = 'none') -> Result:
+def solve_remote(study: Study, url: str, token: str = "none") -> Result:
     """
     Send study to remote server.
 
@@ -42,35 +42,39 @@ def solve_remote(study: Study, url: str, token: str = 'none') -> Result:
     :return: result received from server
     """
     # Send study
-    resp = requests.post(url='%s/api/v1/study' % url, json=study.to_json(), params={'token': token})
+    resp = requests.post(
+        url="%s/api/v1/study" % url, json=study.to_json(), params={"token": token}
+    )
     check_code(resp.status_code)
 
     # Deserialize
     resp = resp.json()
-    id = resp['job']
+    id = resp["job"]
 
     Bar.check_tty = Spinner.check_tty = False
     Bar.file = Spinner.file = sys.stdout
-    bar = Bar('QUEUED', max=resp['progress'])
+    bar = Bar("QUEUED", max=resp["progress"])
     spinner = None
 
-    while resp['status'] in ['QUEUED', 'COMPUTING']:
-        resp = requests.get(url='%s/api/v1/result/%s' % (url, id), params={'token': token})
+    while resp["status"] in ["QUEUED", "COMPUTING"]:
+        resp = requests.get(
+            url="%s/api/v1/result/%s" % (url, id), params={"token": token}
+        )
         check_code(resp.status_code)
         resp = resp.json()
 
-        if resp['status'] == 'QUEUED':
-            bar.goto(resp['progress'])
+        if resp["status"] == "QUEUED":
+            bar.goto(resp["progress"])
 
-        if resp['status'] == 'COMPUTING':
+        if resp["status"] == "COMPUTING":
             if spinner is None:
                 bar.finish()
-                spinner = Spinner('COMPUTING           ')
+                spinner = Spinner("COMPUTING           ")
             spinner.next()
 
         sleep(0.5)
 
-    if resp['status'] == 'ERROR':
-        raise ServerError(resp['message'])
+    if resp["status"] == "ERROR":
+        raise ServerError(resp["message"])
 
-    return Result.from_json(resp['result'])
+    return Result.from_json(resp["result"])

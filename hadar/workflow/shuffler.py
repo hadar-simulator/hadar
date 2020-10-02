@@ -12,14 +12,15 @@ from numpy.random import randint
 
 from hadar.workflow.pipeline import Pipeline, TO_SHUFFLER, Stage
 
-__all__ = ['Shuffler', 'Timeline']
+__all__ = ["Shuffler", "Timeline"]
 
 
 class Timeline:
     """
     Manage data used to generate timeline. Perform sampling too.
     """
-    def __init__(self, data: np.ndarray = None, sampler = randint):
+
+    def __init__(self, data: np.ndarray = None, sampler=randint):
         """
         Instantiate.
 
@@ -55,7 +56,8 @@ class TimelinePipeline(Timeline):
     """
     Manage data timeline from pipeline generation.
     """
-    def __init__(self, data: pd.DataFrame, pipeline: Pipeline, sampler = randint):
+
+    def __init__(self, data: pd.DataFrame, pipeline: Pipeline, sampler=randint):
         """
         Instantiate.
 
@@ -97,6 +99,7 @@ class Shuffler:
     Receive all data sources like raw matrix or pipeline.
     Schedule pipeline generation and shuffle all timeline to create scenarios.
     """
+
     def __init__(self, sampler=randint):
         """
         Instantiate.
@@ -141,7 +144,7 @@ class Shuffler:
         """
         # Compute pipelines
         pool = multiprocessing.Pool()
-        res = pool.map(compute, ((tl, nb_scn, name) for name, tl in self.timelines.items()))
+        res = pool.map(
+            compute, ((tl, nb_scn, name) for name, tl in self.timelines.items())
+        )
         return dict(res)
-
-

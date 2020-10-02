@@ -12,6 +12,7 @@ class DTO:
     """
     Implement basic method for DTO objects
     """
+
     def __hash__(self):
         return hash(tuple(sorted(self.__dict__.items())))
 
@@ -19,7 +20,15 @@ class DTO:
         return isinstance(other, type(self)) and self.__dict__ == other.__dict__
 
     def __str__(self):
-        return "{}({})".format(type(self).__name__, ", ".join(["{}={}".format(k, str(self.__dict__[k])) for k in sorted(self.__dict__)]))
+        return "{}({})".format(
+            type(self).__name__,
+            ", ".join(
+                [
+                    "{}={}".format(k, str(self.__dict__[k]))
+                    for k in sorted(self.__dict__)
+                ]
+            ),
+        )
 
     def __repr__(self):
         return self.__str__()

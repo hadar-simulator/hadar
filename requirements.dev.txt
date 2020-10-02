@@ -4,3 +4,4 @@ click
 setuptools
 wheel
 twine
+black

@@ -15,11 +15,13 @@ from matplotlib.cm import coolwarm
 from hadar.analyzer.result import ResultAnalyzer
 from hadar.viewer.abc import ABCPlotting, ABCElementPlotting
 
-__all__ = ['HTMLPlotting']
+__all__ = ["HTMLPlotting"]
 
 
 class HTMLElementPlotting(ABCElementPlotting):
-    def __init__(self, unit: str, time_index, node_coord: Dict[str, List[float]] = None):
+    def __init__(
+        self, unit: str, time_index, node_coord: Dict[str, List[float]] = None
+    ):
         self.unit = unit
         self.time_index = time_index
         self.coord = node_coord
@@ -27,8 +29,18 @@ class HTMLElementPlotting(ABCElementPlotting):
         self.cmap = coolwarm
         self.cmap_plotly = HTMLElementPlotting.matplotlib_to_plotly(self.cmap, 255)
 
-        self.cmap_cons = ['brown', 'blue', 'darkgoldenrod', 'darkmagenta', 'darkorange', 'cadetblue', 'forestgreen',
-                          'indigo', 'olive', 'darkred']
+        self.cmap_cons = [
+            "brown",
+            "blue",
+            "darkgoldenrod",
+            "darkmagenta",
+            "darkorange",
+            "cadetblue",
+            "forestgreen",
+            "indigo",
+            "olive",
+            "darkred",
+        ]
 
     @classmethod
     def matplotlib_to_plotly(cls, cmap, res: int):
@@ -43,21 +55,33 @@ class HTMLElementPlotting(ABCElementPlotting):
         pl_colorscale = []
         for k in range(res):
             C = (np.array(cmap(k * h)[:3]) * 255).astype(np.uint8)
-            pl_colorscale.append([k * h, 'rgb' + str((C[0], C[1], C[2]))])
+            pl_colorscale.append([k * h, "rgb" + str((C[0], C[1], C[2]))])
         return pl_colorscale
 
     def timeline(self, df: pd.DataFrame, title: str):
-        scenarios = df.index.get_level_values('scn').unique()
+        scenarios = df.index.get_level_values("scn").unique()
         alpha = max(0.01, 1 / scenarios.size)
-        color = 'rgba(0, 0, 0, %.2f)' % alpha
+        color = "rgba(0, 0, 0, %.2f)" % alpha
 
         fig = go.Figure()
         for scn in scenarios:
-            fig.add_trace(go.Scatter(x=self.time_index, y=df.loc[scn], mode='lines', hoverinfo='name',
-                                     name='scn %0d' % scn, line=dict(color=color)))
+            fig.add_trace(
+                go.Scatter(
+                    x=self.time_index,
+                    y=df.loc[scn],
+                    mode="lines",
+                    hoverinfo="name",
+                    name="scn %0d" % scn,
+                    line=dict(color=color),
+                )
+            )
 
-        fig.update_layout(title_text=title,
-                          yaxis_title="Quantity %s" % self.unit, xaxis_title="time", showlegend=False)
+        fig.update_layout(
+            title_text=title,
+            yaxis_title="Quantity %s" % self.unit,
+            xaxis_title="time",
+            showlegend=False,
+        )
 
         return fig
 
@@ -67,9 +91,13 @@ class HTMLElementPlotting(ABCElementPlotting):
         x = np.linspace(0, 100, y.size)
 
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=x, y=y, mode='markers'))
-        fig.update_layout(title_text=title,
-                          yaxis_title="Quantity %s" % self.unit, xaxis_title="%", showlegend=False)
+        fig.add_trace(go.Scatter(x=x, y=y, mode="markers"))
+        fig.update_layout(
+            title_text=title,
+            yaxis_title="Quantity %s" % self.unit,
+            xaxis_title="%",
+            showlegend=False,
+        )
 
         return fig
 
@@ -88,36 +116,94 @@ class HTMLElementPlotting(ABCElementPlotting):
         red = qt[rac < 0]
 
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=x, y=_gaussian(x, m, o), mode='lines', hoverinfo='none', line=dict(color='grey')))
-        fig.add_trace(go.Scatter(x=green, y=_gaussian(green, m, o), hovertemplate='%{x:.2f} ' + self.unit,
-                                 name='passed', mode='markers', marker=dict(color='green', size=10)))
-        fig.add_trace(go.Scatter(x=red, y=_gaussian(red, m, o), hovertemplate='%{x:.2f} ' + self.unit,
-                                 name='failed', mode='markers', marker=dict(color='red', size=10)))
-        fig.update_layout(title_text=title, yaxis=dict(visible=False),
-                          yaxis_title='', xaxis_title="Quantity %s" % self.unit, showlegend=False)
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=_gaussian(x, m, o),
+                mode="lines",
+                hoverinfo="none",
+                line=dict(color="grey"),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=green,
+                y=_gaussian(green, m, o),
+                hovertemplate="%{x:.2f} " + self.unit,
+                name="passed",
+                mode="markers",
+                marker=dict(color="green", size=10),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=red,
+                y=_gaussian(red, m, o),
+                hovertemplate="%{x:.2f} " + self.unit,
+                name="failed",
+                mode="markers",
+                marker=dict(color="red", size=10),
+            )
+        )
+        fig.update_layout(
+            title_text=title,
+            yaxis=dict(visible=False),
+            yaxis_title="",
+            xaxis_title="Quantity %s" % self.unit,
+            showlegend=False,
+        )
 
         return fig
 
     def candles(self, open: np.ndarray, close: np.ndarray, title: str):
         fig = go.Figure()
-        text = ['%s<br>Begin=%d<br>End=%d<br>Flow=%d' % (t, o, c, c-o) for o, c, t in zip(open, close, self.time_index)]
-        fig.add_trace(go.Ohlc(x=self.time_index, open=open, high=open, low=close, close=close,
-                              hoverinfo='text', text=text))
+        text = [
+            "%s<br>Begin=%d<br>End=%d<br>Flow=%d" % (t, o, c, c - o)
+            for o, c, t in zip(open, close, self.time_index)
+        ]
+        fig.add_trace(
+            go.Ohlc(
+                x=self.time_index,
+                open=open,
+                high=open,
+                low=close,
+                close=close,
+                hoverinfo="text",
+                text=text,
+            )
+        )
 
-        fig.update_layout(title_text=title, yaxis_title='Quantity %s' % self.unit, xaxis_rangeslider_visible=False,
-                          xaxis_title='Time', showlegend=False)
+        fig.update_layout(
+            title_text=title,
+            yaxis_title="Quantity %s" % self.unit,
+            xaxis_rangeslider_visible=False,
+            xaxis_title="Time",
+            showlegend=False,
+        )
 
         return fig
 
-    def stack(self, areas: List[Tuple[str, np.ndarray]], lines: List[Tuple[str, np.ndarray]], title: str):
+    def stack(
+        self,
+        areas: List[Tuple[str, np.ndarray]],
+        lines: List[Tuple[str, np.ndarray]],
+        title: str,
+    ):
         fig = go.Figure()
 
         # Stack areas
         stack = np.zeros_like(self.time_index, dtype=float)
         for i, (name, data) in enumerate(areas):
             stack += data
-            fig.add_trace(go.Scatter(x=self.time_index, y=stack.copy(), name=name, mode='none',
-                                     fill='tozeroy' if i == 0 else 'tonexty'))
+            fig.add_trace(
+                go.Scatter(
+                    x=self.time_index,
+                    y=stack.copy(),
+                    name=name,
+                    mode="none",
+                    fill="tozeroy" if i == 0 else "tonexty",
+                )
+            )
 
         # Stack lines.
         # Bottom line have to be top frontward. So we firstly stack lines then plot in reverse set.
@@ -128,10 +214,19 @@ class HTMLElementPlotting(ABCElementPlotting):
             stacked_lines.append((name, stack.copy()))
 
         for i, (name, data) in enumerate(stacked_lines[::-1]):
-            fig.add_trace(go.Scatter(x=self.time_index, y=data, line_color=self.cmap_cons[i % 10],
-                                     name=name, line=dict(width=2)))
+            fig.add_trace(
+                go.Scatter(
+                    x=self.time_index,
+                    y=data,
+                    line_color=self.cmap_cons[i % 10],
+                    name=name,
+                    line=dict(width=2),
+                )
+            )
 
-        fig.update_layout(title_text=title, yaxis_title="Quantity %s" % self.unit, xaxis_title="time")
+        fig.update_layout(
+            title_text=title, yaxis_title="Quantity %s" % self.unit, xaxis_title="time"
+        )
         return fig
 
     def matrix(self, data: np.ndarray, title):
@@ -140,22 +235,33 @@ class HTMLElementPlotting(ABCElementPlotting):
             x[x < 0] /= -np.min(x[x < 0])
             return x
 
-        fig = go.Figure(data=go.Heatmap(
-            z=sdt(data.copy()),
-            x=self.time_index,
-            y=np.arange(data.shape[0]),
-            hoverinfo='text',
-            text=data,
-            colorscale='RdBu', zmid=0,
-            showscale=False))
+        fig = go.Figure(
+            data=go.Heatmap(
+                z=sdt(data.copy()),
+                x=self.time_index,
+                y=np.arange(data.shape[0]),
+                hoverinfo="text",
+                text=data,
+                colorscale="RdBu",
+                zmid=0,
+                showscale=False,
+            )
+        )
 
-        fig.update_layout(title_text=title, yaxis_title="scenarios", xaxis_title="time", showlegend=False)
+        fig.update_layout(
+            title_text=title,
+            yaxis_title="scenarios",
+            xaxis_title="time",
+            showlegend=False,
+        )
 
         return fig
 
     def map_exchange(self, nodes, lines, limit, title, size):
         if self.coord is None:
-            raise ValueError('Please provide node coordinate by setting param node_coord in Plotting constructor')
+            raise ValueError(
+                "Please provide node coordinate by setting param node_coord in Plotting constructor"
+            )
 
         fig = go.Figure()
         # Add node circle
@@ -166,27 +272,42 @@ class HTMLElementPlotting(ABCElementPlotting):
 
         # Plot arrows
         for (src, dest), qt in lines.items():
-            color = 'rgb' + str(self.cmap(abs(qt) / 2 / limit + 0.5)[:-1])
+            color = "rgb" + str(self.cmap(abs(qt) / 2 / limit + 0.5)[:-1])
             self._plot_links(fig, src, dest, color, qt, size)
 
         # Plot nodes
-        fig.add_trace(go.Scattermapbox(
-            mode="markers",
-            lon=node_coords[:, 0],
-            lat=node_coords[:, 1],
-            hoverinfo='text', text=node_qt,
-            marker=dict(size=20, colorscale=self.cmap_plotly, cmin=-limit, color=node_qt,
-                        cmax=limit, colorbar_title="Net Position %s" % self.unit)))
+        fig.add_trace(
+            go.Scattermapbox(
+                mode="markers",
+                lon=node_coords[:, 0],
+                lat=node_coords[:, 1],
+                hoverinfo="text",
+                text=node_qt,
+                marker=dict(
+                    size=20,
+                    colorscale=self.cmap_plotly,
+                    cmin=-limit,
+                    color=node_qt,
+                    cmax=limit,
+                    colorbar_title="Net Position %s" % self.unit,
+                ),
+            )
+        )
 
-        fig.update_layout(showlegend=False,
-                          title_text=title,
-                          mapbox=dict(
-                              style="carto-positron",
-                              center={'lon': center[0], 'lat': center[1]},
-                              zoom=1 / size / 0.07))
+        fig.update_layout(
+            showlegend=False,
+            title_text=title,
+            mapbox=dict(
+                style="carto-positron",
+                center={"lon": center[0], "lat": center[1]},
+                zoom=1 / size / 0.07,
+            ),
+        )
         return fig
 
-    def _plot_links(self, fig: go.Figure, start: str, end: str, color: str, qt: float, size: float):
+    def _plot_links(
+        self, fig: go.Figure, start: str, end: str, color: str, qt: float, size: float
+    ):
         """
         Plot line with arrow to a figure.
 
@@ -201,9 +322,15 @@ class HTMLElementPlotting(ABCElementPlotting):
         E = np.array([self.coord[end][0], self.coord[end][1]])
 
         # plot line
-        fig.add_trace(go.Scattermapbox(lat=[S[1], E[1]], hoverinfo='skip',
-                                       lon=[S[0], E[0]], mode='lines',
-                                       line=dict(width=2 * size, color=color)))
+        fig.add_trace(
+            go.Scattermapbox(
+                lat=[S[1], E[1]],
+                hoverinfo="skip",
+                lon=[S[0], E[0]],
+                mode="lines",
+                line=dict(width=2 * size, color=color),
+            )
+        )
         # vector flow direction
         v = E - S
         n = np.linalg.norm(v)
@@ -215,9 +342,17 @@ class HTMLElementPlotting(ABCElementPlotting):
         C = A - v / 10 + w / 10
 
         # plot arrow
-        fig.add_trace(go.Scattermapbox(lat=[B[1], A[1], C[1], B[1], None], hoverinfo='text', fill='toself',
-                                       lon=[B[0], A[0], C[0], B[0], None], text=str(qt), mode='lines',
-                                       line=dict(width=2 * size, color=color)))
+        fig.add_trace(
+            go.Scattermapbox(
+                lat=[B[1], A[1], C[1], B[1], None],
+                hoverinfo="text",
+                fill="toself",
+                lon=[B[0], A[0], C[0], B[0], None],
+                text=str(qt),
+                mode="lines",
+                line=dict(width=2 * size, color=color),
+            )
+        )
 
 
 class HTMLPlotting(ABCPlotting):
@@ -225,9 +360,14 @@ class HTMLPlotting(ABCPlotting):
     Plotting implementation interactive html graphics. (Use plotly)
     """
 
-    def __init__(self, agg: ResultAnalyzer, unit_symbol: str = '',
-                 time_start=None, time_end=None,
-                 node_coord: Dict[str, List[float]] = None):
+    def __init__(
+        self,
+        agg: ResultAnalyzer,
+        unit_symbol: str = "",
+        time_start=None,
+        time_end=None,
+        node_coord: Dict[str, List[float]] = None,
+    ):
         """
         Create instance.
 
@@ -239,5 +379,3 @@ class HTMLPlotting(ABCPlotting):
         """
         ABCPlotting.__init__(self, agg, unit_symbol, time_start, time_end, node_coord)
         self.plotting = HTMLElementPlotting(self.unit, self.time_index, self.coord)
-
-

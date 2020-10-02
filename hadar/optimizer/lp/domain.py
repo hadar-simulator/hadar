@@ -22,13 +22,17 @@ class JSONLP(JSON, ABC):
                 return v.solution_value()
             elif isinstance(v, dict):
                 # Json can't serialize tuple key, therefore join items with ::
-                return {'::'.join(k) if isinstance(k, tuple) else k: copy(v) for k, v in v.items()}
+                return {
+                    "::".join(k) if isinstance(k, tuple) else k: copy(v)
+                    for k, v in v.items()
+                }
             elif isinstance(v, np.int64):
                 return int(v)
             elif isinstance(v, np.float64):
                 return float(v)
             else:
                 return v
+
         return {k: copy(v) for k, v in self.__dict__.items()}
 
     @staticmethod
@@ -42,7 +46,13 @@ class LPConsumption(JSONLP):
     Consumption element for linear programming.
     """
 
-    def __init__(self, quantity: int, variable: Union[Variable, float], cost: float = 0, name: str = ''):
+    def __init__(
+        self,
+        quantity: int,
+        variable: Union[Variable, float],
+        cost: float = 0,
+        name: str = "",
+    ):
         """
         Instance consumption.
 
@@ -66,7 +76,13 @@ class LPProduction(JSONLP):
     Production element for linear programming.
     """
 
-    def __init__(self, quantity: int, variable: Union[Variable, float], cost: float = 0, name: str = 'in'):
+    def __init__(
+        self,
+        quantity: int,
+        variable: Union[Variable, float],
+        cost: float = 0,
+        name: str = "in",
+    ):
         """
         Instance production.
 
@@ -89,10 +105,20 @@ class LPStorage(JSONLP):
     """
     Storage element
     """
-    def __init__(self, name, capacity: int, var_capacity: Union[Variable, float],
-                 flow_in: float, var_flow_in: Union[Variable, float],
-                 flow_out: float, var_flow_out: Union[Variable, float],
-                 cost: float = 0, init_capacity: int = 0,  eff: float = .99):
+
+    def __init__(
+        self,
+        name,
+        capacity: int,
+        var_capacity: Union[Variable, float],
+        flow_in: float,
+        var_flow_in: Union[Variable, float],
+        flow_out: float,
+        var_flow_out: Union[Variable, float],
+        cost: float = 0,
+        init_capacity: int = 0,
+        eff: float = 0.99,
+    ):
         """
         Create storage.
 
@@ -126,7 +152,15 @@ class LPLink(JSONLP):
     """
     Link element for linear programming
     """
-    def __init__(self, src: str, dest: str, quantity: int, variable: Union[Variable, float], cost: float = 0):
+
+    def __init__(
+        self,
+        src: str,
+        dest: str,
+        quantity: int,
+        variable: Union[Variable, float],
+        cost: float = 0,
+    ):
         """
         Instance Link.
 
@@ -151,11 +185,18 @@ class LPConverter(JSONLP):
     """
     Converter element for linear programming
     """
-    def __init__(self, name: str, src_ratios: Dict[Tuple[str, str], float],
-                 var_flow_src: Dict[Tuple[str, str], Union[Variable, float]],
-                 dest_network: str, dest_node: str,
-                 var_flow_dest: Union[Variable, float],
-                 cost: float, max: float,):
+
+    def __init__(
+        self,
+        name: str,
+        src_ratios: Dict[Tuple[str, str], float],
+        var_flow_src: Dict[Tuple[str, str], Union[Variable, float]],
+        dest_network: str,
+        dest_node: str,
+        var_flow_dest: Union[Variable, float],
+        cost: float,
+        max: float,
+    ):
         """
         Create converter.
 
@@ -181,8 +222,12 @@ class LPConverter(JSONLP):
     @staticmethod
     def from_json(dict, factory=None):
         # Json can't serialize tuple as key. tuple is concatained before serialized, we need to extract it now
-        dict['src_ratios'] = {tuple(k.split('::')): v for k, v in dict['src_ratios'].items()}
-        dict['var_flow_src'] = {tuple(k.split('::')): v for k, v in dict['var_flow_src'].items()}
+        dict["src_ratios"] = {
+            tuple(k.split("::")): v for k, v in dict["src_ratios"].items()
+        }
+        dict["var_flow_src"] = {
+            tuple(k.split("::")): v for k, v in dict["var_flow_src"].items()
+        }
         return LPConverter(**dict)
 
 
@@ -190,8 +235,14 @@ class LPNode(JSON):
     """
     Node element for linear programming
     """
-    def __init__(self, consumptions: List[LPConsumption], productions: List[LPProduction],
-                 storages: List[LPStorage], links: List[LPLink]):
+
+    def __init__(
+        self,
+        consumptions: List[LPConsumption],
+        productions: List[LPProduction],
+        storages: List[LPStorage],
+        links: List[LPLink],
+    ):
         """
         Instance node.
 
@@ -206,10 +257,12 @@ class LPNode(JSON):
 
     @staticmethod
     def from_json(dict, factory=None):
-        dict['consumptions'] = [LPConsumption.from_json(v) for v in dict['consumptions']]
-        dict['productions'] = [LPProduction.from_json(v) for v in dict['productions']]
-        dict['storages'] = [LPStorage.from_json(v) for v in dict['storages']]
-        dict['links'] = [LPLink.from_json(v) for v in dict['links']]
+        dict["consumptions"] = [
+            LPConsumption.from_json(v) for v in dict["consumptions"]
+        ]
+        dict["productions"] = [LPProduction.from_json(v) for v in dict["productions"]]
+        dict["storages"] = [LPStorage.from_json(v) for v in dict["storages"]]
+        dict["links"] = [LPLink.from_json(v) for v in dict["links"]]
         return LPNode(**dict)
 
 
@@ -228,12 +281,14 @@ class LPNetwork(JSON):
 
     @staticmethod
     def from_json(dict, factory=None):
-        dict['nodes'] = {k: LPNode.from_json(v) for k, v in dict['nodes'].items()}
+        dict["nodes"] = {k: LPNode.from_json(v) for k, v in dict["nodes"].items()}
         return LPNetwork(**dict)
 
 
 class LPTimeStep(JSON):
-    def __init__(self, networks: Dict[str, LPNetwork], converters: Dict[str, LPConverter]):
+    def __init__(
+        self, networks: Dict[str, LPNetwork], converters: Dict[str, LPConverter]
+    ):
         self.networks = networks
         self.converters = converters
 
@@ -245,5 +300,9 @@ class LPTimeStep(JSON):
 
     @staticmethod
     def from_json(dict, factory=None):
-        return LPTimeStep(networks={k: LPNetwork.from_json(v) for k, v in dict['networks'].items()},
-                          converters={k: LPConverter.from_json(v) for k, v in dict['converters'].items()})
+        return LPTimeStep(
+            networks={k: LPNetwork.from_json(v) for k, v in dict["networks"].items()},
+            converters={
+                k: LPConverter.from_json(v) for k, v in dict["converters"].items()
+            },
+        )

@@ -12,11 +12,12 @@ from hadar.optimizer.lp.optimizer import solve_lp
 from hadar.optimizer.domain.output import Result
 from hadar.optimizer.remote.optimizer import solve_remote
 
-__all__ = ['LPOptimizer', 'RemoteOptimizer']
+__all__ = ["LPOptimizer", "RemoteOptimizer"]
 
 
 class Optimizer(ABC):
     """Optimizer interface to implement"""
+
     @abstractmethod
     def solve(self, study: Study) -> Result:
         pass
@@ -26,6 +27,7 @@ class LPOptimizer(Optimizer):
     """
     Basic Optimizer works with linear programming.
     """
+
     def solve(self, study: Study) -> Result:
         """
         Solve adequacy study.
@@ -40,7 +42,8 @@ class RemoteOptimizer(Optimizer):
     """
     Use a remote optimizer to compute on cloud.
     """
-    def __init__(self, url: str, token: str = ''):
+
+    def __init__(self, url: str, token: str = ""):
         """
         Server optimizer parameter.
 
@@ -58,4 +61,3 @@ class RemoteOptimizer(Optimizer):
         :return: study's result
         """
         return solve_remote(study, url=self.url, token=self.token)
-

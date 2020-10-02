@@ -9,29 +9,40 @@ import logging
 import os
 import sys
 
-from .workflow.pipeline import RestrictedPlug, FreePlug, Stage, FocusStage, Drop, Rename, Fault, RepeatScenario, ToShuffler, Clip
+from .workflow.pipeline import (
+    RestrictedPlug,
+    FreePlug,
+    Stage,
+    FocusStage,
+    Drop,
+    Rename,
+    Fault,
+    RepeatScenario,
+    ToShuffler,
+    Clip,
+)
 from .workflow.shuffler import Shuffler
 from .optimizer.domain.input import Study
 from .optimizer.optimizer import LPOptimizer, RemoteOptimizer
 from .viewer.html import HTMLPlotting
 from .analyzer.result import ResultAnalyzer
 
-__version__ = '0.5.0'
+__version__ = "0.5.0"
 
-level = os.getenv('HADAR_LOG', 'WARNING')
+level = os.getenv("HADAR_LOG", "WARNING")
 
-if level == 'INFO':
+if level == "INFO":
     level = logging.INFO
-elif level == 'DEBUG':
+elif level == "DEBUG":
     level = logging.DEBUG
-elif level == 'WARNING':
+elif level == "WARNING":
     level = logging.WARNING
-elif level == 'ERROR':
+elif level == "ERROR":
     level = logging.ERROR
 else:
     level = logging.WARNING
 
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler = logging.StreamHandler(stream=sys.stdout)
 handler.setFormatter(formatter)
 logging.basicConfig(level=level, handlers=[handler])
