@@ -7,19 +7,12 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   hadar.optimizer.domain
    hadar.optimizer.lp
    hadar.optimizer.remote
 
 Submodules
 ----------
-
-hadar.optimizer.input module
-----------------------------
-
-.. automodule:: hadar.optimizer.input
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 hadar.optimizer.optimizer module
 --------------------------------
@@ -29,14 +22,13 @@ hadar.optimizer.optimizer module
    :undoc-members:
    :show-inheritance:
 
-hadar.optimizer.output module
------------------------------
+hadar.optimizer.utils module
+----------------------------
 
-.. automodule:: hadar.optimizer.output
+.. automodule:: hadar.optimizer.utils
    :members:
    :undoc-members:
    :show-inheritance:
-
 
 Module contents
 ---------------

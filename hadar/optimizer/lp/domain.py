@@ -4,27 +4,55 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
+import numpy as np
+
+from abc import ABC, abstractmethod
 from typing import List, Union, Dict, Tuple
 
 from ortools.linear_solver.pywraplp import Variable
 
-from hadar.optimizer.input import DTO, Study
+from hadar import Study
+from hadar.optimizer.utils import JSON
 
 
-class SerializableVariable(DTO):
-    def __init__(self, var: Variable):
-        self.val = var.solution_value()
+class JSONLP(JSON, ABC):
+    def to_json(self):
+        def copy(v):
+            if isinstance(v, Variable):
+                return v.solution_value()
+            elif isinstance(v, dict):
+                # Json can't serialize tuple key, therefore join items with ::
+                return {
+                    "::".join(k) if isinstance(k, tuple) else k: copy(v)
+                    for k, v in v.items()
+                }
+            elif isinstance(v, np.int64):
+                return int(v)
+            elif isinstance(v, np.float64):
+                return float(v)
+            else:
+                return v
 
-    def solution_value(self):
-        return self.val
+        return {k: copy(v) for k, v in self.__dict__.items()}
+
+    @staticmethod
+    @abstractmethod
+    def from_json(dict, factory=None):
+        pass
 
 
-class LPConsumption(DTO):
+class LPConsumption(JSONLP):
     """
     Consumption element for linear programming.
     """
 
-    def __init__(self, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0, name: str = ''):
+    def __init__(
+        self,
+        quantity: int,
+        variable: Union[Variable, float],
+        cost: float = 0,
+        name: str = "",
+    ):
         """
         Instance consumption.
 
@@ -38,20 +66,23 @@ class LPConsumption(DTO):
         self.name = name
         self.variable = variable
 
-    def __reduce__(self):
-        """
-        Help pickle to serialize object, specially variable object
-        :return: (constructor, values...)
-        """
-        return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.name)
+    @staticmethod
+    def from_json(dict, factory=None):
+        return LPConsumption(**dict)
 
 
-class LPProduction(DTO):
+class LPProduction(JSONLP):
     """
     Production element for linear programming.
     """
 
-    def __init__(self, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0, name: str = 'in'):
+    def __init__(
+        self,
+        quantity: int,
+        variable: Union[Variable, float],
+        cost: float = 0,
+        name: str = "in",
+    ):
         """
         Instance production.
 
@@ -65,22 +96,29 @@ class LPProduction(DTO):
         self.variable = variable
         self.quantity = quantity
 
-    def __reduce__(self):
-        """
-        Help pickle to serialize object, specially variable object
-        :return: (constructor, values...)
-        """
-        return self.__class__, (self.quantity, SerializableVariable(self.variable), self.cost, self.name)
+    @staticmethod
+    def from_json(dict, factory=None):
+        return LPProduction(**dict)
 
 
-class LPStorage(DTO):
+class LPStorage(JSONLP):
     """
     Storage element
     """
-    def __init__(self, name, capacity: int, var_capacity: Union[Variable, SerializableVariable],
-                 flow_in: float, var_flow_in: Union[Variable, SerializableVariable],
-                 flow_out: float, var_flow_out: Union[Variable, SerializableVariable],
-                 cost: float = 0, init_capacity: int = 0,  eff: float = .99):
+
+    def __init__(
+        self,
+        name,
+        capacity: int,
+        var_capacity: Union[Variable, float],
+        flow_in: float,
+        var_flow_in: Union[Variable, float],
+        flow_out: float,
+        var_flow_out: Union[Variable, float],
+        cost: float = 0,
+        init_capacity: int = 0,
+        eff: float = 0.99,
+    ):
         """
         Create storage.
 
@@ -105,22 +143,24 @@ class LPStorage(DTO):
         self.init_capacity = init_capacity
         self.eff = eff
 
-    def __reduce__(self):
-        """
-        Help pickle to serialize object, specially variable object
-        :return: (constructor, values...)
-        """
-        return self.__class__, (self.name, self.capacity, SerializableVariable(self.var_capacity),
-                                self.flow_in, SerializableVariable(self.var_flow_in),
-                                self.flow_out, SerializableVariable(self.var_flow_out),
-                                self.cost, self.init_capacity, self.eff)
+    @staticmethod
+    def from_json(dict, factory=None):
+        return LPStorage(**dict)
 
 
-class LPLink(DTO):
+class LPLink(JSONLP):
     """
     Link element for linear programming
     """
-    def __init__(self, src: str, dest: str, quantity: int, variable: Union[Variable, SerializableVariable], cost: float = 0):
+
+    def __init__(
+        self,
+        src: str,
+        dest: str,
+        quantity: int,
+        variable: Union[Variable, float],
+        cost: float = 0,
+    ):
         """
         Instance Link.
 
@@ -136,23 +176,27 @@ class LPLink(DTO):
         self.variable = variable
         self.cost = cost
 
-    def __reduce__(self):
-        """
-        Help pickle to serialize object, specially variable object
-        :return: (constructor, values...)
-        """
-        return self.__class__, (self.src, self.dest, self.quantity, SerializableVariable(self.variable), self.cost)
+    @staticmethod
+    def from_json(dict, factory=None):
+        return LPLink(**dict)
 
 
-class LPConverter(DTO):
+class LPConverter(JSONLP):
     """
     Converter element for linear programming
     """
-    def __init__(self, name: str, src_ratios: Dict[Tuple[str, str], float],
-                 var_flow_src: Dict[Tuple[str, str], Union[Variable, SerializableVariable]],
-                 dest_network: str, dest_node: str,
-                 var_flow_dest: Union[Variable, SerializableVariable],
-                 cost: float, max: float,):
+
+    def __init__(
+        self,
+        name: str,
+        src_ratios: Dict[Tuple[str, str], float],
+        var_flow_src: Dict[Tuple[str, str], Union[Variable, float]],
+        dest_network: str,
+        dest_node: str,
+        var_flow_dest: Union[Variable, float],
+        cost: float,
+        max: float,
+    ):
         """
         Create converter.
 
@@ -175,21 +219,30 @@ class LPConverter(DTO):
         self.cost = cost
         self.max = max
 
-    def __reduce__(self):
-        """
-        Help pickle to serialize object, specially variable object
-        :return: (constructor, values...)
-        """
-        return self.__class__, (self.name, self.src_ratios, {src: SerializableVariable(var) for src, var in self.var_flow_src.items()},
-                                self.dest_network, self.dest_node, SerializableVariable(self.var_flow_dest), self.cost, self.max)
+    @staticmethod
+    def from_json(dict, factory=None):
+        # Json can't serialize tuple as key. tuple is concatained before serialized, we need to extract it now
+        dict["src_ratios"] = {
+            tuple(k.split("::")): v for k, v in dict["src_ratios"].items()
+        }
+        dict["var_flow_src"] = {
+            tuple(k.split("::")): v for k, v in dict["var_flow_src"].items()
+        }
+        return LPConverter(**dict)
 
 
-class LPNode(DTO):
+class LPNode(JSON):
     """
     Node element for linear programming
     """
-    def __init__(self, consumptions: List[LPConsumption], productions: List[LPProduction],
-                 storages: List[LPStorage], links: List[LPLink]):
+
+    def __init__(
+        self,
+        consumptions: List[LPConsumption],
+        productions: List[LPProduction],
+        storages: List[LPStorage],
+        links: List[LPLink],
+    ):
         """
         Instance node.
 
@@ -202,8 +255,18 @@ class LPNode(DTO):
         self.storages = storages
         self.links = links
 
+    @staticmethod
+    def from_json(dict, factory=None):
+        dict["consumptions"] = [
+            LPConsumption.from_json(v) for v in dict["consumptions"]
+        ]
+        dict["productions"] = [LPProduction.from_json(v) for v in dict["productions"]]
+        dict["storages"] = [LPStorage.from_json(v) for v in dict["storages"]]
+        dict["links"] = [LPLink.from_json(v) for v in dict["links"]]
+        return LPNode(**dict)
 
-class LPNetwork(DTO):
+
+class LPNetwork(JSON):
     """
     Network element for linear programming
     """
@@ -216,9 +279,16 @@ class LPNetwork(DTO):
         """
         self.nodes = nodes if nodes else dict()
 
+    @staticmethod
+    def from_json(dict, factory=None):
+        dict["nodes"] = {k: LPNode.from_json(v) for k, v in dict["nodes"].items()}
+        return LPNetwork(**dict)
 
-class LPTimeStep(DTO):
-    def __init__(self, networks: Dict[str, LPNetwork], converters: Dict[str, LPConverter]):
+
+class LPTimeStep(JSON):
+    def __init__(
+        self, networks: Dict[str, LPNetwork], converters: Dict[str, LPConverter]
+    ):
         self.networks = networks
         self.converters = converters
 
@@ -227,3 +297,12 @@ class LPTimeStep(DTO):
         networks = {name: LPNetwork() for name in study.networks}
         converters = dict()
         return LPTimeStep(networks=networks, converters=converters)
+
+    @staticmethod
+    def from_json(dict, factory=None):
+        return LPTimeStep(
+            networks={k: LPNetwork.from_json(v) for k, v in dict["networks"].items()},
+            converters={
+                k: LPConverter.from_json(v) for k, v in dict["converters"].items()
+            },
+        )

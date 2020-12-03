@@ -11,11 +11,11 @@ from typing import List
 
 import nbformat
 import os
-from nbconvert import HTMLExporter
+from nbconvert import RSTExporter
 from nbconvert.preprocessors import ExecutePreprocessor
 
-exporter = HTMLExporter()
-ep = ExecutePreprocessor(timeout=600, kernel_name='python3', store_widget_state=True)
+exporter = RSTExporter()
+ep = ExecutePreprocessor(timeout=600, kernel_name="python3", store_widget_state=True)
 
 
 def open_nb(name: str, src: str) -> nbformat:
@@ -26,9 +26,11 @@ def open_nb(name: str, src: str) -> nbformat:
     :param src: source directory
     :return: notebook object
     """
-    print('Reading...', end=' ')
-    nb = nbformat.read('{src}/{name}/{name}.ipynb'.format(name=name, src=src), as_version=4)
-    print('OK', end=' ')
+    print("Reading...", end=" ")
+    nb = nbformat.read(
+        "{src}/{name}/{name}.ipynb".format(name=name, src=src), as_version=4
+    )
+    print("OK", end=" ")
     return nb
 
 
@@ -41,9 +43,9 @@ def execute(nb: nbformat, name: str, src: str) -> nbformat:
     :param src: notebook source directory (for setup context)
     :return: notebook object with computed and stored output widget state
     """
-    print('Executing...', end=' ')
-    ep.preprocess(nb, {'metadata': {'path': '%s/%s/' % (src, name)}})
-    print('OK', end=' ')
+    print("Executing...", end=" ")
+    ep.preprocess(nb, {"metadata": {"path": "%s/%s/" % (src, name)}})
+    print("OK", end=" ")
     return nb
 
 
@@ -56,11 +58,11 @@ def copy_image(name: str, export: str, src: str):
     :param src: source directory
     :return: None
     """
-    src = '%s/%s' % (src, name)
-    dest = '%s/%s' % (export, name)
-    images = [f for f in os.listdir(src) if f.split('.')[-1] in ['png']]
+    src = "%s/%s" % (src, name)
+    dest = "%s/%s" % (export, name)
+    images = [f for f in os.listdir(src) if f.split(".")[-1] in ["png"]]
     for img in images:
-        os.rename('%s/%s' % (src, img), '%s/%s' % (dest, img))
+        os.rename("%s/%s" % (src, img), "%s/%s" % (dest, img))
 
 
 def to_export(nb: nbformat, name: str, export: str):
@@ -72,17 +74,17 @@ def to_export(nb: nbformat, name: str, export: str):
     :param export: directory to export
     :return: None
     """
-    print('Exporting...', end=' ')
-    html, _ = exporter.from_notebook_node(nb)
+    print("Exporting...", end=" ")
+    rst, _ = exporter.from_notebook_node(nb)
 
-    path = '%s/%s' % (export, name)
+    path = "%s/%s" % (export, name)
     if not os.path.exists(path):
         os.makedirs(path)
 
-    with open('%s/index.html' % path, 'w') as f:
-        f.write(html)
+    with open("%s/%s.rst" % (path, name), "w") as f:
+        f.write(rst)
 
-    print('OK', end=' ')
+    print("OK", end=" ")
 
 
 def list_notebook(src: str) -> List[str]:
@@ -92,16 +94,20 @@ def list_notebook(src: str) -> List[str]:
     :return:
     """
     dirs = os.listdir(src)
-    return [d for d in dirs if os.path.isfile('{src}/{name}/{name}.ipynb'.format(name=d, src=src))]
+    return [
+        d
+        for d in dirs
+        if os.path.isfile("{src}/{name}/{name}.ipynb".format(name=d, src=src))
+    ]
 
 
-@click.command('Check and export notebooks')
-@click.option('--src', nargs=1, help='Notebook directory')
-@click.option('--check', nargs=1, help='check notebook according to result file given')
-@click.option('--export', nargs=1, help='export notebooks to directory given')
+@click.command("Check and export notebooks")
+@click.option("--src", nargs=1, help="Notebook directory")
+@click.option("--check", nargs=1, help="check notebook according to result file given")
+@click.option("--export", nargs=1, help="export notebooks to directory given")
 def main(src: str, check: str, export: str):
     for name in list_notebook(src):
-        print('{:30}'.format(name), ':', end='')
+        print("{:30}".format(name), ":", end="")
         nb = open_nb(name, src)
         nb = execute(nb, name, src)
         if check:
@@ -109,8 +115,8 @@ def main(src: str, check: str, export: str):
         if export:
             to_export(nb, name, export)
             copy_image(name, export, src)
-        print('')
+        print("")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

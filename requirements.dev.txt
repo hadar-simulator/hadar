@@ -1,0 +1,7 @@
+-r requirements.txt
+jupyter
+click
+setuptools
+wheel
+twine
+black

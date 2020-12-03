@@ -1,7 +1,8 @@
-pandas
-numpy
-ortools
-plotly
-matplotlib
-requests
-progress
+pandas>=1.0.3,<2.0.0
+numpy>=1.18.2,<2.0.0
+ortools>=7.5.7466,<8.0.0
+plotly==4.8.1
+matplotlib>=3.2.1,<4.0.0
+requests>=2.23.0,<3.0.0
+progress>=1.5,<2
+msgpack>=1.0.0,<2.0.0

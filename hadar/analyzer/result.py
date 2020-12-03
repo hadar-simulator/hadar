@@ -4,18 +4,19 @@
 #  If a copy of the Apache License, version 2.0 was not distributed with this file, you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 #  SPDX-License-Identifier: Apache-2.0
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
+from copy import deepcopy
 from functools import reduce
 from typing import TypeVar, List, Generic, Type
 
 import numpy as np
 import pandas as pd
 
-from hadar.optimizer.input import Study
-from hadar.optimizer.output import Result
+from hadar.optimizer.domain.input import Study
+from hadar.optimizer.domain.output import Result
 
-__all__ = ['ResultAnalyzer', 'NetworkFluentAPISelector']
+__all__ = ["ResultAnalyzer", "NetworkFluentAPISelector"]
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class Index(Generic[T]):
@@ -67,56 +68,56 @@ class ProdIndex(Index[str]):
     """Index implementation to filter productions"""
 
     def __init__(self, index):
-        Index.__init__(self, column='name', index=index)
+        Index.__init__(self, column="name", index=index)
 
 
 class ConsIndex(Index[str]):
     """ Index implementation to filter consumptions"""
 
     def __init__(self, index):
-        Index.__init__(self, column='name', index=index)
+        Index.__init__(self, column="name", index=index)
 
 
 class StorIndex(Index[str]):
     """ Index implementation to filter storage"""
 
     def __init__(self, index):
-        Index.__init__(self, column='name', index=index)
+        Index.__init__(self, column="name", index=index)
 
 
 class LinkIndex(Index[str]):
     """Index implementation to filter destination node"""
 
     def __init__(self, index):
-        Index.__init__(self, column='dest', index=index)
+        Index.__init__(self, column="dest", index=index)
 
 
 class SrcConverter(Index[str]):
     """Index implementation to filter source converter"""
 
     def __init__(self, index):
-        Index.__init__(self, column='name', index=index)
+        Index.__init__(self, column="name", index=index)
 
 
 class DestConverter(Index[str]):
     """Index implementation to filter destination converter"""
 
     def __init__(self, index):
-        Index.__init__(self, column='name', index=index)
+        Index.__init__(self, column="name", index=index)
 
 
 class NodeIndex(Index[str]):
     """Index implementation to filter node"""
 
     def __init__(self, index):
-        Index.__init__(self, column='node', index=index)
+        Index.__init__(self, column="node", index=index)
 
 
 class NetworkIndex(Index[str]):
     """Index implementation fo filter network"""
 
     def __init__(self, index):
-        Index.__init__(self, column='network', index=index)
+        Index.__init__(self, column="network", index=index)
 
 
 class IntIndex(Index[int]):
@@ -142,14 +143,14 @@ class TimeIndex(IntIndex):
     """Index implementation to filter by time step"""
 
     def __init__(self, index):
-        IntIndex.__init__(self, column='t', index=index)
+        IntIndex.__init__(self, column="t", index=index)
 
 
 class ScnIndex(IntIndex):
     """index implementation to filter by scenario"""
 
     def __init__(self, index):
-        IntIndex.__init__(self, column='scn', index=index)
+        IntIndex.__init__(self, column="scn", index=index)
 
 
 class ResultAnalyzer:
@@ -171,8 +172,12 @@ class ResultAnalyzer:
         self.production = ResultAnalyzer._build_production(self.study, self.result)
         self.storage = ResultAnalyzer._build_storage(self.study, self.result)
         self.link = ResultAnalyzer._build_link(self.study, self.result)
-        self.src_converter = ResultAnalyzer._build_src_converter(self.study, self.result)
-        self.dest_converter = ResultAnalyzer._build_dest_converter(self.study, self.result)
+        self.src_converter = ResultAnalyzer._build_src_converter(
+            self.study, self.result
+        )
+        self.dest_converter = ResultAnalyzer._build_dest_converter(
+            self.study, self.result
+        )
 
     @staticmethod
     def _build_consumption(study: Study, result: Result):
@@ -183,28 +188,39 @@ class ResultAnalyzer:
 
         h = study.horizon
         scn = study.nb_scn
-        elements = sum([sum([len(n.consumptions) for n in net.nodes.values()]) for net in study.networks.values()])
+        elements = sum(
+            [
+                sum([len(n.consumptions) for n in net.nodes.values()])
+                for net in study.networks.values()
+            ]
+        )
         size = scn * h * elements
-        cons = {'cost': np.empty(size, dtype=float), 'asked': np.empty(size, dtype=float),
-                'given': np.empty(size, dtype=float),
-                'name': np.empty(size, dtype=str), 'node': np.empty(size, dtype=str),
-                'network': np.empty(size, dtype=str),
-                't': np.empty(size, dtype=float), 'scn': np.empty(size, dtype=float)}
+        cons = {
+            "cost": np.empty(size, dtype=float),
+            "asked": np.empty(size, dtype=float),
+            "given": np.empty(size, dtype=float),
+            "name": np.empty(size, dtype=str),
+            "node": np.empty(size, dtype=str),
+            "network": np.empty(size, dtype=str),
+            "t": np.empty(size, dtype=float),
+            "scn": np.empty(size, dtype=float),
+        }
         cons = pd.DataFrame(data=cons)
 
         n_cons = 0
         for n, net in result.networks.items():
             for node in net.nodes.keys():
-                for i, c in enumerate(net.nodes[node].consumptions):
-                    slices = cons.index[n_cons * h * scn: (n_cons + 1) * h * scn]
-                    cons.loc[slices, 'cost'] = c.cost.flatten()
-                    cons.loc[slices, 'name'] = c.name
-                    cons.loc[slices, 'node'] = node
-                    cons.loc[slices, 'network'] = n
-                    cons.loc[slices, 'asked'] = study.networks[n].nodes[node].consumptions[i].quantity.flatten()
-                    cons.loc[slices, 'given'] = c.quantity.flatten()
-                    cons.loc[slices, 't'] = np.tile(np.arange(h), scn)
-                    cons.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
+                for i, rc in enumerate(net.nodes[node].consumptions):
+                    slices = cons.index[n_cons * h * scn : (n_cons + 1) * h * scn]
+                    sc = study.networks[n].nodes[node].consumptions[i]
+                    cons.loc[slices, "cost"] = sc.cost.flatten()
+                    cons.loc[slices, "name"] = rc.name
+                    cons.loc[slices, "node"] = node
+                    cons.loc[slices, "network"] = n
+                    cons.loc[slices, "asked"] = sc.quantity.flatten()
+                    cons.loc[slices, "given"] = rc.quantity.flatten()
+                    cons.loc[slices, "t"] = np.tile(np.arange(h), scn)
+                    cons.loc[slices, "scn"] = np.repeat(np.arange(scn), h)
 
                     n_cons += 1
 
@@ -218,28 +234,39 @@ class ResultAnalyzer:
         """
         h = study.horizon
         scn = study.nb_scn
-        elements = sum([sum([len(n.productions) for n in net.nodes.values()]) for net in study.networks.values()])
+        elements = sum(
+            [
+                sum([len(n.productions) for n in net.nodes.values()])
+                for net in study.networks.values()
+            ]
+        )
         size = scn * h * elements
-        prod = {'cost': np.empty(size, dtype=float), 'avail': np.empty(size, dtype=float),
-                'used': np.empty(size, dtype=float),
-                'name': np.empty(size, dtype=str), 'node': np.empty(size, dtype=str),
-                'network': np.empty(size, dtype=str),
-                't': np.empty(size, dtype=float), 'scn': np.empty(size, dtype=float)}
+        prod = {
+            "cost": np.empty(size, dtype=float),
+            "avail": np.empty(size, dtype=float),
+            "used": np.empty(size, dtype=float),
+            "name": np.empty(size, dtype=str),
+            "node": np.empty(size, dtype=str),
+            "network": np.empty(size, dtype=str),
+            "t": np.empty(size, dtype=float),
+            "scn": np.empty(size, dtype=float),
+        }
         prod = pd.DataFrame(data=prod)
 
         n_prod = 0
         for n, net in result.networks.items():
             for node in net.nodes.keys():
-                for i, c in enumerate(net.nodes[node].productions):
-                    slices = prod.index[n_prod * h * scn: (n_prod + 1) * h * scn]
-                    prod.loc[slices, 'cost'] = c.cost.flatten()
-                    prod.loc[slices, 'name'] = c.name
-                    prod.loc[slices, 'node'] = node
-                    prod.loc[slices, 'network'] = n
-                    prod.loc[slices, 'avail'] = study.networks[n].nodes[node].productions[i].quantity.flatten()
-                    prod.loc[slices, 'used'] = c.quantity.flatten()
-                    prod.loc[slices, 't'] = np.tile(np.arange(h), scn)
-                    prod.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
+                for i, rp in enumerate(net.nodes[node].productions):
+                    slices = prod.index[n_prod * h * scn : (n_prod + 1) * h * scn]
+                    sp = study.networks[n].nodes[node].productions[i]
+                    prod.loc[slices, "cost"] = sp.cost.flatten()
+                    prod.loc[slices, "name"] = rp.name
+                    prod.loc[slices, "node"] = node
+                    prod.loc[slices, "network"] = n
+                    prod.loc[slices, "avail"] = sp.quantity.flatten()
+                    prod.loc[slices, "used"] = rp.quantity.flatten()
+                    prod.loc[slices, "t"] = np.tile(np.arange(h), scn)
+                    prod.loc[slices, "scn"] = np.repeat(np.arange(scn), h)
 
                     n_prod += 1
 
@@ -255,17 +282,30 @@ class ResultAnalyzer:
         """
         h = study.horizon
         scn = study.nb_scn
-        elements = sum([sum([len(n.storages) for n in net.nodes.values()]) for net in study.networks.values()])
+        elements = sum(
+            [
+                sum([len(n.storages) for n in net.nodes.values()])
+                for net in study.networks.values()
+            ]
+        )
         size = h * scn * elements
 
-        stor = {'max_capacity': np.empty(size, dtype=float), 'capacity': np.empty(size, dtype=float),
-                'max_flow_in': np.empty(size, dtype=float), 'flow_in': np.empty(size, dtype=float),
-                'max_flow_out': np.empty(size, dtype=float), 'flow_out': np.empty(size, dtype=float),
-                'cost': np.empty(size, dtype=float),
-                'init_capacity': np.empty(size, dtype=float), 'eff': np.empty(size, dtype=float),
-                'name': np.empty(size, dtype=str), 'node': np.empty(size, dtype=str),
-                'network': np.empty(size, dtype=str),
-                't': np.empty(size, dtype=float), 'scn': np.empty(size, dtype=float)}
+        stor = {
+            "max_capacity": np.empty(size, dtype=float),
+            "capacity": np.empty(size, dtype=float),
+            "max_flow_in": np.empty(size, dtype=float),
+            "flow_in": np.empty(size, dtype=float),
+            "max_flow_out": np.empty(size, dtype=float),
+            "flow_out": np.empty(size, dtype=float),
+            "cost": np.empty(size, dtype=float),
+            "init_capacity": np.empty(size, dtype=float),
+            "eff": np.empty(size, dtype=float),
+            "name": np.empty(size, dtype=str),
+            "node": np.empty(size, dtype=str),
+            "network": np.empty(size, dtype=str),
+            "t": np.empty(size, dtype=float),
+            "scn": np.empty(size, dtype=float),
+        }
 
         stor = pd.DataFrame(data=stor)
 
@@ -273,23 +313,23 @@ class ResultAnalyzer:
         for n, net in result.networks.items():
             for node in net.nodes.keys():
                 for i, c in enumerate(net.nodes[node].storages):
-                    slices = stor.index[n_stor * h * scn: (n_stor + 1) * h * scn]
+                    slices = stor.index[n_stor * h * scn : (n_stor + 1) * h * scn]
                     study_stor = study.networks[n].nodes[node].storages[i]
 
-                    stor.loc[slices, 'max_capacity'] = study_stor.capacity
-                    stor.loc[slices, 'capacity'] = c.capacity.flatten()
-                    stor.loc[slices, 'max_flow_in'] = study_stor.flow_in
-                    stor.loc[slices, 'flow_in'] = c.flow_in.flatten()
-                    stor.loc[slices, 'max_flow_out'] = study_stor.flow_out
-                    stor.loc[slices, 'flow_out'] = c.flow_out.flatten()
-                    stor.loc[slices, 'cost'] = study_stor.cost
-                    stor.loc[slices, 'init_capacity'] = study_stor.init_capacity
-                    stor.loc[slices, 'eff'] = study_stor.eff
-                    stor.loc[slices, 'network'] = n
-                    stor.loc[slices, 'name'] = c.name
-                    stor.loc[slices, 'node'] = node
-                    stor.loc[slices, 't'] = np.tile(np.arange(h), scn)
-                    stor.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
+                    stor.loc[slices, "max_capacity"] = study_stor.capacity.flatten()
+                    stor.loc[slices, "capacity"] = c.capacity.flatten()
+                    stor.loc[slices, "max_flow_in"] = study_stor.flow_in.flatten()
+                    stor.loc[slices, "flow_in"] = c.flow_in.flatten()
+                    stor.loc[slices, "max_flow_out"] = study_stor.flow_out.flatten()
+                    stor.loc[slices, "flow_out"] = c.flow_out.flatten()
+                    stor.loc[slices, "cost"] = study_stor.cost.flatten()
+                    stor.loc[slices, "init_capacity"] = study_stor.init_capacity
+                    stor.loc[slices, "eff"] = study_stor.eff.flatten()
+                    stor.loc[slices, "network"] = n
+                    stor.loc[slices, "name"] = c.name
+                    stor.loc[slices, "node"] = node
+                    stor.loc[slices, "t"] = np.tile(np.arange(h), scn)
+                    stor.loc[slices, "scn"] = np.repeat(np.arange(scn), h)
 
         return stor
 
@@ -301,29 +341,40 @@ class ResultAnalyzer:
         """
         h = study.horizon
         scn = study.nb_scn
-        elements = sum([sum([len(n.links) for n in net.nodes.values()]) for net in study.networks.values()])
+        elements = sum(
+            [
+                sum([len(n.links) for n in net.nodes.values()])
+                for net in study.networks.values()
+            ]
+        )
         size = h * scn * elements
 
-        link = {'cost': np.empty(size, dtype=float), 'avail': np.empty(size, dtype=float),
-                'used': np.empty(size, dtype=float),
-                'node': np.empty(size, dtype=str), 'dest': np.empty(size, dtype=str),
-                'network': np.empty(size, dtype=str),
-                't': np.empty(size, dtype=float), 'scn': np.empty(size, dtype=float)}
+        link = {
+            "cost": np.empty(size, dtype=float),
+            "avail": np.empty(size, dtype=float),
+            "used": np.empty(size, dtype=float),
+            "node": np.empty(size, dtype=str),
+            "dest": np.empty(size, dtype=str),
+            "network": np.empty(size, dtype=str),
+            "t": np.empty(size, dtype=float),
+            "scn": np.empty(size, dtype=float),
+        }
         link = pd.DataFrame(data=link)
 
         n_link = 0
         for n, net in result.networks.items():
             for node in net.nodes.keys():
-                for i, c in enumerate(net.nodes[node].links):
-                    slices = link.index[n_link * h * scn: (n_link + 1) * h * scn]
-                    link.loc[slices, 'cost'] = c.cost.flatten()
-                    link.loc[slices, 'dest'] = c.dest
-                    link.loc[slices, 'node'] = node
-                    link.loc[slices, 'network'] = n
-                    link.loc[slices, 'avail'] = study.networks[n].nodes[node].links[i].quantity.flatten()
-                    link.loc[slices, 'used'] = c.quantity.flatten()
-                    link.loc[slices, 't'] = np.tile(np.arange(h), scn)
-                    link.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
+                for i, rl in enumerate(net.nodes[node].links):
+                    slices = link.index[n_link * h * scn : (n_link + 1) * h * scn]
+                    sl = study.networks[n].nodes[node].links[i]
+                    link.loc[slices, "cost"] = sl.cost.flatten()
+                    link.loc[slices, "dest"] = rl.dest
+                    link.loc[slices, "node"] = node
+                    link.loc[slices, "network"] = n
+                    link.loc[slices, "avail"] = sl.quantity.flatten()
+                    link.loc[slices, "used"] = rl.quantity.flatten()
+                    link.loc[slices, "t"] = np.tile(np.arange(h), scn)
+                    link.loc[slices, "scn"] = np.repeat(np.arange(scn), h)
 
                     n_link += 1
 
@@ -336,21 +387,26 @@ class ResultAnalyzer:
         elements = sum([len(v.src_ratios) for v in study.converters.values()])
         size = h * scn * elements
 
-        dest_conv = {'name': np.empty(size, dtype=str), 'network': np.empty(size, dtype=str),
-                     'node': np.empty(size, dtype=str), 'flow': np.empty(size, dtype=float),
-                     'cost': np.empty(size, dtype=float), 'max': np.empty(size, dtype=float)}
+        dest_conv = {
+            "name": np.empty(size, dtype=str),
+            "network": np.empty(size, dtype=str),
+            "node": np.empty(size, dtype=str),
+            "flow": np.empty(size, dtype=float),
+            "cost": np.empty(size, dtype=float),
+            "max": np.empty(size, dtype=float),
+        }
         dest_conv = pd.DataFrame(data=dest_conv)
 
         for i, (name, v) in enumerate(study.converters.items()):
-            slices = dest_conv.index[i * h * scn: (i + 1) * h * scn]
-            dest_conv.loc[slices, 'name'] = v.name
-            dest_conv.loc[slices, 'cost'] = v.cost
-            dest_conv.loc[slices, 'max'] = v.max
-            dest_conv.loc[slices, 'network'] = v.dest_network
-            dest_conv.loc[slices, 'node'] = v.dest_node
-            dest_conv.loc[slices, 'flow'] = result.converters[name].flow_dest.flatten()
-            dest_conv.loc[slices, 't'] = np.tile(np.arange(h), scn)
-            dest_conv.loc[slices, 'scn'] = np.repeat(np.arange(scn), h)
+            slices = dest_conv.index[i * h * scn : (i + 1) * h * scn]
+            dest_conv.loc[slices, "name"] = v.name
+            dest_conv.loc[slices, "cost"] = v.cost.flatten()
+            dest_conv.loc[slices, "max"] = v.max.flatten()
+            dest_conv.loc[slices, "network"] = v.dest_network
+            dest_conv.loc[slices, "node"] = v.dest_node
+            dest_conv.loc[slices, "flow"] = result.converters[name].flow_dest.flatten()
+            dest_conv.loc[slices, "t"] = np.tile(np.arange(h), scn)
+            dest_conv.loc[slices, "scn"] = np.repeat(np.arange(scn), h)
 
         return dest_conv
 
@@ -361,9 +417,14 @@ class ResultAnalyzer:
         elements = sum([len(v.src_ratios) for v in study.converters.values()])
         size = h * scn * elements
 
-        src_conv = {'name': np.empty(size, dtype=str), 'network': np.empty(size, dtype=str),
-                    'node': np.empty(size, dtype=str), 'ratio': np.empty(size, dtype=float),
-                    'flow': np.empty(size, dtype=float), 'max': np.empty(size, dtype=float)}
+        src_conv = {
+            "name": np.empty(size, dtype=str),
+            "network": np.empty(size, dtype=str),
+            "node": np.empty(size, dtype=str),
+            "ratio": np.empty(size, dtype=float),
+            "flow": np.empty(size, dtype=float),
+            "max": np.empty(size, dtype=float),
+        }
         src_conv = pd.DataFrame(data=src_conv)
 
         s = 0
@@ -371,28 +432,33 @@ class ResultAnalyzer:
             src_size = len(v.src_ratios)
             e = s + h * scn * src_size
             slices = src_conv.index[s:e]
-            src_conv.loc[slices, 'name'] = v.name
-            src_conv.loc[slices, 'max'] = v.max
-            src_conv.loc[slices, 't'] = np.tile(np.arange(h), scn * src_size)
-            src_conv.loc[slices, 'scn'] = np.repeat(np.arange(scn), h * src_size)
+            src_conv.loc[slices, "name"] = v.name
+            src_conv.loc[slices, "t"] = np.tile(np.arange(h), scn * src_size)
+            src_conv.loc[slices, "scn"] = np.repeat(np.arange(scn), h * src_size)
 
             for i_src, (net, node) in enumerate(v.src_ratios.keys()):
                 e = s + h * scn * (i_src + 1)
                 slices = src_conv.index[s:e]
-                src_conv.loc[slices, 'network'] = net
-                src_conv.loc[slices, 'node'] = node
-                src_conv.loc[slices, 'ratio'] = v.src_ratios[(net, node)]
-                src_conv.loc[slices, 'flow'] = result.converters[name].flow_src[(net, node)].flatten()
+                src_conv.loc[slices, "network"] = net
+                src_conv.loc[slices, "node"] = node
+                src_conv.loc[slices, "max"] = v.max.flatten()
+                src_conv.loc[slices, "ratio"] = v.src_ratios[(net, node)].flatten()
+                src_conv.loc[slices, "flow"] = (
+                    result.converters[name].flow_src[(net, node)].flatten()
+                )
                 s = e
             s = e
 
-        src_conv.loc[:, 'max'] /= src_conv[
-            'ratio']  # max value is for output. Need to divide by ratio to find max for src
+        src_conv.loc[:, "max"] /= src_conv[
+            "ratio"
+        ]  # max value is for output. Need to divide by ratio to find max for src
 
         return src_conv
 
     @staticmethod
-    def _remove_useless_index_level(df: pd.DataFrame, indexes: List[Index]) -> pd.DataFrame:
+    def _remove_useless_index_level(
+        df: pd.DataFrame, indexes: List[Index]
+    ) -> pd.DataFrame:
         """
         If top index level has only on element then remove this index level. Do it recursively.
 
@@ -417,7 +483,7 @@ class ResultAnalyzer:
         """
         names = [i.column for i in indexes]
         mask = reduce(lambda a, b: a & b, (i.filter(df) for i in indexes))
-        pt = pd.pivot_table(data=df[mask], index=names, aggfunc=lambda x: x.iloc[0])
+        pt = pd.pivot_table(data=df[mask], index=names)
 
         return ResultAnalyzer._remove_useless_index_level(df=pt, indexes=indexes)
 
@@ -441,7 +507,9 @@ class ResultAnalyzer:
         :return: true if at least one type is in list False else
         """
         if not ResultAnalyzer.check_index(indexes, type):
-            raise ValueError('Indexes must contain a {}'.format(type.__class__.__name__))
+            raise ValueError(
+                "Indexes must contain a {}".format(type.__class__.__name__)
+            )
 
     def filter(self, indexes: List[Index]) -> pd.DataFrame:
         """
@@ -470,7 +538,7 @@ class ResultAnalyzer:
         if ResultAnalyzer.check_index(indexes, DestConverter):
             return ResultAnalyzer._pivot(indexes, self.dest_converter)
 
-    def network(self, name='default'):
+    def network(self, name="default"):
         """
         Entry point for fluent api
         :param name: network name. 'default' as default
@@ -478,23 +546,50 @@ class ResultAnalyzer:
         """
         return NetworkFluentAPISelector([NetworkIndex(index=name)], self)
 
-    def get_elements_inside(self, node: str, network: str = 'default'):
+    def get_elements_inside(self, node: str = None, network: str = None):
         """
         Get numbers of elements by node.
 
-        :param network: network name
-        :param node: node name
+        :param node: node name. None by default to ask whole network.
+        :param network: network name, 'default' as default if node is provided or None to ask whole network.
         :return: (nb of consumptions, nb of productions, nb of storages, nb of links (export), nb of converters (export), nb of converters (import)
         """
-        n = self.study.networks[network].nodes[node]
-        return len(n.consumptions), \
-               len(n.productions), \
-               len(n.storages), \
-               len(n.links), \
-               sum((network, node) in conv.src_ratios for conv in self.study.converters.values()), \
-               sum((network == conv.dest_network) and (node == conv.dest_node) for conv in self.study.converters.values())
+        size = np.zeros(6)
+        # Compute cost over study
+        if network is None and node is None:
+            for network in self.study.networks.keys():
+                size += self.get_elements_inside(network=network)
+            return size
 
-    def get_balance(self, node: str, network: str = 'default') -> np.ndarray:
+        # Compute cost over network
+        if network and node is None:
+            for node in self.study.networks[network].nodes.keys():
+                size += self.get_elements_inside(network=network, node=node)
+            return size
+
+        # If node is provided but no network set network as 'default'
+        if node and network is None:
+            network = "default"
+
+        n = self.study.networks[network].nodes[node]
+        return np.array(
+            [
+                len(n.consumptions),
+                len(n.productions),
+                len(n.storages),
+                len(n.links),
+                sum(
+                    (network, node) in conv.src_ratios
+                    for conv in self.study.converters.values()
+                ),
+                sum(
+                    (network == conv.dest_network) and (node == conv.dest_node)
+                    for conv in self.study.converters.values()
+                ),
+            ]
+        )
+
+    def get_balance(self, node: str, network: str = "default") -> np.ndarray:
         """
         Compute balance over time on asked node.
 
@@ -504,85 +599,125 @@ class ResultAnalyzer:
         """
         balance = np.zeros((self.nb_scn, self.study.horizon))
 
-        mask = (self.link['dest'] == node) & (self.link['network'] == network)
-        im = pd.pivot_table(self.link[mask][['used', 'scn', 't']], index=['scn', 't'], aggfunc=np.sum)
+        mask = (self.link["dest"] == node) & (self.link["network"] == network)
+        im = pd.pivot_table(
+            self.link[mask][["used", "scn", "t"]], index=["scn", "t"], aggfunc=np.sum
+        )
         if im.size > 0:
-            balance += -im['used'].values.reshape(self.nb_scn, self.horizon)
+            balance += -im["used"].values.reshape(self.nb_scn, self.horizon)
 
-        mask = (self.link['node'] == node) & (self.link['network'] == network)
-        exp = pd.pivot_table(self.link[mask][['used', 'scn', 't']], index=['scn', 't'], aggfunc=np.sum)
+        mask = (self.link["node"] == node) & (self.link["network"] == network)
+        exp = pd.pivot_table(
+            self.link[mask][["used", "scn", "t"]], index=["scn", "t"], aggfunc=np.sum
+        )
         if exp.size > 0:
-            balance += exp['used'].values.reshape(self.nb_scn, self.horizon)
+            balance += exp["used"].values.reshape(self.nb_scn, self.horizon)
         return balance
 
-    def get_cost(self, node: str, network: str = 'default') -> np.ndarray:
+    def get_cost(self, node: str = None, network: str = None) -> np.ndarray:
         """
-        Compute adequacy cost on a node.
+        Compute adequacy cost on a node, network or whole study.
 
-        :param node: node name
-        :param network: network name, 'default' as default
+        :param node: node name. None by default to ask whole network.
+        :param network: network name, 'default' as default if node is provided or None to ask whole network.
         :return: matrix (scn, time)
         """
         cost = np.zeros((self.nb_scn, self.horizon))
         c, p, s, l, _, v = self.get_elements_inside(node, network)
+        network = "default" if node and network is None else network
         if c:
             cons = self.network(network).node(node).scn().time().consumption()
-            cost += ((cons['asked'] - cons['given']) * cons['cost']).groupby(axis=0, level=(0, 1)) \
-                .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
+            cost += (
+                ((cons["asked"] - cons["given"]) * cons["cost"])
+                .groupby(axis=0, level=("scn", "t"))
+                .sum()
+                .sort_index(level=(0, 1))
+                .values.reshape(self.nb_scn, self.horizon)
+            )
 
         if p:
             prod = self.network(network).node(node).scn().time().production()
-            cost += (prod['used'] * prod['cost']).groupby(axis=0, level=(0, 1)) \
-                .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
+            cost += (
+                (prod["used"] * prod["cost"])
+                .groupby(axis=0, level=("scn", "t"))
+                .sum()
+                .sort_index(level=(0, 1))
+                .values.reshape(self.nb_scn, self.horizon)
+            )
 
         if s:
             stor = self.network(network).node(node).scn().time().storage()
-            cost += (stor['capacity'] * stor['cost']).groupby(axis=0, level=(0, 1)) \
-                .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
+            cost += (
+                (stor["capacity"] * stor["cost"])
+                .groupby(axis=0, level=("scn", "t"))
+                .sum()
+                .sort_index(level=(0, 1))
+                .values.reshape(self.nb_scn, self.horizon)
+            )
 
         if l:
             link = self.network(network).node(node).scn().time().link()
-            cost += (link['used'] * link['cost']).groupby(axis=0, level=(0, 1)) \
-                .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
+            cost += (
+                (link["used"] * link["cost"])
+                .groupby(axis=0, level=("scn", "t"))
+                .sum()
+                .sort_index(level=(0, 1))
+                .values.reshape(self.nb_scn, self.horizon)
+            )
 
         if v:
             conv = self.network(network).node(node).scn().time().from_converter()
-            cost += (conv['flow'] * conv['cost']).groupby(axis=0, level=(0, 1)) \
-                .sum().sort_index(level=(0, 1)).values.reshape(self.nb_scn, self.horizon)
+            cost += (
+                (conv["flow"] * conv["cost"])
+                .groupby(axis=0, level=("scn", "t"))
+                .sum()
+                .sort_index(level=(0, 1))
+                .values.reshape(self.nb_scn, self.horizon)
+            )
 
         return cost
 
-    def get_rac(self, network='default') -> np.ndarray:
+    def get_rac(self, network="default") -> np.ndarray:
         """
         Compute Remain Availabale Capacities on network.
 
         :param network: selecto network to compute. Default is default.
         :return: matrix (scn, time)
         """
+
         def fill_width_zeros(arr: np.ndarray) -> np.ndarray:
             return np.zeros((self.nb_scn, self.horizon)) if arr.size == 0 else arr
-        prod_used = self.production[self.production['network'] == network] \
-            .drop(['avail', 'cost'], axis=1) \
-            .pivot_table(index='scn', columns='t', aggfunc=np.sum) \
+
+        prod_used = (
+            self.production[self.production["network"] == network]
+            .drop(["avail", "cost"], axis=1)
+            .pivot_table(index="scn", columns="t", aggfunc=np.sum)
             .values
+        )
         prod_used = fill_width_zeros(prod_used)
 
-        prod_avail = self.production[self.production['network'] == network] \
-            .drop(['used', 'cost'], axis=1) \
-            .pivot_table(index='scn', columns='t', aggfunc=np.sum) \
+        prod_avail = (
+            self.production[self.production["network"] == network]
+            .drop(["used", "cost"], axis=1)
+            .pivot_table(index="scn", columns="t", aggfunc=np.sum)
             .values
+        )
         prod_avail = fill_width_zeros(prod_avail)
 
-        cons_asked = self.consumption[self.consumption['network'] == network] \
-            .drop(['given', 'cost'], axis=1) \
-            .pivot_table(index='scn', columns='t', aggfunc=np.sum) \
+        cons_asked = (
+            self.consumption[self.consumption["network"] == network]
+            .drop(["given", "cost"], axis=1)
+            .pivot_table(index="scn", columns="t", aggfunc=np.sum)
             .values
+        )
         cons_asked = fill_width_zeros(cons_asked)
 
-        cons_given = self.consumption[self.consumption['network'] == network] \
-            .drop(['asked', 'cost'], axis=1) \
-            .pivot_table(index='scn', columns='t', aggfunc=np.sum) \
+        cons_given = (
+            self.consumption[self.consumption["network"] == network]
+            .drop(["asked", "cost"], axis=1)
+            .pivot_table(index="scn", columns="t", aggfunc=np.sum)
             .values
+        )
         cons_given = fill_width_zeros(cons_given)
 
         return (prod_avail - prod_used) - (cons_asked - cons_given)
@@ -605,7 +740,7 @@ class ResultAnalyzer:
         """
         return self.study.nb_scn
 
-    def nodes(self, network: str = 'default') -> List[str]:
+    def nodes(self, network: str = "default") -> List[str]:
         """
         Shortcut to get list of node names
 
@@ -625,18 +760,21 @@ class NetworkFluentAPISelector:
     - join is unique only one element of node, time, scn are expected for each query
     - production, consumption and link are excluded themself, only on of them are expected for each query
     """
+
     FULL_DESCRIPTION = 5  # Need 5 indexes to describe completely a query
 
     def __init__(self, indexes: List[Index], analyzer: ResultAnalyzer):
         self.indexes = indexes
         self.analyzer = analyzer
 
-        if not ResultAnalyzer.check_index(indexes, ConsIndex) \
-                and not ResultAnalyzer.check_index(indexes, ProdIndex) \
-                and not ResultAnalyzer.check_index(indexes, StorIndex) \
-                and not ResultAnalyzer.check_index(indexes, LinkIndex) \
-                and not ResultAnalyzer.check_index(indexes, SrcConverter) \
-                and not ResultAnalyzer.check_index(indexes, DestConverter):
+        if (
+            not ResultAnalyzer.check_index(indexes, ConsIndex)
+            and not ResultAnalyzer.check_index(indexes, ProdIndex)
+            and not ResultAnalyzer.check_index(indexes, StorIndex)
+            and not ResultAnalyzer.check_index(indexes, LinkIndex)
+            and not ResultAnalyzer.check_index(indexes, SrcConverter)
+            and not ResultAnalyzer.check_index(indexes, DestConverter)
+        ):
             self.consumption = lambda x=None: self._append(ConsIndex(x))
             self.production = lambda x=None: self._append(ProdIndex(x))
             self.link = lambda x=None: self._append(LinkIndex(x))
@@ -667,4 +805,4 @@ class NetworkFluentAPISelector:
         if len(self.indexes) == NetworkFluentAPISelector.FULL_DESCRIPTION:
             return self.analyzer.filter(self.indexes)
         else:
-            return NetworkFluentAPISelector(self.indexes, self.analyzer)
+            return NetworkFluentAPISelector(deepcopy(self.indexes), self.analyzer)

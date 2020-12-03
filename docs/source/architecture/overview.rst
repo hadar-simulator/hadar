@@ -1,5 +1,7 @@
+.. _overview:
+
 Overview
-========
+============
 
 Welcome to the Hadar Architecture Documentation.
 

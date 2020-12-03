@@ -1,0 +1,6 @@
+-r requirements.dev.txt
+sphinx
+sphinx-autobuild
+pydata-sphinx-theme
+nbsphinx
+Pygments==2.6.1

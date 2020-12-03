@@ -12,7 +12,6 @@ hadar.optimizer.remote.optimizer module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

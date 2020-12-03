@@ -23,42 +23,48 @@ def range_sampler(low, high, size):
 class TestPipeline(unittest.TestCase):
     def test_pipeline(self):
         # Input
-        i = pd.DataFrame(data={'data': np.ones(1000) * 100})
+        i = pd.DataFrame(data={"data": np.ones(1000) * 100})
 
-        pipe = RepeatScenario(n=500) + \
-               Rename(data='quantity') + \
-               Fault(loss=10, occur_freq=0.1, downtime_min=5, downtime_max=10) +\
-               Clip(lower=80)
+        pipe = (
+            RepeatScenario(n=500)
+            + Rename(data="quantity")
+            + Fault(loss=10, occur_freq=0.1, downtime_min=5, downtime_max=10)
+            + Clip(lower=80)
+        )
 
         # Test
         o = pipe(i)
 
         # Verify io interfaces
-        self.assertEqual(['data'], pipe.plug.inputs)
-        self.assertEqual(['quantity'], pipe.plug.outputs)
+        self.assertEqual(["data"], pipe.plug.inputs)
+        self.assertEqual(["quantity"], pipe.plug.outputs)
 
         # Verify fault generator
         self.assertFalse((o.values == 100).all())
         self.assertTrue((80 <= o.values).all())
 
         # Verify columns
-        np.testing.assert_array_equal(np.arange(500), o.columns.get_level_values(0).unique().sort_values())
-        self.assertEqual(['quantity'], o.columns.get_level_values(1).unique())
+        np.testing.assert_array_equal(
+            np.arange(500), o.columns.get_level_values(0).unique().sort_values()
+        )
+        self.assertEqual(["quantity"], o.columns.get_level_values(1).unique())
 
 
 class TestShuffler(unittest.TestCase):
     def test_shuffle(self):
         # Input
         shuffler = Shuffler(sampler=range_sampler)
-        shuffler.add_data(name='solar', data=np.array([[1, 2, 3], [5, 6, 7]]))
+        shuffler.add_data(name="solar", data=np.array([[1, 2, 3], [5, 6, 7]]))
 
-        i = pd.DataFrame({(0, 'a'): [3, 4, 5], (1, 'a'): [7, 8, 9]})
-        pipe = RepeatScenario(2) + ToShuffler('a')
-        shuffler.add_pipeline(name='load', data=i, pipeline=pipe)
+        i = pd.DataFrame({(0, "a"): [3, 4, 5], (1, "a"): [7, 8, 9]})
+        pipe = RepeatScenario(2) + ToShuffler("a")
+        shuffler.add_pipeline(name="load", data=i, pipeline=pipe)
 
         # Expected
-        exp = {'solar': np.array([[1, 2, 3], [5, 6, 7], [1, 2, 3]]),
-               'load': np.array([[3, 4, 5], [7, 8, 9], [3, 4, 5]])}
+        exp = {
+            "solar": np.array([[1, 2, 3], [5, 6, 7], [1, 2, 3]]),
+            "load": np.array([[3, 4, 5], [7, 8, 9], [3, 4, 5]]),
+        }
 
         # Test & Verify
         res = shuffler.shuffle(3)

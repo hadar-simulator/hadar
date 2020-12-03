@@ -12,7 +12,6 @@ hadar.analyzer.result module
    :undoc-members:
    :show-inheritance:
 
-
 Module contents
 ---------------
 

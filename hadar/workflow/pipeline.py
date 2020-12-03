@@ -13,12 +13,24 @@ import numpy as np
 import pandas as pd
 from pandas import MultiIndex
 
-from hadar.optimizer.input import DTO
+from hadar.optimizer.utils import DTO
 
-__all__ = ['RestrictedPlug', 'FreePlug', 'Stage', 'FocusStage', 'Drop', 'Rename', 'Fault', 'RepeatScenario',
-           'ToShuffler', 'Pipeline', 'Clip']
+__all__ = [
+    "RestrictedPlug",
+    "FreePlug",
+    "Stage",
+    "FocusStage",
+    "Drop",
+    "Rename",
+    "Fault",
+    "RepeatScenario",
+    "ToShuffler",
+    "Pipeline",
+    "Clip",
+]
 
-TO_SHUFFLER = 'to_shuffler'
+TO_SHUFFLER = "to_shuffler"
+
 
 class Plug(ABC, DTO):
     """
@@ -145,6 +157,7 @@ class Pipeline:
     """
     Compute many stages sequentially.
     """
+
     def __init__(self, stages: List):
         """
         Instance new pipeline.
@@ -159,8 +172,10 @@ class Pipeline:
         for i in range(0, len(stages) - 1):
             curr, next = stages[i], stages[i + 1]
             if not curr.plug.linkable_to(next.plug):
-                raise ValueError("Pipeline can't be added current outputs are %s and %s has input %s" %
-                                 (self.plug.outputs, curr.__class__.__name__, next.plug.inputs))
+                raise ValueError(
+                    "Pipeline can't be added current outputs are %s and %s has input %s"
+                    % (self.plug.outputs, curr.__class__.__name__, next.plug.inputs)
+                )
 
             self.plug += next.plug
 
@@ -175,8 +190,10 @@ class Pipeline:
             raise ValueError("You can link Pipeline only with new Stage object")
 
         if not self.plug.linkable_to(other.plug):
-            raise ValueError("Pipeline can't be added current outputs are %s and %s has input %s" %
-                             (self.plug.outputs, other.__class__.__name__, other.plug.inputs))
+            raise ValueError(
+                "Pipeline can't be added current outputs are %s and %s has input %s"
+                % (self.plug.outputs, other.__class__.__name__, other.plug.inputs)
+            )
 
         self.plug += other.plug
         self.stages.append(other)
@@ -207,11 +224,17 @@ class Pipeline:
         """
         names = Stage.get_names(timeline)
         if not self.plug.computable(names):
-            raise ValueError("Pipeline accept %s in input, but receive %s" % (self.plug.inputs, names))
+            raise ValueError(
+                "Pipeline accept %s in input, but receive %s"
+                % (self.plug.inputs, names)
+            )
 
     def assert_to_shuffler(self):
         if TO_SHUFFLER not in self.plug.outputs:
-            raise ValueError("Pipeline output must have a 'to_generate' column, but has %s", self.plug.outputs)
+            raise ValueError(
+                "Pipeline output must have a 'to_generate' column, but has %s",
+                self.plug.outputs,
+            )
 
 
 class Stage(ABC):
@@ -237,7 +260,9 @@ class Stage(ABC):
         :return: Pipeline with two stage and merged plug
         """
         if not isinstance(other, Stage):
-            raise ValueError('Only addition with other Stage is accepted not with %s' % type(other))
+            raise ValueError(
+                "Only addition with other Stage is accepted not with %s" % type(other)
+            )
 
         return Pipeline(stages=[self, other])
 
@@ -262,11 +287,13 @@ class Stage(ABC):
 
         # If compute run inside multiprocessing like in Shuffler. randomness are not independence.
         # We need to reseed with urandom
-        np.random.seed(int.from_bytes(os.urandom(4), byteorder='little'))
+        np.random.seed(int.from_bytes(os.urandom(4), byteorder="little"))
 
         names = Stage.get_names(timeline)
         if not self.plug.computable(names):
-            raise ValueError("Stage accept %s in input, but receive %s" % (self.plug.inputs, names))
+            raise ValueError(
+                "Stage accept %s in input, but receive %s" % (self.plug.inputs, names)
+            )
 
         return self._process_timeline(timeline.copy())
 
@@ -398,7 +425,12 @@ class Rename(Stage):
 
         :param kwargs: dictionary of strings like Rename(old_name='new_name')
         """
-        Stage.__init__(self, plug=RestrictedPlug(inputs=list(kwargs.keys()), outputs=list(kwargs.values())))
+        Stage.__init__(
+            self,
+            plug=RestrictedPlug(
+                inputs=list(kwargs.keys()), outputs=list(kwargs.values())
+            ),
+        )
         self.rename = kwargs
 
     def _process_timeline(self, timeline: pd.DataFrame) -> pd.DataFrame:
@@ -419,6 +451,7 @@ class ToShuffler(Rename):
     """
     To Connect pipeline to shuffler
     """
+
     def __init__(self, result_name: str):
         """
         Instance Stage
@@ -452,7 +485,14 @@ class Fault(FocusStage):
     Generate a random fault for each scenarios.
     """
 
-    def __init__(self, loss: float, occur_freq: float, downtime_min: int, downtime_max, seed: int = None):
+    def __init__(
+        self,
+        loss: float,
+        occur_freq: float,
+        downtime_min: int,
+        downtime_max,
+        seed: int = None,
+    ):
         """
         Initiate Stage.
 
@@ -462,7 +502,9 @@ class Fault(FocusStage):
         :param downtime_max: maximal downtime (downtime will be toss for each occurred fault)
         :param seed: random seed. Set only if you want reproduce exactly result.
         """
-        FocusStage.__init__(self, plug=RestrictedPlug(inputs=['quantity'], outputs=['quantity']))
+        FocusStage.__init__(
+            self, plug=RestrictedPlug(inputs=["quantity"], outputs=["quantity"])
+        )
         self.loss = loss
         self.occur_freq = occur_freq
         self.downtime_min = downtime_min
@@ -474,15 +516,19 @@ class Fault(FocusStage):
             np.random.seed(self.seed)
 
         horizon = scenario.shape[0]
-        nb_faults = np.random.choice([0, 1], size=horizon, p=[1 - self.occur_freq, self.occur_freq]).sum()
+        nb_faults = np.random.choice(
+            [0, 1], size=horizon, p=[1 - self.occur_freq, self.occur_freq]
+        ).sum()
         loss_qt = np.zeros(horizon)
         faults_begin = np.random.randint(low=0, high=horizon, size=nb_faults)
-        faults_duration = np.random.randint(low=self.downtime_min, high=self.downtime_max, size=nb_faults)
+        faults_duration = np.random.randint(
+            low=self.downtime_min, high=self.downtime_max, size=nb_faults
+        )
         for begin, duration in zip(faults_begin, faults_duration):
-            loss_qt[begin:(begin + duration)] += self.loss
+            loss_qt[begin : (begin + duration)] += self.loss
 
         scenario._is_copy = False  # Avoid SettingCopyWarning
-        scenario['quantity'] -= loss_qt
+        scenario["quantity"] -= loss_qt
         return scenario
 
 
@@ -505,6 +551,8 @@ class RepeatScenario(Stage):
 
         n_scn = Stage.get_scenarios(timeline).size
         names = Stage.get_names(timeline)
-        index = Stage.build_multi_index(scenarios=np.arange(0, n_scn * self.n), names=names)
+        index = Stage.build_multi_index(
+            scenarios=np.arange(0, n_scn * self.n), names=names
+        )
 
         return pd.DataFrame(data=data, columns=index)

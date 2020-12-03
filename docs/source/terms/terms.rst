@@ -1,3 +1,5 @@
+.. _terms:
+
 Legal Terms
 ===========
 

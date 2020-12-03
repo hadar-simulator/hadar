@@ -18,51 +18,43 @@ You are in the technical documentation.
 
 * If you want to discover Hadar and the project, please go to https://www.hadar-simulator.org for an overview
 
-* If you want to start using Hadar, you can begin with `tutorials <https://hadar-simulator.org/tutorials>`_
+* If you want to start using Hadar, you can begin with :ref:`Tutorials <tutorials>`
 
-* If you want to understand Hadar engine, see **Architecture**
+* If you want to understand Hadar engine, see :ref:`Architecture <architecture>`
 
-* If you want to look at a method or object behavior search inside **References**
+* If you want to look at a method or object behavior search inside :ref:`Reference <reference>`
 
-* If you want to help us coding Hadar, please read **Dev Guide** before.
+* If you want to help us coding Hadar, please read :ref:`Contributing <dev-guide>` before.
 
-* If you want to see Mathematics model used in Hadar, go to **Mathematics**.
+* If you want to see Mathematics model used in Hadar, go to :ref:`Mathematics <mathematics>`.
+
+.. toctree::
+   :maxdepth: 2
+
+   examples/index.rst
+
+.. toctree::
+   :maxdepth: 2
+
+   architecture/index.rst
 
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Architecture:
+   :maxdepth: 2
 
-   architecture/overview.rst
-   architecture/workflow.rst
-   architecture/optimizer.rst
-   architecture/analyzer.rst
-   architecture/viewer.rst
+   mathematics/index.rst
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Mathematics:
+   :maxdepth: 2
 
-   mathematics/linear-model.rst
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Dev Guide:
-
-   dev-guide/repository.rst
-   dev-guide/contributing.rst
+   dev-guide/index.rst
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Reference:
+   :maxdepth: 2
 
-   reference/hadar.workflow.rst
-   reference/hadar.optimizer.rst
-   reference/hadar.analyzer.rst
-   reference/hadar.viewer.rst
+   reference/modules
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Legal Terms
+   :maxdepth: 2
 
    terms/terms.rst

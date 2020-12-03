@@ -1,5 +1,7 @@
-hadar
-=====
+.. _reference:
+
+Reference
+=========
 
 .. toctree::
    :maxdepth: 4

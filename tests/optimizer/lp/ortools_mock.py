@@ -6,7 +6,7 @@
 #  This file is part of hadar-simulator, a python adequacy library for everyone.
 from ortools.linear_solver.pywraplp import Solver, Variable
 
-from hadar.optimizer.input import DTO
+from hadar.optimizer.utils import DTO
 
 
 class MockNumVar(DTO, Variable):
@@ -48,7 +48,7 @@ class MockSolver(Solver):
     def __init__(self):
         pass
 
-    def NumVar(self, min: float, max: float, name: str = ''):
+    def NumVar(self, min: float, max: float, name: str = ""):
         return MockNumVar(min, max, name)
 
     def Objective(self) -> MockObjective:
@@ -64,4 +64,4 @@ class MockSolver(Solver):
         pass
 
     def ExportModelAsLpFormat(self, toggle: bool):
-        return ''
+        return ""
