@@ -547,8 +547,8 @@ class TestConverterAnalyzer(unittest.TestCase):
     def test_aggregate_to_conv(self):
         # Expected
         exp_conv = pd.DataFrame(
-            data={"flow": [10, 1, 1], "max": [5] * 3, "ratio": [2] * 3},
-            index=pd.Index([0, 1, 2], name="t"),
+            data={"flow": [10., 1., 1.], "max": [5] * 3, "ratio": [2] * 3},
+            index=pd.Index([0., 1., 2.], name="t"),
         )
 
         agg = ResultAnalyzer(study=self.study, result=self.result)
@@ -559,8 +559,8 @@ class TestConverterAnalyzer(unittest.TestCase):
     def test_aggregate_from_conv(self):
         # Expected
         exp_conv = pd.DataFrame(
-            data={"cost": [1] * 3, "flow": [20, 2, 2], "max": [10] * 3},
-            index=pd.Index([0, 1, 2], name="t"),
+            data={"cost": [1] * 3, "flow": [20., 2., 2.], "max": [10] * 3},
+            index=pd.Index([0., 1., 2.], name="t"),
         )
 
         agg = ResultAnalyzer(study=self.study, result=self.result)
