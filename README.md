@@ -17,7 +17,7 @@ Each kind of network has a needs of adequacy. On one side, some network nodes ne
 items such as watt, litter, package. And other side, some network nodes produce items.
 Applying adequacy on network, is tring to find the best available exchanges to avoid any lack at the best cost.
 
-For example, a electric grid can have some nodes wich produce too more power and some nodes which produce not enough power.
+For example, a electric grid can have some nodes that can produce more power than they need and some nodes that do not produce enough power.
 
 ![adequacy](examples/Get%20Started/figure.png)
 
